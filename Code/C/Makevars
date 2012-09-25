@@ -1,0 +1,5 @@
+## C++
+CXXFLAGS=-I$(HOME)/RV-Project/Code/C_Examples/MyLib/Matrix/ \
+	 -I$(HOME)/RV-Project/Code/C_Examples/MyLib/RNG/ \
+	 -I$(HOME)/RV-Project/Code/C_Examples/MyLib/RandomVariates \
+	 -I$(HOME)/Code/include/
