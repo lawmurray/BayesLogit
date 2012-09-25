@@ -1,0 +1,37 @@
+Table of Conents
+ - Install
+ - Run Demo
+
+* TO INSTALL:
+
+All command line instructions are to be called from within this directory.
+
+** FROM SOURCE:
+   
+If you use Mac and have the XCode installed or if you use Linux you
+may install the R package FROM SOURCE:
+
+From the command line in this directory do
+
+  R CMD INSTALL -l Test/ BayesLogit_0.0-2.tar.gz
+
+** MAC BINARY
+
+If you use Mac and do not have XCode try installing the BINARY:
+(WARNING: you need a recent version of OS X for this to work.)
+
+From the command line in this directory do
+
+  R CMD INSTALL -l Test/ BayesLogit_0.0-2.tgz
+
+** WINDOWS BINARY
+
+If you use WINDOWS you can install the BINARY:
+
+  Go to the Packages drop down menu and tell R to install the local
+  package <BayesLogit_0.0-2.zip>.
+
+* RUN DEMO
+
+After you have installed the package, start R and run the script
+<Demo.R>, which can be found in this directory.
