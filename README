@@ -3,3 +3,9 @@ BayesLogit: fast, exact Bayesian inference for logistic likelihoods.
 The Code/ directory has C and R code and the R Package.
 
 The Notes/ directory has manuscripts.
+
+Instructions for pushing for the first time:
+
+git remote add origin https://github.com/jwindle/BayesLogit.git
+git push -u origin master
+
