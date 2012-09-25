@@ -1,0 +1,206 @@
+\documentclass[11pt]{article}
+
+\input{commands}
+
+\usepackage{natbib}
+
+\newcommand{\Polya}{P\'{o}lya}
+\newcommand{\PG}{\text{PG}}
+\newcommand{\point}{\noindent $\bullet$ }
+
+% Page Layout
+\setlength{\oddsidemargin}{0.0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\textheight}{8in}
+%\parindent 0in
+%\parskip 12pt
+
+% Set Fancy Style
+%\pagestyle{fancy}
+
+%\lhead{Left Header}
+%\rhead{Right Header}
+
+\title{Dynamic Generalized Linear Models using \Polya-Gamma augmentation}
+\author{Carlos M. Carvalho, James G. Scott, Liang Sun, Jesse Windle}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+
+Recently, \cite{polson-etal-2012} introduced a new data augmentation scheme for
+posterior distributions derived from logisitic likelihoods.  Such models arise
+when the distribution of the reponse variable $y_i$ depends upon a proportion
+$p_i$, which occurs when working with catogorical or count data, and one models
+this proportion on the log-odds scale, $\psi_i = \log \frac{p_i}{1-p_i}$, as the
+linear combination $x_i \beta$.  In this case, the likelihood takes the form
+\[
+\prod_{i=1}^n \frac{ (e^{\psi_i})^{a_i} }{ (1 + e^{\psi_i})^{b_i} }
+\]
+where $a_i$ and $b_i$ are some function of the response, explanatory variables,
+hyperparameters, or some combination thereof.  The \Polya-Gamma distribution
+possesses an integral identity so that the posterior distribution $p(\beta |
+y)$, derived from the logistic likelihodo above, may ``demarginalized'' to
+produce an augmented posterior distribution $p(\beta, \omega | y)$ in which the
+complete conditional $p(\omega | \beta, y)$ is the product of independent
+\Polya-Gamma distributions and, if one choses a normal prior for $\beta$, the
+complete conditional $p(\beta | \omega, y)$ is normal as well yielding a
+convenient, efficient Gibbs sampler.  \cite{polson-etal-2012} show that this
+method is superior to similar alternative methods, such as
+\cite{holmes-held-2006} and \cite{fruhwirth-schnatter-fruhwirth-2007}, for
+binary logistic regression and that it may be applied in a number of other
+settings including contingency tables, multinomial logistic regression, and
+negative binomial regression for count data.  However, they devote little
+attention to dynamic models.  This paper fills that void.
+
+% when $\omega \sim \PG(b, 0)$,
+% \[
+% \frac{(e^{\psi})^{a}}{(1+e^{\psi})^{b}} = 2^{-b} e^{\kappa \psi}
+% \int_0^\infty e^{-\omega \psi_i^2 / 2} p(\omega) d \omega
+% \]
+% where $\kappa = a - b / 2$; thus,
+
+\point Polya Gamma Augmentation for static models.
+
+\point Background of dynamic GLM.
+
+Prior models for dynamic generalized models include:
+
+\begin{itemize}
+\item \cite{west-etal-1985}
+
+  For exponential families.
+
+\item \cite{ravines-etal-2006}
+
+  For exponential families.  Specific example for binomial, poisson, Gamma
+  transfer function.
+
+\item \cite{fruhwirth-schnatter-fruhwirth-2007}
+
+  For binary logistic, multinomial logistic, though give binomial logistic example.
+
+\item \cite{fruhwirth-schnatter-wagner-2006}
+
+  For count data - Poisson regression.
+
+\item \cite{fruhwirth-schnatter-etal-2009}
+
+  Shows how to reduce the number of latents.  Can do dynamic Poisson regression.
+  Can also do dynamic negative binomial regression.
+
+  In both cases, she suggests using a normal mixture representation of the log
+  gamma distribution.  But this turns out to be somewhat annoying to do since
+  the shape parameter changes.  Hence you need an entire family of log-gamma
+  distributions.
+
+\end{itemize}
+
+\section{Dynamic Binary Logistic Regression}
+
+Suppose $\psi_{it}$ is the log-odds of success for observation $i$ at time $t$,
+\[
+P(y_{it}=1) = p_{it} \; \textmd{ where } \psi_{it} = \log \frac{p_{it}}{1-p_{it}}.
+\]
+Furthormore, suppose that the system is not changing in time.  In that case, the
+we would model the log-odds using predictors we might find suitable yielding the
+static regression
+\[
+\psi_{it} = x_{it} \beta.
+\]
+Given the logistic likelihood one can infer $\beta$ by his or her favorite
+method, which in our case is the \Polya-Gamma auxiliary variable approach.
+
+Now suppose that this system is evolving in time and that the statistical
+manifestation of that evolution is a dynamic regression coefficients so that the
+log odds are modeled by \( \psi_{it} = x_{it} \beta_t.  \) If we do not have a
+strong sense of how the regression coefficient evolves, then a random walk for
+$\beta_t$ is appropriate and we arrive at the dynamic generalized linear model
+\[
+\begin{cases}
+\psi_{it} = x_{it} \beta_t \\
+\beta_t = \beta_{t-1} + \omega_t, & \omega_t \sim N(0, W).
+\end{cases}
+\]
+
+To apply the \Polya-Gamma method, imagine fixing $t$ and looking at a single
+term in the likelihood.  You would have something like (where $y_i$ is the
+number of successes for covariate $i$--though for the PG code we have $y_i$ is
+the proportion of successes!)
+\[
+\exp \Big[ (y_{i} - n_{i}/2) x_{i} \beta - \frac{1}{2} \omega_{i} \psi_i^2
+\Big] 
+p(\omega_i | n_i, 0). 
+\]
+Collecting all the observations this becomes
+\[
+\exp \Big[ \alpha' X \beta - \frac{1}{2} \beta' X' \Omega X \beta \Big]
+p(\omega | n, 0) \;
+\textmd{ where } \;
+\alpha_i = (y_i - n_i/2) \; \textmd{ and } \; X = [x_i].
+\]
+Assuming that $\omega$ is fixed.  We want to find a quadratic form
+\[
+(z - X \beta)' \Omega (z - X \beta) = z' \Omega z - 2 z' \Omega X \beta + (X
+\beta)' \Omega (X \beta).
+\]
+Since $\omega$ is fixed we can just multiply the likelihood by $\exp
+\frac{-1}{2} z' \Omega z$ where $\Omega z = \alpha$ to generate this expression.
+Thus, for fixed $\omega$ the likelihood of $\beta$ can be interpreted as coming from
+\[
+z = X \beta + \ep, \; \ep \sim N(0, \Omega^{-1})
+\]
+where
+\[
+\Omega z = \alpha.
+\]
+\begin{comment}
+(Waving my hands: We have $\Omega z = \alpha = y - n/2$.  Thus we should have $y
+= \Omega z + n/2$.  Use for generating synthetic data?  No, its pseudo-data.)
+\end{comment}
+Reincorporating the time index, we have
+\[
+\begin{cases}
+z_t = X_t \beta_t + \ep_t, & \ep_t \sim N(0, \Omega_t^{-1}) \\
+\beta_t = \beta_{t-1} + \omega_t, & \omega_t \sim N(0, W).
+\end{cases}
+\]
+It is easy to calculate $z_t$ since $\Omega_t$ is diagonal.  One still produce a
+joint draw of $(\beta | W, D_T)$ when there are a different number of or no
+observations at each time step.
+\begin{comment}
+  The one place that we need to be careful is that there may be a variable
+  number of observations at each point in time.  Thus the number of rows in
+  $z_t$ and $X_t$ is $m_t$, which may vary.  Also, it may be the case that there
+  are no observations, in which case we have the equivalent of missing data.  I
+  believe the dynamic linear model shouldn't have a problem with that.
+\end{comment}
+The sampling procedure is then
+\begin{enumerate}
+\item Set $\beta_t = 0$ for all $t$.  This is a reasonable seed since it
+  represents even odds.
+\item Calculate $\psi_t = X_t \beta_t$.
+\item Sample $\omega_{it} \sim PG(n_{it}, \psi_{it})$.
+\item Sample $\beta_t$ using the dynamic linear model above.
+\item Repeat, starting at (2).
+\end{enumerate}
+
+\section{Dynamic Negative Binomial Regression}
+
+\section{Normal Mixture Methods}
+
+\section{Comparison}
+
+\section{Conclusion}
+
+% If you have a bibliography.
+% The file withe bibliography is name.bib.
+\bibliography{bayeslogit}{}
+\bibliographystyle{abbrvnat}
+
+\end{document}

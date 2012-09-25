@@ -1,0 +1,779 @@
+\documentclass{article}
+
+\input{commands}
+\usepackage{outlines}
+
+\newcommand{\Polya}{P\'{o}lya}
+\newcommand{\Pois}{\text{Pois}}
+\newcommand{\Ga}{\text{Ga}}
+\newcommand{\NB}{\text{NB}}
+
+% Page Layout
+\setlength{\oddsidemargin}{0.0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\textheight}{8in}
+%\parindent 0in
+%\parskip 12pt
+
+% Set Fancy Style
+%\pagestyle{fancy}
+
+%\lhead{Left Header}
+%\rhead{Right Header}
+
+\begin{document}
+
+% Change Font and Spacing
+\large % change the font size to 12pt
+\linespread{1.1} % change the line spacing
+
+% Set the counter
+\setcounter{section}{0}
+
+\section{Dynamic / GP Logit}
+
+Imagine a scenario where the coefficients in a regression may be slowly changing
+in time.  The idea, I think, is that somehow the population is slowly evolving
+via changes in the parameters of the regression.  For instance, we could regard
+$\psi_{it}$ as the log-odds of success for observation $i$ at time $t$.  This
+would be something like
+\[
+P(y_{it}=1) = p_{it} \; \textmd{ where } \psi_{it} = \log \frac{p_{it}}{1-p_{it}}.
+\]
+I am imagining a scenario where at each time $t$ we are doing a logistic
+regression and these logistic regressions are tied together by some sort of
+correlation / covariation structure.  This could be modeled by something like
+\[
+\begin{cases}
+\psi_{it} = x_{it} \beta_t \\
+\beta_t = \beta_{t-1} + \omega_t, & \omega_t \sim N(0, W).
+\end{cases}
+\]
+Above is the basic idea used by West et al. (1985) (or check out West and
+Harrison 1997) for modeling dynamic generalized linear models.
+
+Imagine fixing $t$ and looking at a single term in the likelihood using the
+Polya-Gamma trick.  You would have something like (where $y_i$ is the number of
+successes for covariate $i$--though for the PG code we have $y_i$ is the
+proportion of successes!)
+\[
+\exp \Big[ (y_{i} - n_{i}/2) x_{i} \beta - \frac{1}{2} \omega_{i} \psi_i^2
+\Big] 
+p(\omega_i | n_i, 0). 
+\]
+Collecting all the observations this becomes
+\[
+\exp \Big[ \alpha' X \beta - \frac{1}{2} \beta' X' \Omega X \beta \Big]
+p(\omega | n, 0) \;
+\textmd{ where } \;
+\alpha_i = (y_i - n_i/2) \; \textmd{ and } \; X = [x_i].
+\]
+Assuming that $\omega$ is fixed.  We want to find a quadratic form
+\[
+(z - X \beta)' \Omega (z - X \beta).
+\]
+Expanding the quadratic form we get
+\[
+z' \Omega z - 2 z' \Omega X \beta + (X \beta)' \Omega (X \beta).
+\]
+Since $\omega$ is fixed we can just multiply the likelihood by $\exp
+\frac{-1}{2} z' \Omega z$ where $\Omega z = \alpha$ to generate this expression.
+Thus, for fixed $\omega$ the likelihood of $\beta$ can be interpreted as coming from
+\[
+z = X \beta + \ep, \; \ep \sim N(0, \Omega^{-1})
+\]
+where
+\[
+\Omega z = \alpha.
+\]
+(Waving my hands: We have $\Omega z = \alpha = y - n/2$.  Thus we should
+have $y = \Omega z + n/2$.  Use for generating synthetic data?)  Thus,
+reincorporating the time index we have
+\[
+\begin{cases}
+z_t = X_t \beta_t + \ep_t, & \ep_t \sim N(0, \Omega_t^{-1}) \\
+\beta_t = \beta_{t-1} + \omega_t, & \omega_t \sim N(0, W).
+\end{cases}
+\]
+It is easy to calculate $z_t$ since $\Omega_t$ is diagonal.  The one place that
+we need to be careful is that there may be a variable number of observations at
+each point in time.  Thus the number of rows in $z_t$ and $X_t$ is $m_t$, which
+may vary.  Also, it may be the case that there are no observations, in which
+case we have the equivalent of missing data.  I believe the dynamic linear model
+shouldn't have a problem with that.  The sampling procedure is then
+\begin{enumerate}
+\item Set $\beta_t = 0$ for all $t$.  This is a reasonable seed since it
+  represents even odds.
+\item Calculate $\psi_t = X_t \beta_t$.
+\item Sample $\omega_{it} \sim PG(n_{it}, \psi_{it})$.
+\item Sample $\beta_t$ using the dynamic linear model above.
+\item Repeat, starting at (2).
+\end{enumerate}
+
+An equivalent, off-line, method would be to assume that $\beta(t)$ follows a
+Gaussian process or some other prior that ties $\beta_t$ together.  Then we
+would have something like
+\[
+\begin{cases}
+z_{i} = x_{i} \beta(t_i) + \ep_{i}, & \ep_{i} \sim N(0, \omega_{i}^{-1}) \\
+\beta \sim GP(0, K) \\
+\end{cases}
+\]
+where $K(t_1, t_2)$ is the covariance function of the Gaussian Process.  We have
+re-indexed so that each observation has its own index and time is a covariate.
+In fact, this shows how you can take fancy linear model and apply it to
+categorical data using the Polya-Gamma trick.
+
+Maybe we should try to find categorical data that include spatial component.
+One could then use try Gaussian Process regression to estimate with coefficients
+changing smoothly in space.  In that case we would have,
+\[
+\begin{cases}
+z_i = f(x_i) + \ep_i, \; \ep \sim N(0, \omega_i^{-1}) \\
+f \sim GP(0, K).
+\end{cases}
+\]
+This could be a computational burden because we will have to invert a relatively
+large matrix.
+
+Check out Chapter 3 of Williams and Rasmussen's book on Gaussin Processes.  You
+must use approximation in that case because you do not have a conjugate
+situation.  This is not the case with the Polya-Gamma method.  Though, again,
+you may be burdened large amounts of data making it time consuming to invert
+matrices.  They have an example using a database of hand written characters
+provided by the USPS.  I wonder... instead of using a Gaussian process can you
+use a Dirichlet process... You should have clusters, i.e. characters, or several
+variants of characters and you want to assign each letter to a cluster.  Maybe
+you can do a cluster of clusters.  I think Jordan had something similar to this.
+This may relate to his beta process.  Basically, I am thinking of a Gaussian
+process of normal mixtures, where the location of the normal mixtures is random.
+This seems like it might be computationally intensive.
+
+We can follow a program similar to above following Fr\"{u}hwirth-Schnatter.
+This is kind of a hybrid between the Poisson and Logistic regression.  The
+log-odds are still expressed as $\psi_{it} = x_i \beta_t$.  If, again, we think
+of fixing $t$, then we sample using the latent utiltiy representation
+\[
+y_{i}^u = x_i \beta + \ep_{i}, \; \ep_i \sim N(m_{r_i}, s_{r_i}^2).
+\]
+Given $\beta$ we sample each $y_i^u$, $y_{i}^0$, and $r_i$ independently.
+Further, we do not assume any of these have temporal dependence when
+conditioning on $\beta_t$.  Thus the sampling procedure, I think, should be a
+simple extentions where now we estimate $\beta_t$ using
+\[
+\begin{cases}
+y_t = X_t \beta_t + \ep_t, & \ep_t \sim N(m_{r_t}, \diag(s_{r_t}^2)) \\
+\beta_t = \beta_{t-1} + \omega_t, & \omega_t \sim N(0, W).
+\end{cases}
+\]
+Again, we must pay attention to the dimension of $y_t$, $X_t$, and $r_t$, which
+changes in time.  (The number of columns in $X_t$ does not change in time.)  As
+you can see, this is (essentially) identical to the model above.
+
+In either case, we can write either model as
+\[
+\begin{cases}
+y_t = X_t \beta_t + \ep_t, & \ep_t \sim N(b_t, V_t) \\
+\beta_t = (I-\Phi)\mu + \Phi \beta_{t-1} + \omega_t, & \omega_t \sim N(0, W).
+\end{cases}
+\]
+For the moment let's restrict $\Phi$ to be diagonal.  I am writing this slightly
+differently than Fr\"{u}wirth Schnatter because she includes the mean term in
+$\beta_t$ (essentially).  I suppose I could do that here as well by accepting
+singular $W$.  The mean and variance, $b_t$ and $V_t$ are known while $W$ is not
+known.  (Aside: we could store $y_t$ and $X_t$ as lists.  But we could also
+store them as vectors or matrices and keep track of the indexing using another
+variable.)
+
+The evolution equations are as follows:
+\begin{outline}
+\1 Time $t-1$ posterior:
+\[
+\beta_{t-1} \mid D_{t-1} \sim N(m_{t-1}, C_{t-1}).
+\]
+\1 Evolution / Prior:
+\begin{align*}
+a_t & = (I-\Phi) \mu + \Phi m_{t-1} \\
+R_t & = \Phi C_{t-1} \Phi' + W \\
+\beta_t & \mid D_{t-1} = N(a_t, R_t).
+\end{align*}
+\1 Observation:
+\begin{align*}
+f_t & = X_t a_t + b_t \\
+Q_t & = X_t R_t X_t' + V_t \\
+y_t & \mid D_{t-1} \sim N(f_t, Q_t).
+\end{align*}
+\1 Covariance:
+\[
+\cov(y_t, \beta_t | D_{t-1}) =: \rho_t = X_t R_t.
+\]
+\1 Joint:
+\[
+\begin{bmatrix}
+y_t \\ \beta_t
+\end{bmatrix}
+\mid D_{t-1}
+\sim
+N
+\Big(
+\begin{bmatrix}
+f_t \\ a_t
+\end{bmatrix},
+\begin{bmatrix}
+Q_t & \rho_t \\
+\rho_t' & R_t
+\end{bmatrix}
+\Big)
+\]
+\1 Regression matrix, error:
+\begin{align*}
+A_t & = \rho_t' Q_{t}^{-1} \\
+e_t & = y_t - f_t.
+\end{align*}
+\1 Posterior
+\begin{align*}
+m_t & = a_t + A_t e_t \\
+C_t & = R_t - \rho_t' Q_t^{-1} \rho_t \\
+\beta_t & \mid D_t \sim N(m_t, C_t).
+\end{align*}
+
+\end{outline}
+
+When calculating $Q_t^{-1}$ you want to consider the dimension of $X_t$, which
+we will call $N \times P$.  If $N > P$ then you might want to use SWM, i.e.
+\[
+(V + XRX')^{-1} = V^{-1} + V^{-1} X(R^{-1} + X'V^{-1}X)^{-1}X' V^{-1}.
+\]
+If $P > N$ then you might just want to invert $Q$ directly.  It is possible that
+$P > N$ since we may have only an observation or two for a given time point.
+NOTICE that in former case, you do not need to calculate $Q$.  Thus $Q$ is $N
+\times N$ ($N$ is the number of ``data points'' and $P$ is the dimension of
+$\beta_t$) and
+\begin{outline}
+\1 $P \geq N$
+
+  \2 Note: $A_t' = Q_t^{-1} \rho_t \iff Q_t A_t' = \rho_t$.
+  \2 $L L' = Q_t$ so $LL' A_t' = \rho_t$.
+  \2 $\xi = L^{-1} \rho_t \iff L \xi = \rho_t$.
+  \2 $A_t' = L^{'-1} \xi \iff L'A_t' = \xi$.
+  \2 $m_t = a_t + A_t e_t$.
+  \2 $C_t = R_t - \xi' \xi$.
+
+\1 $N > P$ (Maybe this should be something like $N > c P$ where $c > 1$.)
+
+  \2 $T = R_t^{-1} + X_t'V_t^{-1}X_t$
+  \2 $LL' = T$
+  \2 $L^{'-1} X'V^{-1} = \xi \iff X'V^{-1} = L' \xi$.
+  \2 $Q_t^{-1} = V_t^{-1} + \xi' \xi$.
+  \2 $A_t = \rho_t' Q_t^{-1}$.
+  \2 $m_t = a_t + A_t e_t$
+  \2 $C_t = R_t - \rho_t' Q_t^{-1} \rho_t$.
+
+\end{outline}
+
+To backward sample we need $p(\beta_{t-1} \mid \beta_t, D_{t-1})$.
+\begin{outline}
+\1 Covariance:
+\[
+\cov(\beta_t, \beta_{t-1} \mid D_{t-1}) = \Phi C_{t-1}
+\]
+\1 Joint:
+\[
+\begin{bmatrix}
+\beta_t \\ \beta_{t-1}
+\end{bmatrix}
+\mid D_{t-1}
+\sim
+N
+\Big(
+\begin{bmatrix}
+a_t \\ m_{t-1}
+\end{bmatrix},
+\begin{bmatrix}
+R_t & \Phi C_{t-1} \\
+(\Phi C_{t-1})' & C_{t-1}
+\end{bmatrix}
+\Big)
+\]
+\1 Regression matrix, error:
+\begin{align*}
+B_t & = (\Phi C_{t-1})' R_t^{-1} \\
+e_t & = \beta_t - a_t
+\end{align*}
+\1 Draw:
+\begin{align*}
+\ell & = m_{t-1} + B_t e_t \\
+U & = C_{t-1} - (\Phi C_{t-1})' R_t^{-1} (\Phi C_{t-1}) \\
+\beta_{t-1} & \mid \beta_t, D_{t-1} \sim N(\ell, U).
+\end{align*}
+\end{outline}
+
+If you have missing data then
+\[
+\begin{cases}
+m_t = a_t = \Phi m_{t-1} \\
+C_t = R_t = \Phi C_{t-1} \Phi' + W.
+\end{cases}
+\]
+This won't (I don't think) affect backwards sampling.  Whereas before you get a
+reduction in variance in $C_t$ compared to $R_t$, now you do not.
+
+\section{Static Probit vs. Static Logit}
+
+Effective sample size.  These are the averages for 10 simulations.  Each
+simulation was run 10000 time and the first 1000 samples were discarded.  For
+both the logit and probit models a non-informative $N(0, 100)$ prior was used.
+The simulations were run on a workstation with an Intel Xeon 2.40 GHz CPU and 4
+GB of RAM.  Below, $N$ is the number of observations and $P$ is the number of
+covariates.
+
+You will notice that the running times for the PG method are drastically lower
+than found in the PG paper.  This is because the code used in that paper drew
+each $\omega_i$ one at a time.  It is much faster to use the \texttt{rpg}
+functions ability to draw the entire vector $\omega$ at once.
+
+I believe the reason the Probit model does better than the Logit model when
+$\beta$ has many dimensions is because you can precompute the posterior variance
+(and Cholesky factor) of $p(\beta | y, z)$ before Gibbs sampling.  You cannot do
+that in the Logit case.
+
+We also calculate the average ESS over observations and simulations of the
+posterior probability of each success probability.  The posterior probability
+can be calculated from the log odds $\psi_i = x_i \beta$ via $p_i = \exp(\psi_i)
+/ (1 + \exp(\psi_i))$ for the logit model and from $p_i = \Phi(x_i \beta)$ for
+the probit model.  We may encounter values of $x_i \beta$ in the probit model
+that result in $p_1 = 1$ or $0$.  In that case the ESS calculation is degenerate
+and we remove it from the average.
+
+\begin{table}
+\centering
+\begin{tabular}{l c c c c c c}
+          & $N$  & $P$ & $P^*$ & PG.ESS   &  Pro.ESS  & BL.to.Pro \\
+\hline
+Diabetes  & 768  & 8   & 9  & 4849.392 & 2547.9075 & 1.903284  \\
+Heart     & 270  & 13  & 19 & 3203.718 & 1470.3308 & 2.178910  \\
+Australia & 690  & 14  & 35 & 3218.647 &  995.6811 & 3.232609  \\
+Germany   & 1000 & 20  & 49 & 4959.180 & 2485.7040 & 1.995081  \\
+\end{tabular}
+\caption{The average effective sample size of $\beta$ over components of $\beta$ and 
+  simulations.  $N$ is the number of observations, $P$ is the
+  number of covariates, and $P^*$ is the dimension of $\beta$.}
+\end{table}
+
+\begin{table}
+\centering
+\begin{tabular}{l c c c c c}
+           & PG.Time & Pro.Time & PG.ESS.per.Time & Pro.ESS.per.Time &
+           PG.Pro.ratio \\
+\hline
+Diabetes   & 12.290  &    8.435 &        394.5803 &        302.06372 & 1.3062816    \\
+Heart      &  7.571  &    4.547 &        423.1565 &        323.36283 & 1.3086121    \\
+Australia  & 24.039  &   10.217 &        133.8927 &         97.45338 & 1.3739158    \\
+Germany    & 47.668  &   16.813 &        104.0358 &        147.84417 & 0.7036857      
+\end{tabular}
+\caption{The average effective sample sizes per execution time.}
+\end{table}
+
+\begin{table}
+\centering
+\begin{tabular}{l c c}
+          & PG       & Pro      \\
+\hline
+Diabetes  & 4719.281 & 2499.716 \\
+Heart     & 3109.270 & 1568.471 \\
+Australia & 2681.208 & 1363.054 \\
+Germany   & 4736.249 & 2401.344
+\end{tabular}
+\caption{Average effective sample size of the posterior probability of success
+  over observations and simulations.  Degenerate ESS removed.}
+\end{table}
+
+\section*{FS\&F method for NB}
+
+I don't know if this is out there.  It seems pretty obvious, so I don't know why
+it isn't in FS's paper on Poisson regression, since it seems like people prefer
+negative binomial regression anyway.
+
+The distribution for $k$ is
+\[
+{k+d-1 \choose k} (1-p)^d p^k.
+\]
+We could think of $p$ as the probability of success and $d$ as the number of
+failures, in which case $k$ is the number of successes before there are $d$
+failures; but that is not the best interpretation for our purposes, which we
+will get to in a moment.  You can write $k \sim NB(d, p)$ as a Poisson-Gamma
+mixture
+\begin{align*}
+& k \sim \text{Pois}(\lambda) \\
+& \lambda \sim \text{Ga}(d, \text{scale}=\alpha) \; \text{ where } \alpha = \frac{p}{1-p}.
+\end{align*}
+This is all from Wikipedia.  
+
+This arises because one wants to use a Poisson like model, but to have greater
+variance in the number of counts.  The mean and variance of $X \sim
+\text{Pois}(\lambda)$ is $\lambda$.  The mean of the negative binomial is
+\[
+\bbE[k] = \bbE[\bbE[k|\lambda]] = \bbE[\lambda] = d \alpha
+\]
+and the variance is
+\begin{align*}
+\Var(k) & = \bbE[\Var(k|\lambda)] + \Var(\bbE[k|\lambda]) \\
+& = \bbE[\lambda] + \Var(\lambda) \\
+& = d \alpha + d \alpha^2.
+\end{align*}
+Letting $\mu = d \alpha$ we have
+\[
+\bbE[k] = \mu \; \text{ and } \; \Var(k) = \mu + \frac{\mu^2}{d}.
+\]
+This is like the Poisson distribution, but with greater dispersion.
+
+All of this is great since we have a scale-mixture of exponential-like things,
+which is the key to FS\&F.  In particular,
+\[
+\lambda \sim \alpha \text{Ga}(d, 1)
+\]
+so that taking the $\log$ of both sides you have
+\[
+\log(\lambda) = \psi + \log(\text{Ga}(d,1))
+\]
+(or alternatively $\log (\lambda) = \psi - - \log(\text{Ga}(d,1))$) where
+\[
+\psi = \log \alpha, \; \text{ the ``log odds.''}
+\]
+I put this in quotes, because it isn't exactly the quantity we desire, but this
+is what we model when using the \Polya-Gamma trick.  We can also write
+\[
+\psi = \log \mu - \log d,
+\]
+which shows that are choice of $\psi$ above is just a scaled version of the log
+mean counts.  So long as we include an intercept in our regression we will have
+the same posteriors for all predictors and produce the same forecasts.
+
+Now we can use the normal mixture trick.  When $d=1$, we have an exponential, so
+we can use FS\&F mixture where the mixture is $N(-m_r, \sigma_r^2)$ since she
+looks at $-\log(\text{Ex}(1))$.  Everything else is conjugate.  In particular,
+\[
+p(k | \alpha, \lambda) = \frac{e^\lambda \lambda^k}{k!} 
+\frac{\alpha^{-d} \lambda^{d-1}}{\Gamma(d)} e^{-\lambda / \alpha}.
+\]
+where $\alpha = \mu / d = e^\psi / d$.  To sample $\lambda$, which is just an
+intermediate auxilliary, we have
+\[
+p(\lambda | \alpha, k) \propto \lambda^{k+d-1} e^{-\lambda (1+1/\alpha)} \propto
+\text{Ga}(k+d, \text{rate}=1+1/\alpha).
+\]
+To sample $r$ we have a discrete mixture,
+\[
+p(r|\lambda, \psi) \propto \sigma_{r}^{-1} \exp 
+\Big[ \frac{-\sigma_r^{-2}}{2} \Big(\log(\lambda) - \psi + m_r \Big)^2 \Big].
+\]
+This seems way too easy.  This would show that it is sometime easier to sample
+what appears to be a more complicated distribution (a mixture vs. a non-mixture).
+
+\subsection*{Estimating $d$}
+
+From above it seems like we might be able to estimate $d$.  But this does not
+work for FS\&F, since we need to know $d$ for the normal mixture.  However, I
+think we might be able to use the Polya-Gamma trick. 
+
+We know a few things.  First we know that $p(k | \alpha, d)$ is negative
+binomial, which means that we can use the PG trick.  We also know that we can
+sample $p(\lambda | \alpha, k, d)$.  Thus we should be able to sample
+\[
+p(\alpha, \lambda | k, d) =  p(\alpha | k, d) p(\lambda | \alpha, k, d)
+\]
+Furthermore, it looks to me like we can sample
+\[
+p(d | \alpha, \lambda).
+\]
+Thus we could maybe Gibbs sample so that
+\begin{enumerate}
+\item Sample $(\omega | \alpha, k, d)$.
+\item Sample $(\alpha | \omega, k, d)$.
+\item Sample $(\lambda | \alpha, k, d)$.
+\end{enumerate}
+Actually, \textbf{THIS IS WRONG}.  We need to sample
+\[
+(\lambda | \alpha, k, d, \omega).
+\]
+We could sample $\alpha$, approximately, be doing several PG steps.  What
+happens when you do the above.  Can you take only one auxiliary step and still
+guarentee covergence of the chain?  If you are going to do several auxiliary
+steps, you might as well just look at the likelihood for $d$
+\[
+\frac{\Gamma(k+d)}{\Gamma(d)} (1-p)^d.
+\]
+I think it is possible to do something with this, but it is going to get ugly.
+It is like a sum of gamma densities or something.
+
+\section{Dynamic Principle Componenent Regression}
+
+See Christiansen p. 385 for a more thorough discussion of principle component
+regression.  Principle component regression is different than principle
+component analysis.
+
+With PCA you find orthogonal latent factors.  Given knowledge of the population
+\[
+x \sim N(0, \Sigma)
+\]
+then we know that
+\[
+x = Vy, \; y \sim N(0, D^2)
+\]
+where $\Sigma = VD^2V'$.  When working with a population $X \sim MN(0, I,
+\Sigma)$ (where we have i.i.d rows) then we can take the SVD $X = \hat U \hat D
+\hat V'$ so that $\hat V$ is an estimate of $V$ and $\hat D^2$ is an estimate of
+$n D^2$ (or something like that).
+
+In PC regression we take the design matrix $X = U D V'$ and then transform
+\[
+y = X \beta + \ep
+\]
+into
+\[
+U_*' y = 
+\begin{bmatrix}
+D \\ 0
+\end{bmatrix}
+\gamma + \ep.
+\]
+where $U_*$ has been made full rank by adding additional orthonormal columns.
+The variance of $\gamma_i$ is $\sigma^2 / d_i^2$ thus if some of the $d_i$ are
+small then it may be reasonable to drop the corresponding variables $\gamma_i$
+from the regression.
+
+James wants to use princple component regression in the dynamic case.  Suppose
+that $X = UDV$ and that $x_t$ is a row of $X$ and $\beta_t$ as a column of
+$\beta$.  Then our dynamic regression involves
+\[
+y_t = x_t \cdot \beta_t + \ep_t.
+\]
+Specifically
+\[
+y_t = \sum_{i} X_{ti} \beta_{it} + \ep_t
+\]
+The SVD of $X$ can be written as
+\[
+X_{ti} = \sum_{j} d_j u_{tj} v_{ij}.
+\]
+Thus we have
+\[
+y_t = \sum_i \sum_j d_j u_{tj} v_{ij} \beta_{it} + \ep_t.
+\]
+Letting
+\[
+\gamma_{jt} = \sum_i v_{ij} \beta_{it}
+\]
+that is
+\[
+\gamma_t = V' \beta_t.
+\]
+Thus we have
+\[
+y_t = \sum_{j} d_j u_{tj} \gamma_{jt} + \ep_t
+\]
+or
+\[
+y_t = z_t \cdot \gamma_t + \ep_t
+\]
+where
+\[
+z_{tj} = d_j u_{tj} \text{ or } z_t = u_t D \text{ or } Z = UD.
+\]
+Just assuming that the logic carries over, if $d_j$ is small, then remove it
+from the regression to reduce the dimensionality of the problem.
+
+Actually, this may be slightly different than princple components regression.
+It appears that principal components removes the mean in each column of $X$.
+This would align with the initial assumptions we mentioned.
+
+I think the same is going to hold here.  The only thing that matters is the
+column space of $X$ so we can do a change of variables so that
+\[
+y = \alpha 1 + X \beta + \ep
+\]
+produces the same fitted values and residuals as
+\[
+y = \kappa 1 + (X - 1 m_x') \gamma + \ep.
+\]
+The same argument holds as above, but now we do the SVD on $X- 1 m_x'$.  But now
+we ensure that we can have an intercept.  In that case we have
+\[
+y_t = \kappa + z_t \gamma_t + \ep_t.
+\]
+After $X$ has been normalized, take the SVD to get $UDV'$.  $Z=UD$ is called the
+scores I believe.
+
+\section{Dynamic Negative Binomial}
+
+Unfortunately, it appears that FS may be competitive.  I have yet to do the
+actually simulations; but it appears that \cite{fruthwirth-schnatter-etal-2009}
+may have a better ESR than the PG method.  This is due to the relative
+inefficieny when calculating $PG(y+d, \psi)$ random variables.  Whenver the
+count $y$ is high enough it is going to take a while to simulate all of the
+random variables we need.  Yet more motivation for finding a better $PG(n, z)$
+sampler.
+
+See \texttt{notes.tex} for more discussion of negative binomial.
+
+In those models we have
+\[
+\begin{cases}
+y_t \sim \Pois(\lambda_t) \\
+\lambda_t \sim \mu_t \Ga(d, \text{scale}=1/d) \\
+\log(\mu_t) = x_t \beta.
+\end{cases}
+\]
+We are modeling the log-mean (or log-odds).  We can make this dynamic by In
+those models we have
+\[
+\begin{cases}
+y_t \sim \Pois(\lambda_t) \\
+\lambda_t \sim \mu_t \Ga(d, \text{scale}=1/d) \\
+\lambda_t \sim \alpha_t \Ga(d, 1) \\
+\log(\mu_t) = x_t \beta_t \\
+\log(\alpha_t) = x_t \beta_t - \log(d) \\
+\beta_t = \beta_{t-1} + \omega_t, & \omega_t \sim N(0, W).
+\end{cases}
+\]
+Or if we are following the principle components regression above we have
+\[
+\begin{cases}
+y_t \sim \Pois(\lambda_t) \\
+\lambda_t \sim \mu_t \Ga(d, \text{scale}=1/d) \\
+\lambda_t \sim \alpha_t \Ga(d, 1) \\
+\log(\mu_t) = \hat \kappa + z_t \beta_t \\
+\log(\alpha_t) = \kappa + z_t \beta_t, & \kappa = \hat \kappa - \log(d) \\
+\beta_t = \beta_{t-1} + \omega_t, & \omega_t \sim N(0, W).
+\end{cases}
+\]
+where $z_t$ now does not include an intercept.  It is convenient to have several
+quantities to work with so 
+\[
+\begin{cases}
+\zeta_t = x_t \beta_t \\
+\psi_t = \zeta_t - \log(d) \\
+\psi_t = \log(\alpha_t) \\
+\alpha_t = \frac{p_t}{1-p_t}.
+\end{cases}
+\]
+We could model the log-odds directly.  There is an R-script
+\texttt{NBPG-logodds.R} that does that in the non-dynamic case.  But it is
+traditional to model the log-mean.
+
+For FSF, I think pretty much nothing changes between the static and dynamic
+case:
+
+\begin{enumerate}
+
+\item Sample $(d, r, \lambda | \{\beta_t\})$ via
+
+\begin{enumerate}
+\item $p(d | \mu, y)$ where $\mu = \{\mu_t\}$
+\item $p(\lambda | \alpha(d), d, y)$ where $\alpha = \alpha_t(d)$
+\item $p(r | \lambda, \alpha, d, y)$.
+\end{enumerate}
+
+\item Sample $( \{\beta_t\} | r, \lambda, d, y )$.
+
+  We need to FFBS now instead of LS using our normal-mixture term for the
+  observation.
+
+  Also we need to calculate $\mu_t$ differently.
+
+  We also must deal with sampling the intercept.
+
+\end{enumerate}
+
+For the PG method we again sample $p(d, \omega | y, \beta)$ by $p(d | y, \beta)
+p(\omega | d, y, \beta)$.  The likelihood for $\{\beta_t\}, \omega$ is
+\[
+\propto \prod_{t=1}^T e^{\psi_i \kappa_i} e^{-\omega_i \psi_i^2 / 2} p(\omega_i | y_i + d_i).
+\]
+where $\psi_t = \hat \iota + x_t \beta_t - \log(d)$.  In this case we see that
+it really isn't a big deal to model the log-odds instead of the log-mean.  If we
+model $\psi_t = \iota + x_t \beta_t$ where $\iota = \hat \iota - \log d$ then we
+can recover $\mu_t = \psi_i + \log d$.  In either case though it doesn't really
+matter.  We can always chose to roll $\log d$ into $z$.
+
+Following the identical logic as above if we multiply the likelihood by
+$\exp - \frac{1}{2} z \Omega z$ where $\Omega z = \kappa$ then we have
+\[
+\exp \Big( -\frac{1}{2} (z - \psi)' \Omega (z- \psi) \Big).
+\]
+Thus we have
+\[
+\begin{cases}
+z = \psi + \ep, \; \ep \sim N(0, \Omega^{-1}) \\
+\Omega z = \kappa
+\end{cases}
+\]
+which becomes
+\[
+\begin{cases}
+z_t = \iota + x_t \beta_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
+z_t = \kappa_t / \omega_t \\
+\beta_t = \phi \beta_{t-1} + \nu_t, & \nu_t \sim N(0, W).
+\end{cases}
+\]
+Or in the case of log-mean we have
+\[
+\begin{cases}
+\hat z_t = z_t + \log(d) = \hat \iota + x_t \beta_t + \ep_t, 
+  & \ep_t \sim N(0, 1/\omega_t) \\
+z_t = \kappa_t / \omega_t \\
+\beta_t = \phi \beta_{t-1} + \nu_t, & \nu_t \sim N(0, W).
+\end{cases}
+\]
+I don't think it makes sense to have an intercept $\iota$ when we are using a
+random walk.  If we have some covariates then I think it is okay.  But if we
+just had
+\[
+\begin{cases}
+z_t = \iota + \beta_t + \ep_t \\
+\beta_t = \beta_{t-1} + \nu_t
+\end{cases}
+\]
+then $\beta_t$ is not identified.  (Recall however, that Scott 2011 mentions
+something about working parameters.  Evidently it is sometime okay to let
+parameters not be identified and then to later identify them.)
+
+I believe in either case we have
+\[
+\begin{cases}
+z_t = \iota + x_t \beta_t + \ep_t, \; \ep_t N(0, V_t) \\
+\beta_t \sim GP
+\end{cases}
+\]
+where GP refers to Gaussian process, in place of AR(1) or a random walk or
+whatever it is that we have.
+
+We need to be somewhat careful about whether we are using covariates or not.
+When we have
+\[
+\begin{cases}
+z_t = \iota + x_t \beta_t + \ep_t \\
+\beta_t \sim AR(1)
+\end{cases}
+\]
+it is okay where $\beta_t$ has a non-zero mean.
+When we have
+\[
+\begin{cases}
+z_t = \iota + \beta_t + \ep_t \\
+\beta_t \sim AR(1)
+\end{cases}
+\]
+then $\beta_t$ should not have a mean.  When $\beta_t$ is a random walk then
+there should be no mean level $\iota$.
+
+\section{Dynamic Binary Logistic Regression}
+
+
+
+% If you have a bibliography.
+% The file withe bibliography is name.bib.
+% \bibliography{name}{}
+% \bibliographystyle{plain}
+
+\end{document}

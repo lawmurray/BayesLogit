@@ -1,0 +1,965 @@
+\documentclass{article}
+
+\input{commands}
+\usepackage{outlines}
+\usepackage{parskip}
+\usepackage{natbib}
+% \usepackage{bibentry}
+
+\newcommand{\qt}{}
+
+% Page Layout
+\setlength{\oddsidemargin}{0.0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\textheight}{8in}
+%\parindent 0in
+%\parskip 12pt
+
+% Set Fancy Style
+\pagestyle{fancy}
+
+%\lhead{Left Header}
+%\rhead{Right Header}
+
+\begin{document}
+
+% We need this to place the references in the notes.
+% \nobibliography{bayeslogit}{}
+%\bibliographystyle{abbrvnat}
+
+% Change Font and Spacing
+%\large % change the font size to 12pt
+%\linespread{1.1} % change the line spacing
+
+% Set the counter
+% \setcounter{section}{0}
+
+\tableofcontents
+
+\section{Albert and Chib, 1993}
+
+Bayesian Analysis of Binary and Polychotomous Response Data:
+
+\begin{outline}
+\1 Model: binary response $y_i \sim Bern(p_i)$ where $p_i = H(x_i \beta)$.
+\2 We get to chose $H$.  $H =$ cdf of Normal: Probit.  $H=$ logistic: Logit.
+
+\1 Normal approximation to likelihood not good for small $n$.
+
+\1 Key idea: see a function of $x_i \beta$ and make it an integral over some
+density.
+\2 L: $\prod \Phi(x_i \beta)^{y_i} (1 - \Phi(x_i \beta))^{1-y_i}$.  So
+\begin{align*}
+\Phi(x_i \beta) 
+& = \int_\bbR \bbI_{(-\infty, x_i \beta]}(z) p(z \mid 0, 1) dz 
+= \int_\bbR \bbI_{[-x_i \beta, \infty)}(z) p(z \mid 0, 1) dz \\
+& = \int_\bbR \bbI_{[0, \infty)}(z) p(z, \mid x_i \beta, 1) dz
+\end{align*}
+Similarly, $(1-\phi(x_i \beta)) = \int_\bbR \bbI_{(-\infty,x_i \beta]} p(z \mid
+x_i \beta, 1)$.
+Since
+\[
+p(\beta | y) = \int p(\beta, z \mid y) dz = \int p(\beta \mid y) p(z \mid \beta,y) dz.
+\]
+We have
+\[
+p(\beta, z | y) = \prod p(z_i \mid x_i \beta, y_i)
+\]
+where $p(z_i \mid x_i \beta, y_i)$ is standard normal with mean $x_i \beta$,
+right truncated at zero if $y_i = 0$ and standard normal with mean $x_i \beta$,
+left truncated if $y_i=1$.  Equivalently, and this is direct from Albert and
+Chib
+\[
+\prod \Big[ \bbI(z_i > 0, y_i=1) + \bbI(z_i < 0, y_i=0) \Big] p(z_i \mid x_i
+\beta, 1).
+\]
+In this scenario, the posterior conditionals are ``nice'' and you can then use
+Gibbs sampling.
+
+\2 You can generalize this further, by mixing the normal $N(z_i \mid x_i \beta,
+\lambda)$ over $\lambda$.  They also delve into a hierarchical, e.g. Lindley and
+Smith discussion, so that there is a hyperprior on the prior mean for $\beta$.
+
+\1 Also discussion multinomial probit data.
+
+\end{outline}
+
+\section{Held and Holmes, 2006}
+
+Bayesian Auxiliary Variable Models for Binary and Multinomial Regression
+
+\begin{outline}
+
+\1 Overal impression: they do several things: can just tick off the same stuff
+with Polson and Scott's auxillery approach.
+
+  \2 Auxillery variable representation
+
+  \2 Joint sampling approach
+
+  \2 Covariate uncertainty (model selection)
+
+  \2 Polychotomous regression
+
+\1 Extension to Alberta and Chib, 1993.
+
+  \2 Joint Update
+
+  \2 Auxillery approach is possible for logistic, using scale mixture of
+  Normals.
+
+    \3 Logit model is preferred because you can interpret stuff in terms of
+    log-odds.
+
+    \3 Logit link is analytic and has relatively heavy tails
+
+  \2 Their logit work can be generalized to accomodate covariate set uncertainty
+  and multinomail response data.
+
+\1 For probit: they suggest a ``joint'' draw, which uses
+\[
+p(\beta, z |y) = p(z |y) p(\beta | z)
+\]
+instead of the Gibbs steps 1) $p(\beta | z, y)$ 2) $p(z | beta, y)$.  Joint is
+in quotations because they use Gibbs sampling to draw $p(z|y)$.
+
+  \2 Empirically, this is more efficient.
+
+\1 Logit: They follow probit method, but you need another auxillery variable.
+\begin{align*}
+y_i & = \{ 1, z_i > 0; 0, z_i \leq 0 \} \\
+z_i & = x_i \beta + \ep_i \\
+\ep_i & \sim N(0, \lambda_i) \\
+\lambda_I & = (2 \psi_i)^2 \\
+\psi_i & \sim KS \\
+\beta & \sim p(\beta)
+\end{align*}
+Of course, Devroye (1986), knows how to draw a Kolmogorov-Smirnov (KS)
+distribution.  Once you have marginalized $\lambda$ you get that
+$\ep_i$ is logistic, which Andrews and Mallows discuss.
+
+  \2 Can sample kind of jointly.  A couple options.  They suggest $p(z, \lambda
+  | \beta y)$ and $p(\beta | z, \lambda)$.
+
+\1 What is going on in (16)?  Why not just take the $\beta_j$ of interest from
+the the posterior?
+
+\1 Check out discussion.  Mentions alternative method by Gamerman (1997) that
+uses a ``weighted least squares'' Metropolis-Hastings proposal.
+
+\end{outline}
+
+\section{Andrews and Mallows, 1974}
+
+Scale Mixtures of Normal Distributions
+
+\begin{outline}
+
+\1 Key connection:  If $Z \sim N(0,1) \perp V$ and $X = Z/V$ then $X$ has a
+density given by
+\begin{equation}
+\label{am74:scale-mixture}
+f_X(x) = (2 \pi)^{-1/2} \int_0^\infty v 
+\exp \big\{ -\frac{1}{2} v^2 x^2 \big\} dG_V(v).
+\end{equation}
+
+\1 One can connect this to the Laplace transform of $H$, $h(y) = f_X(\sqrt{y})$
+where
+\[
+H(t) = \int_0^t (u/\pi)^{1/2} dG_v[(2u)^{1/2}].
+\]
+Thus $f \rightarrow h \rightarrow H \rightarrow G$.
+
+  \2 Similarly, if you know $f_X$ then you can immediately calculate the Laplace
+  transform of $G$ (i.e. Moment generating function of $V$) by
+  \[
+  2 \int_0^\infty f_X(x) \exp \big\{ -\frac{1}{2} t^2 / x^2 \big\}
+  =
+  \int_0^\infty \exp (-vt) dG_V(v)
+  \]
+  using the identity
+  \[
+  \int_0^\infty \exp \Big( -\frac{1}{2} (a^2 u^2 b^2 u^{-2}) \Big)
+  =
+  (\pi/2a^2)^{1/2} \exp (-|ab|).
+  \]
+
+\1 \textbf{Main theorem}: Suppose $f_X$ is symmetric.  Then $g(y) =
+f_X(y^{1/2})$ is totally monotone iff you can write $X$ as $Z/V$ where $Z \perp
+V$ and $Z$ is standard normal.
+
+  \2 This is all about BERSTEIN's theorem, which is interesting in its own
+  right!
+
+  \2 Totally monotone: 
+  \[
+  (-1)^n \frac{d^n f}{dy} \geq 0 \textmd{ for } y > 0.
+  \]
+
+  \2 BERSTEIN's theorem: If $f \in C^\infty\{ [0, \infty) \}$ is totally
+  monotone then you can write $f$ as a mixture of exponentials:
+  \[
+  f(t) = \int_0^\infty e^{-tx} dg(x).
+  \]
+
+  \3 This theory characterizes the Laplace transforms of Borel meausres on the
+  positive reals.
+
+  \3 This is related to Levy processes and infinitely divisible measures (for
+  subordinators, I suppose).
+
+  \2 Their theorem includes a nice application of the MCT.
+
+\1 Several examples: t, double exponential (Laplace), and logistic distribution.
+
+\end{outline}
+
+\section{Fruhwirth-Schnatter and Fruhwirth, 2007}
+
+Auxiliary mixture sampling with applications to logistic models
+
+\begin{outline}
+
+\1 Second paragraph of intro mention ``seminal papers on Bayesian estimation of
+logistic regression models''
+
+  \2 First sampling? Zellner and Rossi, 1984
+
+  \2 First MCMC: Zeger and Karim, 1991
+
+  \2 Other MCMC: Gammerman, 1997; Chib et al., 1998, Lenk and DeSarbo, 2000;
+  Hurn et al., 2003; Scott, 2004
+
+  \2 Review: Dey et al., 2000.
+
+\1 Mention again that most MCMC techniques require M-H step, which is evidently
+not prefered.  Criticize Holmes and Held for using M-H step.
+
+\1 Strategy: use latent utilities approach (McFadden, 1974) and (Scott, 2004) to
+turn into a (conditionally) linear model; use normal mixture to approximate type
+I extreme value distribution.
+
+  \2 Latent utility thing is confusing economic-speak.  Just think of as latent
+  varibles.
+
+  \2 Equivalent to logit: 
+  \begin{displaymath}
+  \begin{cases}
+    y_i = \bbI \big\{y_i^u > y_{i0}^u \big\} & \\
+    y_i^u = x_i \beta + \ep_i & \\
+    \ep_i, y_{i0}^u \sim \textmd{Type I Extreme Value Distributions} &
+  \end{cases}
+  \end{displaymath}
+
+  Use normal mixture to approximate $\ep_i \approx N(m_{r_i},
+  V_{r_i})$.  Then one can estimate $\beta$, in a Gibbs sampler using
+  \[
+  y_i^u = x_i \beta + m_{r_i} + N(0, V_{r_i}).
+  \]
+
+\1 Notes on Normal Mixture:
+
+  \2 Pick values for normal mixture by minimizing Kullback-Leibler distance or
+  Maximum absolute deviation.
+
+  \2 Test how well normal mixture approximates true density by running a MCMC
+  Met. Hast. simulation and measuring acceptance rate.  (SOMETHING TO REMEMBER.)
+
+\1 Key link between type I extreme value distribution and exponentials.  In
+particular,
+
+  \2 $z \sim EV(I) \implies \exp(-z) \sim Ex(1) \sim Ex(rate=\exp(z))$.  Thus
+  one can work with exponentials instead of EV(I) since we have a monotone
+  transform which preserves the inequality.
+
+  \2 Several key facts.
+
+  \3 $\exp(-y_i^u) = \exp(-x_i \beta - \ep_i) = \frac{1}{\lambda_i} \exp(-\ep_i) \sim
+  E(\lambda_i).$
+
+  \3 $x_1 \sim E(\lambda_1)$ and $x_2 \sim E(\lambda_2)$ implies 
+  $x_3 = \min(x_1, x_2) \sim E(\lambda_3 = \lambda_1 + \lambda_2)$
+  And
+  \[
+  \begin{cases}
+  p(x_1 | x_1 < x_2) \sim E(\lambda_3) \\
+  p(x_1 | x_1 > x_2) \sim x_2 + E(\lambda_1).
+  \end{cases}
+  \]
+
+  For my own sanity: The trick to use: think about $P(X_1 > x_1, etc.)$.  To
+  show the min: $P(M:=\min\{X_1,X_2\} > x) = P(X_1 > x, X_2 > x)$ to get cdf.  To
+  show conditionals, use similar trick:
+  \begin{align*}
+  P(X_1 > x, M > y) & = P(X_1 > x, X_1 > y, X_2 > y) \\
+  & =
+  \begin{cases}
+    P(X_1 > x, X_2 > y) = e^{-\lambda x} e^{-\gamma y} &, x \geq y \\
+    P(X_1 > y, X_2 > y) = e^{-(\lambda + \gamma)x} &, y > x.
+  \end{cases}
+  \end{align*}
+  To get the density we apply $\frac{-\del}{\del x} \frac{-\del}{\del y}$ above
+  to get the density
+  \[
+  p(x,y) =
+  \begin{cases}
+    \lambda e^{ -\lambda x} \gamma e^{ - \gamma y} &, x \geq y \\
+    0 &, y > x.
+  \end{cases}
+  \]
+  The kernel for the conditional is then
+  \[
+  \begin{cases}
+    e^{-(\lambda + \gamma)x} &, x=y \\
+    e^{-\lambda x} &, x > y.
+  \end{cases}
+  \]
+
+\1 \textbf{Everything you need to implement code} is on pp. 3512 and 3513.
+
+  \2 Key thing!  You must sample $(y^u, r \mid, e.e.)$ jointly!
+
+\1 Multinomial logit
+
+  \2 Direct extension of logistic regression for binary outcomes.
+
+  To remind myself: One view of the multinomial case: $\mb{y}_i = (y_{i1},
+  \ldots, y_{im})$ with each componenent representing the number of instances of
+  case $j$ on the $i$th trial.
+
+  I believe in FS\&F we must restrict our attention to ``one roll of the
+  die,'' in which case we just get only one observation be trial.  In that case
+  we can identify $y_i$ by the catogory $k$ we observe.
+
+  We now have $m$ latents with
+  \[
+  y_{ji}^u = x_i \beta_j + \ep_{ji}, \ep_{ji} \sim EV(I), j = 1, \ldots m
+  \]
+  as well as $y_{0i}^u \sim EV(I)$.  Then
+  \[
+  y_i = k \iff y_{ki}^u = \max_{\ell} y_{\ell i}^u.
+  \]
+  This is due to McFadden, 1974.
+
+  They say ``the category 0 for observation $y_i$ is indenpendent of any
+  covariates for reasons of identifiability.''  Thinking along previous lines,
+  one way to identify model is to chose $\lambda_0 = 0$, i.e. $\beta = 0$, which
+  can be seen as $y_{0i}^u = \ep_{0i}$.
+
+  In the case above we have two outcomes. Here it would seem that really we have
+  $m+1$ outcomes.
+
+  \2 Posterior estimation in essentially the same way:
+
+    \3 Use normal mixture trick to represent some of the EV(I)'s.
+
+    \[
+    y_{ki}^u = x_i \beta_k + m_{r_{ki}} + N(0, s_{r_{ki}}^2).
+    \]
+
+    \3 Use exponential trick to sample $y_i^u | y_i, \beta)$.
+
+    We know $\exp(-y_{ki}^u) = Ex(\lambda_{ki})$ with the convention that
+    $\lambda_0 = 1$.  Further,
+    \[
+    \min_k \Big\{ \exp(-y_{ki}^u) \Big\} \sim Ex( \sum_{k=0}^m \lambda_{ki} ).
+    \]
+    
+    When $y_i = k$ we know that 
+
+    \4 $\exp(-y_{ki}^u) = \min \cdots$ with the above distribution and that
+    
+    \4 $\exp(-y_{\ell i}^u) = \exp(-y_{ki}^u) + Ex(\lambda_{\ell i})$.
+
+    \3 Sample the normal mixture in the same way.
+
+\1 Two extensions to more complex models:
+
+  \2 State space modeling of binary data
+
+  \2 Multinomial logit models with random effects
+
+\1 Applications...
+
+\end{outline}
+
+\section{Fruhwirth-Schnatter and Wagner, 2006}
+
+Title: Auxiliary mixture sampling for parameter-driven models of time series of counts
+with applications to state space modelling
+
+Citation: \cite{fruhwirth-schnatter-wagner-2006}
+
+BibKey: fruhwirth-schnatter-wagner-2006
+
+\begin{outline}
+
+\1 Poisson regression for counts with mean changing in time
+
+\[
+y_t \mid \lambda_t \sim Po(\lambda_t), \; \log \lambda_t = x_t \beta.
+\]
+
+  \2 Usually, observations are assumed to be independent.
+
+  \2 Account for dependence by (1) parameter-driven or (2) observation-driven
+  models.  (See Cox, 1981).
+
+  \2 They consider \emph{parameter} driven, in which case dependence is
+  introduced by latent process.
+
+\1 p.2, 2nd paragraph, references.
+
+\1 There general model is
+\[
+\begin{cases}
+y_t \mid \lambda_t \sim Po(\lambda_t) \\
+\log \lambda_t = x_t^1 \alpha + x_t^2 \beta_t \\
+x_t \sim \textmd{ some time series } \sim p(x\mid\theta).
+\end{cases}
+\]
+The model for $x_t$ is what ``ties'' the means $\lambda_t$ together across
+observations.
+
+  \2 Two tricks: latent exponentials and normal mixtures.
+
+  Consider the density for $y_t$.  Check Sato: You can construct the Poisson procoess
+  $X_t$ using the random walk $W_n = T_n + W_{n-1}$ where $T_n \sim E(\lambda)$
+  and $X_u = n$ iff $W_n \leq u < W_{n+1}$.  $X_u$ as marginal distribution
+  $Po(\lambda u)$.  Thus if $y_t \sim Po(\lambda_t)$ then we must have that
+  $P(y_t = n \mid \lambda_t) = P(W_{n} \leq 1 < W_{n+1} \mid \lambda_t)$.
+
+  More specifically, it would be something like for each day $t$ we have
+  $y_{t,u}$, a Poisson process in $u$ with parameter $\lambda_t$.  You can then
+  say that $y_{t,1}$, which we denote $y_{t}$ for short, has
+  \[
+  P(y_t = n | \lambda_t) = P(W_{n}^{(t)} \leq 1 < W_{n+1}^{(t)} | \lambda_t)
+  \]
+
+  Analogous to $W_n^j$ above consider the latents $\tau_{tj} \sim E(\lambda_t),
+  j = 1, \ldots, y_t + 1$.  Then
+  \[
+  \tau_{tj} \sim \frac{\xi_{tj}}{\lambda_t}, \; \xi_{tj} \sim Ex(1).
+  \]
+  You can do inference on $\log \lambda_t = \alpha x^1_t + \beta_t x^2_t$ by
+  considering the log transformation,
+  \[
+  - \log \tau_{tj} \mid \alpha, \beta_t = x_t^1 \alpha + x_t^2 \beta_t + \ep_{tj}
+  \]
+  \textbf{ where }
+  \[
+  \ep_{tj} = - \log \xi_{tj} \sim \textmd{Extreme Value, model by exponential mixture.}
+  \]
+  Presumably $\beta_t$ is coming from a random walk, AR(1), etc.
+
+  \2 Inference (my impression)
+
+    \3 Sample $\alpha, \{\beta_t\}$ given $\{\tau_{ij}\}, \theta$ using DLM stuff.
+    \3 Sample $\theta$ (from $\beta_t \sim AR(1|\theta)$) using time series stuff.
+    \3 Sample normal mixture indicators $r_{tj} | \alpha, \beta_t, \tau_{tj}$.
+    \3 Recall that $\log \lambda_t = \alpha x^1_t + \beta_t x_t^2$.
+    \3 Sample $\tau_{tj} | \{y_{t}\}, \lambda_t$ using knowledge about
+    conditional distribution of $\tau_{tj}$, i.e. $W_{y_t} = \sum_{i=1}^{y_t}
+    \tau_{tj}$ has $W_{y_t} \leq 1 < W_{y_t+1}$.  Evidently, you can do this
+    using order statistics... see Robert \& Casella, 1999, p. 47.
+
+
+  \2 FS\& say to do the following:
+
+  Select starting values for $\tau, \theta$ and $S = \{r_{tj}, j=1, \ldots, y_t,
+  t=1, \ldots, T\}$.  (Aside: from my experience you want to be smart about
+  seeding the indicators $\{r_{tj}\}$.  In particular, you DO NOT want to start
+  the seed at a highly unlikely spot.  That can throw your entire simulation off
+  into some other local mode.  [Or something like that.  I'm not exactly sure
+  what happens.]  You could start by randomly picking $\{r_{tj}\}$ be prior
+  distribution.)
+
+    \3 Sample $\alpha, \{\beta_t\} | \ldots$.
+    \3 Sample $\theta | \ldots$.
+    \3 Sample $\{\tau_{tj}\} | \ldots$.
+    \3 Sample $\{r_{tj}\} | \ldots$.
+  
+\1 Example: Application to road safety.
+
+\end{outline}
+
+\section{Geyer, 1992}
+
+Title: Practical Markov Chain Monte Carlo
+
+Citation: \cite{geyer-1992}
+
+BibKey: geyer-1992
+
+\begin{outline}
+
+\1 Lots of good references in the beginning.
+
+\1 If you run several chains and they disagree, then you haven't run your chains
+for a long enough period.
+
+  \2 But ``no comfort should be taken from the agreement of multiple runs.''
+
+  \2 N. Polson, ``witch's hat'' distribution.
+
+\1 p. 474 right side: ``Metropolis-rejected swapping'' (Geyer, 1991a) and other variants on
+Metropolis methods.
+
+\1 Theorem due to Kipnis and Varadhan, 1986: you can show that the moment of the
+chain $\hat \mu_n$ and the moment you are interested in satisfy some central
+limit result (p. 475).
+
+In particular,
+\[
+\sqrt{n} (\hat \mu_n - \mu) \ra_{\mcD} N(0, \sigma^2).
+\]
+
+However, for this to be useful you need an estimate of $\sigma^2 =
+\sum_{t=-\infty}^\infty \gamma_t$, the sum of the autocorrelations.
+
+Just using the corresponding sample quantities does not work though.  However,
+$\Gamma_m = \gamma_{2m} + \gamma_{2m+1}$ possess special properties (positive,
+monotone decreasing, and convex), which can be used to select some ``good''
+terms to generate an upper bound for $\sigma^2$.
+
+\end{outline}
+
+\section{West et al. 1985}
+
+Title: Dynamic Generalized Linear Models and Bayesian Forecasting.
+
+Citation: \cite{west-etal-1985}
+
+BibKey: west-etal-1985
+
+\begin{outline}
+
+\1 Brief history of genesis: static to dynamic; formalize management by exception.
+
+\1 Exponential family:
+\[
+p(Y_t \mid \eta_t, \phi) = \exp \Big[ \phi \Big\{Y_t \eta_t - a(\eta_t)\Big\}
+\Big]
+b(Y_t, \phi).
+\]
+$\eta_t$ is called the natrual parameter and $\phi$ is a scale parameter.  The
+mean and variance are described by
+\[
+\bbE[Y_t \mid \eta_t, \phi] = \mu_t = a'(\eta_t)
+\]
+and
+\[
+\Var[Y_t \mid \eta_t, \phi] = a''(\eta_t) / \phi.
+\]
+If the prior for $\eta_t$ takes a specific form then closed form Bayesian
+forecasting is possible.  That form is
+\[
+p(\eta_t | D_{t-1}) = c(a_t, \beta_t) 
+\exp \Big[ a_t \eta_t - \beta_t a(\eta_t) \Big].
+\]
+
+\1 You can find a recapitulation of this work in \cite{harrison-west-1997}.
+
+The idea there is to proceed using clever approximations.  With a generalized
+linear model you want to model the conditional mean.
+\[
+\bbE[Y_t | \beta] = \mu_t(\beta) = a'(\eta_t).
+\]
+But the conditional distribution $p(Y_t | \beta)$ is not normal.  One does not
+want to relate $\mu_t$ to $\beta$ in a linear way because that will probably
+force $\mu_t$ to potentially take on some values that should have zero
+probability.  Instead, one wants to use some transform taking $\mu_t$ to
+$\lambda_t$ and to model $\lambda_t = x_t \beta$ linearly.  I believe $a'$ is
+usually (always?) strictly increasing.  Let $\lambda_t = h(\mu_t)$ and
+$\lambda_t = g(\eta_t)$ be bijections.  Then we can go between $\mu_t, \eta_t$,
+and $\lambda_t$ with $a', h$, and $g$.  In binary logistic regression the
+natural paramter is the log-odds so $g$ is the identity in that case.
+
+\2 On p. 521 you see that
+\[
+\begin{cases}
+p(Y_t | \eta_t) \; \text{ and } \; g(\eta_t) = \lambda_t = F_t' \theta_t \\
+\theta_t = G_t \theta_{t-1} + \omega_t \; \text{ with } \; \omega_t \sim [0, W_t].
+\end{cases}
+\]
+Notice that now the observatione equation is not just a normal perturbation and
+that the distribution of $\omega_t$ is unspecified; instead, the first and
+second moments are given.
+
+If the time $t-1$ posterior moments are
+\[
+(\theta_{t-1} | D_{t-1}) \sim [m_{t-1}, C_{t-1}]
+\]
+then one evolves forward to
+\[
+(\theta_t | D_{t-1}) \sim [a_t, R_t]
+\]
+just like in the normal case.  But now we are just working with moments instead
+of distributions.  The joint moments of $lambda_t$ and $\theta_t$ are then
+\[
+\begin{pmatrix} \lambda_t \\ \theta_t \end{pmatrix} | D_{t-1}
+\sim
+\Big[
+\begin{pmatrix} f_t \\ a_t \end{pmatrix},
+\begin{pmatrix}q_t & F_t' R_t \\ R_t F_t & R_t \end{pmatrix} \Big].
+\]
+One may take these moments and produce the regression of $\theta_t$ upon
+$\lambda_t$ to calculate $\hat \bbE[ \theta_t | \lambda_t, D_{t-1}]$ and $\hat
+\bbV[ \theta_t | \lambda_t, D_{t-1}]$.  I think you can derive these quantities
+using linear predictors and quadratic loss.  (See section 4.9.)  In that case
+I'm not sure if $\bbV(\theta_t | \lambda_t, D_{t-1})$ has the meaning that one
+would initially give it.
+
+They suggest using a conjugate distribution for $\eta_t$ so that one may go from
+$(\eta_t | D_{t-1})$ to $(\eta_t | D_t)$ in a convenient way.  Think of this in
+the following way.  The distribution of $(\eta_t | D_{t-1})$ is described by
+$(r_t, s_t)$.  You update with new data to get new parameters $(r_t^*, s_t^*)$.
+So the program to this point would be:
+
+\begin{enumerate}
+\item Get moments of $\lambda_t | D_{t-1}$.  Use those moments to calculate
+  $r_t$ and $s_t$.
+
+\item Use $r_t$ and $s_t$ to get $r_t^*$ and $s_t^*$.
+
+\item Use $r_t^*$ and $s_t^*$ to get $f_t^*$ and $q_t^*$ where
+\[
+f_t^* = \bbE[\lambda_t | D_t] \; \text{ and } \; q_t^* = \Var[\lambda_t | D_t].
+\]  
+\end{enumerate}
+
+Evidently, one can show that
+\[
+p(\theta_t | D_t) = \int p(\theta_t | \lambda_t, D_{t-1}) p(\lambda_t | D_t) d \lambda_t.
+\]
+This shows that $p(\theta_t | \lambda_t, D_t) = p(\theta_t | \lambda_t D_{t-1})$
+I think.  That lets us then do
+\[
+\bbE[\theta_t | D_t] = \bbE[ \bbE[ \theta_t | \lambda_t, D_{t-1}] ]
+\]
+and
+\[
+\bbV[\theta_t | D_{t}] = 
+\bbV[ \bbE[ \theta_t | \lambda_t, D_{t-1}] | D_{t} ] + 
+\bbE[ \bbV[\theta_t | \lambda_t, D_{t-1}] | D_t ].
+\]
+We have linear estimates $\hat \bbE[\ldots] \simeq \bbE[\theta_t | \lambda_t,
+D_{t-1}]$ (as an affine function of $\lambda_t$, and a function of $\lambda_t$,
+$f_t$, and $q_t$) and $\hat \bbV[\ldots] \simeq \bbV[\theta_t | \lambda_t,
+D_{t-1}]$ (as a function of $q_t$).  We can use those to get approximates
+versions of $\bbE[\theta_t | D_{t}]$ and $\bbV[\theta_t | D_t]$.  Calculating
+the approximation yields $(\theta_t | D_t) \simeq [m_t, C_t]$.
+
+So the two places we must fiddle with things: (1) when we assume $\eta_t$ is
+conjugate to $Y_t$, which I suppose isn't that crazy, except that I don't see
+why it should be conjugate \emph{and} the transformed parameters should follow a
+certain process; (2) we use the linear moments instead of the actual moments.
+
+Thus, this procedure is really moving between \emph{approximations} of the first
+and second moment.
+
+\end{outline}
+
+\section{Ravines Et al., 2006}
+
+Title: An Efficient Sampling Scheme for Generalized Dynamic Models
+
+Citation: \cite{ravines-etal-2006}
+
+Bibkey: ravines-etal-2006
+
+Building upon the work of \cite{west-etal-1985}, \cite{ravines-etal-2006} take
+their sampling scheme and then add an MCMC step to get an exact draw from the
+joint distribution of the states.
+
+In particular, one assumes that the approximate moments produced by the above
+procedure are exact and then backwards samples as in the normal case using
+\[
+p(\theta_T | D_T) \prod_{i=1}^T p(\theta_{t-1} | \theta_{t}, D_{t-1})
+\]
+where, I believe one uses the approximate moments $m_{t-1} = m_{t-1}(D_{t-1})$
+and $C_{t-1} = C_{t-1}(D_{t-1})$ to evolve $\theta_{t-1}$ and then calculate the
+regression coefficients needed for the backwards sampling.
+
+Papers they mention:
+
+\begin{outline}
+
+\1 A review: Ferreira and Gamerman (2000).
+
+\1 Prior to MCMC
+
+\2 West et al. (1985)
+\2 Kitagawa (1987)
+\2 Farrmeir (1992)
+
+\1 Migon (2005) has a survey?
+
+\1 MCMC 
+\2 Gamerman (1998) - studied MH methods.  Found single move samplers to be better.
+
+\2 Geweke and Tanizaki (2001) - proposed some extensions.  Focused on good
+proposals.
+
+\end{outline}
+
+Their contribution: proposing a multimove sampler.
+
+\section{Fruhwirth-Schnatter and Fruhwirth, 2010}
+
+Title: Data Augmentation and MCMC for Binary and Multinomial Logit Models. 
+
+Citation: \cite{fruhwirth-schnatter-fruhwirth-2010}
+
+BibKey: fruhwirth-schnatter-fruhwirth-2010
+
+Good review of Bayesian methods for estimation in binary and multinomial logit.
+
+\begin{outline}
+
+\1 Review Holmes and Held and FS\&F along with several MH methods
+
+\1 Scott's independnet MH methods is the best.
+
+\2 I think the advantages of independent MH are going to go away when we are
+working in the dynamic case.
+
+\1 FS\&F present a normal mixture for the logistic distribution, a la the HH
+auxiliar representation, which does much better than the FS\&F representation in
+terms of extreme values.
+
+\2 They call representation with logistic error DRUM and the representation with
+EV error RUM (random utility).  You can derive the DRUM representation from RUM:
+the logistic distribution can be written as the difference of two extreme value
+distributions.
+
+\1 From this point, it would seem that our challenge is to beat MH.  That may
+not be possible.
+
+\1 HH does horrible in their paper.  I am guessing that they did not implement the
+HH stuff in C.
+
+\end{outline}
+
+\section{Fr\"{u}wirth-Schnatter and Wagner, 2008}
+
+Title: Marginal liklihoods for non-Gaussian models using auxiliary mixture
+sampling.
+
+Citation: \cite{fruhwirth-schnatter-wagner-2008}
+
+BibKey: fruhwirth-schnatter-wagner-2008
+
+This will be of interst to James maybe.  It is about model selection for GLMs.
+Use the complete-data likelihood estimator.  I need to read this more closely.
+
+\section{Fr\"{u}wirth-Schnatter et al., 2009}
+
+Title: Improved auxiliary mixture sampling for hierarchical models
+
+Citation: \cite{fruhwirth-schnatter-etal-2009}
+
+BibKey: fruhwirth-schnatter-etal-2009
+
+The idea is that it is annoying to have to calculate all of those latent
+variables in the Poisson case.  She remedies that by using a different latent
+variable augmentation, though now she must approximate the $\log \text{Ga}(a,
+1)$ distribution for various $a$.  She does that by generating the finite
+mixture approximations for various $a$.  It appears that one could preprocess to
+find the approximations.
+
+She gives a presentation for negative binomial regression.  It appears that one
+should want to select the degrees of freedom parameter.  She provides a way to
+do that.  It seems to me that she is saying that she can sample from $\log
+\text{Ga}(a, 1)$ for positive integers $a=1, \ldots, 20$, and then for
+increasingly less frequent positive integers.  She has a way to interpolate
+between those positive integers she hasn't precomputed a mixture representation
+for directly.
+
+\section{O'Brien and Dunson, 2004}
+
+Title: Bayesian Multivariate Logistic Regression
+
+Citation: \cite{obrien-dunson-2004}
+
+BibKey: obrien-dunson-2004
+
+Their moitivating example is binary logistic regression: neurtoxicology study in
+rat pups.  Give rats pesticide at various levels and then observe normal
+activity level (0) or elevated activity level (1).  This is odd since they are
+designing a multivariate procedure.
+
+Common frequentist approaches they mention: marginal logistic regression via
+generalized estimating equations \qt{(GEE's; Zeger and Liang, 1986; Pretice, 1988,
+Lipsitz, Laird, and Harrington, 1991; Carey and Zeger, 1993, among others) and
+mixed effects logistic regression (Stiratelli, Laird, and Ware, 1984).}
+
+They mention Albert and Chib-like method when working in univariate case.  Then
+they say that this approach is problematic when trying to extend things to the
+multivariate setting.
+
+Their approach: Take i.d. $e_j$ with CDF $F$.  Then $\ell_j = \log \{ F(e_j) /
+(1 - F(e_j)) \}$ is logistically distributed and hence $z_j = \mu_j + \ell_j$ is
+logistically distributed with mean $\mu_j$.  They claim that because each $z_j$
+is marginally logistic that the joint distribution of $z = \{z_j\}$ is
+multivariate logistic.  I need to convince myself of that.  (I suppose you could
+take Andrews and Mallows and then apply a transformation.  $X = N(0, \Lambda)$
+where $\Lambda_{ii}$ is $4KS^2$.  Then define $AX$ to be multivariate logistic?
+Maybe not.  Does this have logistic marginals?  It does if the sum of
+independent logistic rvs is logistic.  But that does not seem to be the case
+looking at the CF.  Thus it must be the multivariate logistic is defined in
+terms of havign marginal logistic distributions?  Or it could be defined via the
+multinomial logistic transformation--identifying that with a CDF.)
+
+It isn't clear to me that that are doing multinomial logistic regression in the
+sense that they are constructing a transformation for a generalized linear
+model, but they do not show, at least I haven't found yet, that their
+construction implies a likelihood invovlving
+\[
+\frac{e^{\psi_{ij}}}{\sum_{j=1}^J e^{\psi_{ij}}}.
+\] 
+Their model has the property that marginally one recovers a logistic
+transformation.  I suppose when one choses a t-disribution with diagonal scale
+parameter that things become independent and so you should get something like
+that.  They mention multiple binary observations, which is different than
+rolling a dice.
+
+See equation (6) and discussion near by.  Theirs is slightly different.
+
+In any event their construction of multivariate link function is interesting.
+It is induced by the augmentation.  They suggest using $e \sim T_p$, a
+multivarite t-distribution to construct $z$.  This induces a distribution on
+$z$, and that can then be used for modeling.  Decomposing the t-distribution as
+a scale-mixture of normals gets one back to a normal distribution, I am
+guessing, for the regression coefficient.  (Aside, what if you use Andrews and
+Mallows as suggested above with Holmes and Held to generate a link function?  Or
+with our method for that matter.)
+
+\section{Scott, 2011}
+
+Title: Data augmentation, frequentist estimation, and the Bayesian analysis of
+multinomial logit models
+
+Citation: \cite{scott-2004}
+
+BibKey: scott-2004 (I think everyone refers to a working paper from 2004)
+
+Key papers he mentions
+\begin{itemize}
+\item Tanner and Wong (1987)
+\item Albert and Chib (1993)
+\item McCulloch and Rossi (1994)
+\item Meng and van Dyk (1999)
+\item Liu and Wu (1999)
+\item van Dyk and Meng (2001)
+\end{itemize}
+
+He suggests three different algorithms.
+
+\begin{description}
+
+\item[DAFE] (Constrain $\beta_0=0$ for identifiabiltiy.)
+
+This is Gibbs sampling--MH within Gibbs.
+
+1. Sample $z \sim p(z | \beta^{(t)}, y)$
+
+2. Use a MH step to sample $\beta \sim p(\beta | y,z)$.
+
+In particular, Let your proposal be
+\[
+q_t(\beta) = p_\infty(\beta | \hat \beta^{(t)})
+\]
+where $\hat \beta^{(t)}$ is a least squares estimate of $\beta$ given $z^{(t)}$
+and normal prior; and the target distribution is $p(\beta | y, z)$.
+
+Scott uses the EV representation.  FSF say using the logistic representation is
+better!!!
+
+\item[DAFE-R]
+
+This RW metropolis.
+
+Just do MH.  Use the least squares estimate for the scale (I think) in the
+proposal.
+
+\item[DAFE-WP] Do DAFE but now do not constrain $\beta_0$.  Correct that in
+  post-processing for identifiability.
+
+\end{description}
+
+\section{Hahn et al., 2010}
+
+Title: A sparse Factor-Analytic Probit Model for Congressional Voting Patterns
+
+Citation: \cite{hahn-etal-2010}
+
+Bibkey: hahn-etal-2010
+
+\section{Chib and Jeliazkov, 2006}
+
+Title: Inference in Semiparametric Dynamic Models for Binary Longitudinal Data
+
+Citation: \cite{chib-jeliazkov-2006}
+
+BibKey: chib-jeliazkov-2006
+
+\section{Chib and Greenberg, 1998}
+
+Title: Analysis of multivariate probit models
+
+Citation: \cite{chib-greenberg-1998}
+
+BibKey: chib-greenberg-1998
+
+\section{Miscellaneous}
+
+\begin{outline}
+
+\1 Talking with Larry Carin: he said that logit is preferable to probit because
+you can sample $p$ (the probability) directly whereas within probit you can only
+easily sample 1,0.  I don't know what he meant.
+
+\1 Think about Poisson Binomial
+
+\end{outline}
+
+\section{Things to look up:}
+
+\begin{outline}
+
+\1 Peskun ordering (p. 153 Holmes and Held, 2006)
+
+  \2 After looking that up revisit that the aforementioned section in Holmes and
+  Held.
+
+\1 Rao-Blackwellization.  Look up in Gelfand and Smith, 1990.
+
+\2 Rao-Blackwellization refers to conditioning on a sufficient statistic to
+reduce variance of estimate.  It relies upon identity
+\[
+\Var(X) = \Var(\bbE[X|Y]) + \bbE[\Var(X|Y)].
+\]
+You can find a discussion of this in Berger and Casella.  First, $\bbE[X|Y]$ is
+an unbiased estimator as well and it has small variance than $X$.  Second, and
+more subtle, is that we need $Y$ to be a sufficient statistic.  If it is not a
+sufficient statistic, then the esitmator $\bbE[X|Y]$ may depend upon the
+underlying parameter $\theta$, which isn't helpful since we don't know $\theta$.
+In other words, when $Y$ is sufficient then $p(x | y, \theta) = p(x | y)$, which
+may not otherwise be the case.
+
+
+\1 What is a quantile-quantile (QQ?) plot good for?
+
+\1 Mixed effects models.
+
+\1 Check out the book Generalized Linear Models by McCullagh and Nelder, 1999.
+
+\end{outline}
+
+% If you have a bibliography.
+% The file withe bibliography is name.bib.
+\bibliography{bayeslogit}{}
+\bibliographystyle{abbrvnat}
+
+\end{document}

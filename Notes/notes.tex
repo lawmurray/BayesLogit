@@ -1,0 +1,1939 @@
+\documentclass{article}
+
+\input{commands}
+
+\usepackage{mathtools}
+\usepackage{cases}
+\usepackage{algorithm}
+%\usepackage{algorithmic}
+\usepackage{algpseudocode}
+% \usepackage{algcompatible}
+\usepackage{outlines}
+\usepackage{natbib}
+
+\newcommand{\PG}{\text{PG}}
+\newcommand{\Pois}{\text{Pois}}
+\newcommand{\Ga}{\text{Ga}}
+\newcommand{\NB}{\text{NB}}
+\newcommand{\floor}[1]{\lfloor #1 \rfloor}
+\newcommand{\eqd}{\,{\buildrel d \over =}\,}
+\newcommand{\KS}{\text{KS}}
+
+% Page Layout
+\setlength{\oddsidemargin}{0.0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\textheight}{8in}
+%\parindent 0in
+%\parskip 12pt
+
+% Set Fancy Style
+%\pagestyle{fancy}
+
+%\lhead{Left Header}
+%\rhead{Right Header}
+
+\begin{document}
+
+\tableofcontents
+
+% Change Font and Spacing
+\large % change the font size to 12pt
+\linespread{1.1} % change the line spacing
+
+% Set the counter
+\setcounter{section}{0}
+
+\section{Logistic Regression}
+
+Suppose the probability of a success is
+\[
+p = 1 / (1 + \exp(-x \beta)).
+\]
+Then the probability of $n y$ successes in $n$ trials is
+\[
+{ny \choose n}
+\Big(\frac{1}{1+e^{-x\beta}}\Big)^{ny}
+\Big(\frac{e^{-x\beta}}{1+e^{-x\beta}}\Big)^{n-ny}
+\]
+which is equivalent to
+\[
+{ny \choose n} \Big( \frac{e^{yx\beta}}{1 + e^{x\beta}} \Big)^{n}.
+\]
+Repeating this $N$ times we have
+\[
+p(y|\beta) = \prod_{i=1}^N {n_i y_i \choose n_i}
+\Big( \frac{e^{y_i x_i \beta}}{1 + e^{x_i \beta}} \Big)^{n_i}.
+\]
+Hence
+\[
+\ell(\beta | y) \propto
+\prod_{i=1}^N
+\Big( \frac{e^{y_i x_i \beta}}{1 + e^{x_i \beta}} \Big)^{n_i}.
+\]
+
+We want to write this as a (normal) mixture.  The key is express the likelihood
+as
+\[
+\propto e^{u \beta} \prod_{i} \cosh^{-n_i} (x_i \beta / 2), \; u = \sum_{i} n_i
+(y_i - 1/2) x_i,
+\]
+which we can do since
+\[
+\frac{e^{-x_i \beta / 2}}{e^{-x_i \beta / 2}} \Big( \frac{e^{y_i x_i \beta}}{1 +
+  e^{x_i \beta}} \Big)
+= \frac{e^{(y_i - 1/2) x_i \beta}}{e^{-x_i \beta / 2} + e^{x_i \beta / 2}}
+= \frac{e^{(y_i - 1/2) x_i \beta}}{ 2 \cosh(x_i \beta / 2) }.
+\]
+A clever choice of prior can be treated as an extra data point, which simply
+alters the above description by taking a product over $i=0, \ldots, N$.  In that
+case
+\[
+p(\beta | y) \propto e^{u \beta} \prod_{i=0}^N \cosh^{-n_i} (x_i \beta / 2).
+\]
+
+Someone clever noticed that $\cosh^{-n}$ is related to the MGF (Laplace
+transform) of the Jacobi distribution.  In particular, if $J^*$ is as from
+Devroye, then
+\[
+\bbE[e^{-\lambda J^*}] = \cosh^{-1}(\sqrt{2 \lambda})
+\]
+and the MFG of a sum of $n$ independent $J^*$s is
+\[
+\bbE[e^{-\lambda J^*(n)}] = \cosh^{-n}(\sqrt{2 \lambda}).
+\]
+
+Thus, we can rewrite the posterior for $\beta$ as
+\begin{equation}
+\label{post1}
+\propto e^{u \beta} \prod_{i=0}^N \exp \{-\frac{1}{2} \Big(\frac{z_i}{2} \Big)^2
+\omega_i \} p_{J^*(n)}(\omega_i) \textmd{ where } z_i = x_i \beta.
+\end{equation}
+
+\textbf{UPDATE: I WAS WRONG THERE IS A CORRESPONDING DATA GENERATING
+  REPRESENTATION}
+
+Consider
+\[
+\Big( \frac{e^{\psi_i}}{1+e^{\psi_i}} \Big) \delta_1(y_i) + 
+\Big( \frac{1}{1+e^{\psi_i}} \Big) \delta_0(y_i).
+\]
+We can write this as
+\[
+\Big( e^{\psi_i/2} \delta_1(y_i) + e^{-\psi_i/2} \delta_0(y_i) \Big) 2^{-1}
+\cosh^{-1} (\psi_i / 2).
+\]
+Then the data augmentation is
+\[
+p(y_i, \omega_i | \psi_i) = \Big( e^{\psi_i/2} \delta_1(y_i) + e^{-\psi_i/2}
+\delta_0(y_i) \Big) 2^{-1} \exp(-\omega_i \psi_i^2 / 2) p(\omega_i).
+\]
+Or if we want to factor it we have
+\[
+\Big( e^{\psi_i/2} \delta_1(y_i) + e^{-\psi_i/2} \delta_0(y_i) \Big) 2^{-1}
+\cosh^{-1} (\psi_i / 2) \cosh(\psi_i / 2) \exp(-\omega_i \psi_i^2 / 2) p(\omega_i).
+\]
+In which case we can see that one generates $y_i$ by
+\[
+\begin{cases}
+P(y_i = 1) = e^{\psi_i / 2} / (2 \cosh(\psi_i/2)) \\
+\omega_i \sim \PG(1, \psi_i).
+\end{cases}
+\]
+Notice that $\omega_i$ are independent to $y_i$.
+This produces the correct posterior representation
+\[
+e^{\psi_i(y_i - 1/2)} 2^{-1} \cosh \ldots
+\]
+since
+\[
+\Big( e^{\psi_i/2} \delta_1(y_i) + e^{-\psi_i/2} \delta_0(y_i) \Big)
+= e^{\psi_i(y_i - 1/2)}.
+\]
+Is it important that $\omega_i$ is independent from $y_i$?  So if I was to
+synthetically generate the data $y$ would have no effect on $\omega$.
+
+\section{Jacobi and Polya-Gamma}
+
+A couple distributions will be helpful here.  Really we want the terms of the
+product in (\ref{post1}) to look like
+\[
+\exp \Big( \frac{-1}{2} z^2 \omega^* \Big) p(\omega^*)
+\]
+so that we have a Normal-precision mixture.  We can do that by a change of
+variables, $w / 4= w^*$.
+
+If $w$ has distribution $J^*(n)$ with some density, then the density for
+$w^*$ is
+\[
+p_{PG(n)}(\omega^*) = 4 p_{J^*(n)} (4 \omega^*).
+\]
+By our change of variables we know that
+\[
+PG(n) = \frac{1}{4} J^*(n).
+\]
+Define the density $p(\omega | J^*(n,z) )$ by the kernel
+\[
+\exp \{ \frac{-z^2}{2} \omega \} p_{J^*(n)}(\omega).
+\]
+Using the Laplace transform (of $J^*$) one can see the true density to be
+\[
+\cosh(z) \exp \{ \frac{-z^2}{2} \omega \} p_{J^*(n)}(\omega).
+\]
+Similarly, define the density $p(\omega | PG(n, z))$ by the kernel
+\[
+\exp \{ \frac{-z^2}{2} \omega \} p_{PG(n)}(\omega).
+\]
+Then the two RV's are related by (again $w^* = w/4$)
+\[
+p(\omega^* | PG(n, z)) = 4 \; p( 4 \omega^* | J^*(n,z/2) )
+\]
+and
+\[
+PG(n, z) = \frac{1}{4} J^*(n, z/2).
+\]
+
+This relationships will be useful because it lets us easily transfer the work of
+Devroye and of Baine, Pitman, and Yor to what we are doing.  For instance, if we
+can draw from $J^*(n, z/2)$ then we can immediately draw from $PG(n,z)$.
+Furthermore, we can easily move between various representations using this
+transformation.  As an example, let's consider deriving the sum of exponentials
+representation for $J^*$.  To begin, a key observation is that
+\[
+\cosh(z) = \prod_{i=1}^\infty \Big(1 + \frac{z^2}{(n-1/2)^2 \pi^2} \Big)
+\]
+by the Wierstrauss factorization theorem.  Thus
+\begin{align*}
+\bbE[\exp(-\lambda J^*)]
+& = 1 / \cosh(\sqrt{2 \lambda}) \\
+& = \prod_{n=1}^\infty \Big(1 + \frac{\lambda}{(n-1/2)^2 \frac{\pi^2}{2}} \Big)^{-1}.
+\end{align*}
+Let $c_n = (n-1/2)^2 \frac{\pi^2}{2}$.  Since
+\[
+\bbE[\exp(-\lambda E/c)] = (1 + \frac{\lambda}{c})^{-1}
+\]
+the product above becomes
+\[
+\prod_{i=1}^\infty \bbE[\exp(-\lambda \frac{E_i(1)}{c_n})]
+\]
+which shows that
+\[
+J^* = \sum_{i=1}^\infty \frac{E_i(1)}{c_n}.
+\]
+Similarly, if you tilt $J^*$ by $\exp(-\alpha x)$ then, using the Laplace
+transform identity
+\[
+\mathcal{L}(e^{-\alpha x} p(x))(\lambda) = \mathcal{L}(p(x))(\lambda + \alpha),
+\]
+we have
+\[
+\mathcal{L}(e^{-\alpha x} p_{J^*}(x))(\lambda)
+=
+\prod_{n=1}^\infty \Big( 1 + \frac{\lambda + \alpha}{c_n} \Big)^{-1}.
+\]
+Using the identity $\cosh(\sqrt{2\alpha}) = \prod_{i=1}^\infty (1 + \alpha /
+c_n)$ we see that the MGF of the density
+\[
+\cosh(\sqrt{2\alpha}) e^{-\alpha x} p_{J^*}(x)
+\]
+is
+\[
+\prod_{i=1}^\infty (1 + \alpha / c_n) \Big( 1 + \alpha/c_n + \frac{\lambda}{c_n}
+\Big)^{-1} =
+\prod_{i=1}^\infty \Big(1+ \frac{\lambda}{c_n + \alpha}\Big)^{-1}
+\]
+and hence the the RV can be represented as
+\[
+\sum_{i=1}^\infty \frac{E_i(1)}{c_n + \alpha}.
+\]
+The same technique can be used to show that
+\[
+J^*(n,z) = \sum_{i=1}^\infty \frac{Ga(n, 1)}{c_n + z^2/2}
+\]
+and hence
+\[
+PG(n, z) = 2 \; \sum_{i=1}^\infty \frac{Ga(n,1)}{(n-1/2)^2 4 \pi^2 + z^2}.
+\]
+
+\section{Sampling from $J^*(n,z)$}
+
+One could sample $J^*(n,z)$ using the sum of Gammas representation, but this is
+rather slow.  For small, integral $n$ one can take advantage of
+\[
+J^*(n,z) = \sum_{i=1}^n J^*(1.0, z).
+\]
+We can sample $J^*(1.0, z)$ relatively quickly by augmenting the algorithm in
+Devroye (2009).  Everything follows almost immediately from that work.  In particular,
+we have that
+\[
+J^*(1.0, z) = \cosh(z) \exp(\frac{-1}{2} z^2 w) p_{J^*}(w).
+\]
+
+Really we can look at this as wanting to sample from the kernel
+\[
+f(w|z) = \exp(\frac{-1}{2} z^2 w) f(w)
+\]
+where $f(w)$ is the density for $J^*$.
+
+Devroye's goal is to sample $f(w) = p_{J^*}(w)$.  He notes that there are two
+representations for this density,
+\begin{numcases}{f(w) =}
+\label{jacobi:d1}
+\pi \sum_{n=0}^\infty (-1)^n \big(n+\frac{1}{2} \big)
+  \exp \big( (-n+1/2)^2 \pi^2 x / 2 \big) \\
+\label{jacobi:d2}
+(\frac{2}{\pi x})^{3/2} \pi \sum_{n=0}^\infty (n+\frac{1}{2})
+  \exp \Big( - \frac{2(n+1/2)^2}{x} \Big),
+\end{numcases}
+which we may express as
+\[
+f(x) = \sum_{n=0}^\infty (-1)^n a_{n}(x)
+\]
+where $a_n(x)$ is positive for all $n$ and $x$.  All the conditions that Devroye
+outlines holds for $\exp(-\alpha x) a_n(x)$ as well so the same technique
+applies to generating a random variate with density defined by the kernel
+\[
+f(x|z) = \sum_{n=0}^\infty (-1)^n
+\underbrace{\exp(-\frac{1}{2} z^2 x) a_n(x)}_{\tilde a_n(x)}.
+\]
+Devroye uses both representations of the density $f$ to sample from the Jacobi.
+In particular, he observes the following:
+\begin{enumerate}
+
+\item Devroye's first lemma: $a_i(x) \leq a_{i+1}(x)$ is true when $x \geq (\log
+  3)/\pi^2$ under representation (\ref{jacobi:d1}) and is true when $x \leq 4 /
+  \log 3$ under representation (\ref{jacobi:d2}).
+
+\item These intervals overlap.
+
+\item For $x \geq (\log 3) / \pi^2$ and representation (\ref{jacobi:d1}) and for
+  $x \leq 4 / \log 3$ and (\ref{jacobi:d2}) the partial sums $A_n(x)$ have
+  \[
+  A_0(x) \geq A_2(x) \geq \cdots \geq f(x) \geq \cdots \geq A_3(x) \geq A_1(x),
+  \]
+  which suggests we can use Von Neumann's alternating sum method (I guess).
+
+\item Since $A_0(x) \geq f(x)$ for all $x$ and motivates the proposal:
+  Representation (\ref{jacobi:d1}) suggests using an exponential proposal while
+  representation (\ref{jacobi:d2}) suggests using an inverse $\chi^2$.
+
+\item In particular, the proposal kernel is defined by
+\[
+f(x) \leq A_0(x) = g(x) =
+\begin{dcases}
+\frac{\pi}{2} \exp \Big( - \frac{\pi^2 x}{8} \Big), & x \geq t \\
+\Big( \frac{2}{\pi x} \Big)^{3/2} \frac{\pi}{2} \exp \Big(- \frac{1}{2x}\Big), &
+x \leq t,
+\end{dcases}
+\]
+where $t = 2 / \pi$ is a threshold found in the intersection of the two
+aforementioned intervals for which the value of the two representations are
+identical, thus allowing for a continuous pasting of proposals.
+
+\end{enumerate}
+
+The same process applies to the tilted kernel $f(\omega | z)$ defined by
+\[
+f(x|z) = \exp(-\frac{1}{2} z^2 w) f(x)
+\]
+and corresponding proposal kernel
+\[
+g(x|z) = \exp(-\frac{1}{2} z^2 w) g(x).
+\]
+This produces
+\[
+f(x|z) \leq g(x|z) =
+\begin{dcases}
+\frac{\pi}{2} \exp \Big( - \Big[ \frac{\pi^2}{8} + \frac{z^2}{2} \Big] w \Big)
+& x \geq t
+\\
+\Big( \frac{2}{\pi x} \Big)^{3/2}
+\frac{\pi}{2} \exp \Big( \frac{-1}{2x} - \frac{z^2}{2} x \Big)
+& x \leq t,
+\end{dcases}
+\]
+The former is an exponential kernel and the latter is an Inverse-Gaussian
+kernel.  We want to draw from the exponential when we are below a certain
+threshold and from the inverse-gaussian when we are above a certain threshold.
+
+To sample from this proposal one first flips a coin to determine which piece of
+the proposal will be used.  The weight of this coin depends on $z$.  Thus we
+need to figure out how much each piece contributes to the total mass in terms of
+$z$.  The (unnormalized) weight of the first piece is
+\[
+p(z) = \int_{t}^\infty g(x|z) dx =
+  \frac{\pi}{2}
+  \frac{1}{\frac{\pi^2}{8} + \frac{z^2}{2}}
+  \exp \Big( - \Big[ \frac{\pi^2}{8} + \frac{z^2}{2} \Big] t \Big).
+\]
+For the second piece we need to match parameters with the Inverse-Gaussian.  The
+density for an inverse-Gaussian RV is
+\[
+IG(x \mid \mu, \lambda) = \Big(\frac{\lambda}{2\pi x^3}\Big)^{1/2}
+\exp \Big( \frac{-\lambda (x - \mu)^2)}{2 \mu^2 x} \Big).
+\]
+Our expression above is tied to this density by
+\begin{align*}
+\frac{-1}{2x} - \frac{z^2}{2}x
+& = \frac{-z^2}{2x} (x^2 - 2x|z|^{-1} + 2x|z|^{-1} + z^{-2}) \\
+& = \frac{-z^2}{2x} (x - |z|^{-1})^2 - |z|.
+\end{align*}
+Thus the (unnormalized) weight of the second piece is
+\[
+q(z) = 2 \exp(-|z|) \int_{0}^t IG(x \mid \mu=|z|^{-1}, \lambda=1.0) dx.
+\]
+
+The program is as follows: use the first density if $U < p / (p+q)$, the
+probability that drawing from $g*(x|z)$ you draw $x < t$, otherwise, use the
+second density.  Propose using the chosen piece.  Use the alternating series
+method.  Drawing from a truncated exponential is straightforward.  Drawing from a
+truncated inverse Gamma is less straightforward.
+
+We break the $IN$ draw up into two separate scenarios.  Nic suggests using
+method (1) if $\mu > t \; (Z < 1/t)$ and using (2) if $\mu < t \; (Z > 1/t)$.
+
+\begin{enumerate}
+
+\item When $Z$ is small do accept/reject with a proposal from a \(IG(1/2,
+  scale=1/2) \bbI_{(0,t)} = 1 / \chi^2_1 \bbI_{(0,t)}\).  If we consider the ratio of
+  the kernels
+  \[
+  \frac{x^{-3/2} \exp \Big( \frac{-1}{2x} - \frac{z^2}{2}x \Big)}
+  {x^{-3/2} \exp \Big( \frac{-1}{2x} \Big)}
+  = \exp \Big( \frac{-z^2}{2} x \Big)
+  \]
+  we see that the $M$, the supremem of the above ratio, is one and hence the
+  acceptance probability is
+  \[
+  \exp(\frac{-z^2}{2} x).
+  \]
+
+  To sample from a truncated inverse $\chi^2_1$ Devroye generates from a
+  truncated normal, $x \sim N \bbI_{[1/\sqrt{t}, \infty)}$, to generate $x \sim
+  1/\chi^2_1 \bbI_{(0,t]}$.  To generate a truncated normal Devroye (2009) follows
+  Devroye (1986, p. 382).  In particular, keep generating independent pairs $(E,
+  E')$ until $E^2 \leq 2 E' / t$, then return $(1 + tE) / \sqrt{t}$.
+
+\item When $Z$ is large, we do a rejection algorithm with an Inverse-Gaussian
+  proposal.  Recall that $Z$ is inverse mean, so large $Z$ corresponds to small
+  mean.  Here we follow Devroye (1986) wherein one finds that you can generate
+  an Inverse-Gaussian using a $\chi^2$ distribution or a normal.  In particular,
+  if $X \sim IN(\mu, \lambda)$ then
+  \[
+  Y = \frac{\lambda(X-\mu)^2}{\mu^2 X} = \chi_1^2 = N^2.
+  \]
+  Solving for $Y$ we have two solutions, corresponding to $X < \mu$ and $X >
+  \mu$; respectively,
+  \[
+  X_1 = \mu + \frac{\mu^2 Y}{2\lambda} - \frac{\mu}{2\lambda} \sqrt{4 \mu \lambda
+    Y + \mu^2 Y^2} \textmd{ and } X_2 = \frac{\mu^2}{X_1}.
+  \]
+
+  To generate $Y$, you draw $Y \sim N^2$ and then set $X_1$ from $Y$ as
+  described above.  Draw $U \sim U$.  If $U \leq \frac{\mu}{\mu + X_1}$ then
+  return $X = X_1$, otherwise return $X = \mu^2 / X_1$ (Devroye, 1986, p. 149).
+
+  To draw the truncated inverse-Gaussian we use rejection.  We know that $\mu <
+  t$ so if we find $U < \frac{\mu}{\mu + X_1}$ we can immediately accept as $X_1
+  < \mu$.  Otherwise we must check that $X = \mu^2 / X_1 < t$.
+
+  \textbf{Many-to-one Sampling} (Deroye, 1986, p. 145): Suppose I can simulate
+  $Y$ and $Y = \Psi(X)$ where $\Psi^{-1}$ is many-to-one.  I want to simulate
+  $X$.  For the moment, let's assume that $\Psi^{-1}$ is two-to-one, for
+  instance, it could be quadratic.  Further suppose that $\Psi'$ is of one sign
+  on $(-\infty, T)$ and of the other sign on $(T, \infty)$ and that
+  \[
+  x =
+  \begin{cases}
+    l(y) & x < T, \\
+    r(y) & x > T.
+  \end{cases}
+  \]
+  Suppose $x$ has density $f$.  Then the densit of $y$ can be calculated using
+  the change of variables formual and is
+  \[
+  h(y) = \underbrace{|l'(y)| f(l(y))}_{p_l(y)}
+       + \underbrace{|r'(y)| f(r(y))}_{p_r(y)}.
+  \]
+  Then one can sample $X$ by sampling $Y$ and then setting $X := l(Y)$ with
+  probabiltiy $p_l(y) / (p_l(y) + p_r(y))$ and $X := r(y)$ otherwise.  In
+  essence you know, given the value of $Y$ that $X$ can only take on two values,
+  the distribution of which is given by $(p_l(y), p_r(y)) / h(y)$.
+
+\end{enumerate}
+
+Once we have sampled our proposal we can use the series method (Devroye, 1986,
+p. 151).
+
+\noindent \textbf{Time Series Method}: Copying from Devroye (1986).  We need $Y$
+with density $f$ to be approximated by $f_n \nearrow f$ and $g_n \searrow f$ and
+to have some easy proposal $h$ for which $f \leq c h$ where $c$ is larger than
+but preferably close to one.  Then you can generate $Y$ by the following:
+\begin{algorithmic}
+\Repeat
+\State Generate $X \sim h$.
+\State $Y \leftarrow \mcU(0, c h(X))$
+\State $n \leftarrow 0$
+\Repeat
+\State $n \leftarrow n + 1$
+\State If $Y \leq f_n(X)$ then return $X$.
+\Until {$Y > g_n(X)$}
+\Until {FALSE}
+\end{algorithmic}
+The key idea, I think, is that the second loop is such that you are really
+checking that $Y \leq f(X)$.  So really, this is a fancy way to sample $Y \sim
+\mcU(0,c h(X))$ and then check that $Y \leq f(X)$, which is just accept-reject
+sampling. (Check, do I want $\leq$? what happens with discrete distributions.)
+
+Now, when the density can be expressed an alternating series, as we have in this
+case, the same method applies, except that you can now calculate $f_n$ and
+$g_n$, which in this case are partial sums, on the fly.  In particular, the
+algorithm is (again, taking from Devroye... almost, p. 152 is slightly
+different):
+\begin{algorithmic}
+\Repeat
+\State $X \sim h$, the proposal
+\State $n \leftarrow 0, S \leftarrow a_0(X)$.
+\State $Y \leftarrow \mcU(0, c h(X))$ (same as $\mcU(0,1) S$ when $g = A_0$)
+\Repeat
+\State $n \leftarrow n + 1$
+\If {$n$ is odd}
+\State $S \leftarrow S - a_n(X)$, if $Y < S$, then return $X$
+\Else
+\State $S \leftarrow S + a_n(X)$, if $Y > S$, then break
+\EndIf
+\Until {FALSE}
+\Until {FALSE}
+\end{algorithmic}
+
+
+\section{Sampling a Polya-Gamma$(n, z)$}
+
+From above, we know that
+\[
+PG(n, z) = \frac{1}{4} J^*(n,z/2).
+\]
+Thus, to sample $PG(n, z)$ where $n$ is a natural number we can sum $n$
+independent samples of $PG(1,z)$.  The sampling of $PG(1,z)$ can then be adapted
+from our discussion above and Devroye as follows:
+
+\begin{algorithm}
+\label{alg:tiltedpg}
+\caption{Sampling from $PG^*(1,z)$}
+\begin{algorithmic}
+\State \textbf{Input}: $z$, a real number
+\State \textbf{Define}: \texttt{pigauss}, the CDF of the inverse Gaussian distribution
+\State \textbf{Define}:  $a_n(x)$, the peicewise defined coefficients found
+  in Devroye (2009, p.5)
+\State $z \leftarrow |z| / 2$,
+       $t \leftarrow 0.64$,
+       $K \leftarrow \pi^2 / 8 + z^2 / 2$
+\State $p \leftarrow \frac{\pi}{2 K} \exp(-K t)$
+\State $q \leftarrow 2 \exp(-|z|) \; \texttt{pigauss}(t, \mu = 1/z, 1.0)$
+% \STATE Set $p, q$ given $z$
+\Repeat
+\State Generate $U, V \sim \mathcal{U}(0,1)$
+\If{$U < p / (p+q)$}
+\State $X \leftarrow t + E/K$ where $E \sim \mathcal{E}(1)$
+\Else
+%\STATE $X \sim \mathcal{IN}(\mu=1/z, 1.0) \bbI_{(0,t)}$
+\State $\mu \leftarrow 1/z$
+\If {$\mu > t$}
+\Repeat
+\State Generate $1/X \sim \chi^2_1 \bbI_{(t,\infty)}$
+\Until {$\mathcal{U}(0,1) < \exp(-\frac{z^2}{2} X)$}
+\Else
+\Repeat
+\State Generate $X \sim \mathcal{IN}(\mu, 1.0)$
+\Until {$X < t$}
+\EndIf
+% \STATE if $\mu > t$ generate $1/W \sim \chi^2_1 \bbI_{(t,\infty)}$ until $\mathcal{U}(0,1) < \exp(-\frac{z^2}{2} W)$
+% \STATE else generate $W \sim \mathcal{IN}(\mu, 1.0) \bbI_{(0,t)}$
+\EndIf
+\State $S \leftarrow a_0(X)$, $Y \leftarrow VS$, $n \leftarrow 0$
+\Repeat
+\State $n \leftarrow n + 1$
+\If{$n$ is odd}
+\State $S \leftarrow S - a_n(X)$; \textbf{if} $Y < S$, \textbf{then} \Return $X$
+/ 4
+\Else
+\State $S \leftarrow S + a_n(X)$; \textbf{if} $Y > S$, \textbf{then} \textbf{break}
+\EndIf
+\Until {FALSE}
+\Until {FALSE}
+\end{algorithmic}
+\end{algorithm}
+
+\section*{Posterior Inference}
+
+\subsection*{Gibbs}
+
+\subsubsection*{Polychotomous Data}
+
+Imagine that we are drawing from a multinomial distribution, i.e. $\mb{y} \sim MN(n,
+\{p_i\}_{i=1}^J)$ has pmf
+\[
+\frac{n!}{y_1! \cdots y_J !} p_1^{y_1} \cdots p_J^{y_J} \; \textmd{ where } \;
+n = \sum_{j=1}^J y_j.
+\]
+Then the likelihood for a single draw is
+\[
+\ell(\mb{p} | \mb{y}) = p_1^{y_1} \cdots p_J^{y_J} \textmd{ where }
+\sum_{j=1}^J p_j = 1 \textmd{ and } \sum_{j=1}^J y_j = n.
+\]
+Taking into account the constraints we can also write this as
+\[
+\ell(\mb{p}|\mb{y}) = p_1^{y_1} \cdots p_{J-1}^{y_{J-1}} (1 - \sum_{k < J}
+p_k)^{n-\sum_{k<J} y_k}.
+\]
+
+The logistic transformation is
+\[
+p_j = \frac{e^\psi_j}{\sum_{j} e^{\psi_j}}.
+\]
+This is not uniquely identified.  If we set $\psi_J=0$ then this becomes
+identified and we can interpret $\psi_j$ as the log odds of $j$ against $J$,
+i.e.
+\[
+\psi_j = \log(p_j / p_J).
+\]
+When we model $\psi_j = \mb{x} \beta_j$ then we can interpret $\mb{x} \beta_j$ as the
+increase or decrease in the log odds over even odds, i.e. $\psi_j = 0, j=1,
+\ldots, J$.
+
+We want to sample from the posterior of $\beta$ using our PG trick and the
+method of Holmes and Held.  That is we want to sample $\psi_j | \psi_{-j},
+\omega_j$.  It will be easier to work here if we write the likelihood without
+invoking the constraints.  In particular, we know that
+\[
+\ell(\mb{p} | \mb{y}) \propto p_1^{y_1} \cdots p_J^{y_J}.
+\]
+Writing this in terms of the log-odds, the likelihood for $\psi$ is
+\[
+\ell(\psi | \mb{y}) \propto \prod_j \Big(\frac{e^{\psi_j}}{\sum_{k} e^{\psi_k}}
+\Big)^{y_j}.
+\]
+Conditioning on $\psi_{-j}$ (we implicitly condition on $\mb{y}$)
+\[
+\ell(\psi_j | \psi_{-j}) \propto 
+\Big(\frac{e^{\psi_j}}{\sum_{k} e^{\psi_k}} \Big)^{y_j}
+\Big(\frac{1}{\sum_k e^{\psi_k}} \Big)^{n-y_j}
+\]
+Letting $e^{c_j} = \sum_{k \neq j} e^{\psi_j}$ we have
+\begin{align*}
+\ell(\psi_j | \psi_{-j}) & \propto 
+\Big(\frac{e^{\psi_j}}{e^c_j + e^{\psi_j}} \Big)^{y_j}
+\Big(\frac{1}{e^{c_j} + e^{\psi_j}} \Big)^{n-y_j} \\
+& \propto
+\Big(\frac{e^{\psi_j - c_j}}{1 + e^{\psi_j - c_j}} \Big)^{y_j}
+\Big(\frac{1}{1 + e^{\psi_j-c_j}} \Big)^{n-y_j} \\
+& \propto
+\Big(\frac{e^{\eta_j}}{1 + e^{\eta_j}} \Big)^{y_j}
+\Big(\frac{1}{1 + e^{\eta_j}} \Big)^{n-y_j}.
+\end{align*}
+We recognize this as the likelihood found in logistic regression with binary
+outcome.  Incorporating an $i$ indicy for multiple observations, this becomes
+\[
+\ell(\psi_{ij} | \psi_{i,-j}) = 
+\prod_{i=1}^N
+\Big(\frac{e^{\eta_{ij}}}{1 + e^{\eta_{ij}}} \Big)^{y_{ij}}
+\Big(\frac{1}{1 + e^{\eta_{ij}}} \Big)^{n_i-y_{ij}}.
+\]
+where
+\[
+\eta_{ij} = \psi_{ij} - c_{ij} \; \textmd{ and } \; 
+e^{c_{ij}} = \sum_{k \neq j} e^{\psi_{ik}}.
+\]
+Now employing the PG trick we have
+\begin{align*}
+\ell(\psi_{ij} | \psi_{i,-j}) & \propto 
+\prod_{i=1}^N \Big( \frac{e^{\eta_{ij} y_{ij}/n_i}}{1 + e^{\eta_{ij}}} \Big)^{n_i} \\
+& \propto
+\prod_{i=1}^N \Big( \frac{e^{\eta_{ij} y_{ij}/n_i - \eta_{ij}/2}}{e^{-\eta_{ij}/2}
+  + e^{\eta_{ij}/2}} \Big)^{n_i} \\
+& \propto
+\prod_{i=1}^N e^{\kappa_{ij} \eta_{ij}} \cosh^{-n_i}(\eta_{ij}).
+\end{align*}
+where $\kappa_{ij} = (y_{ij}/n_i - 1/2) n_i$.  (Note: can be precomputed.)
+Now employing the PG trick we have
+\[
+\ell(\psi_{ij}, \omega_{ij} | \psi_{i,-j}) \propto
+\prod_{i=1}^N e^{\kappa_{ij} \eta_{ij}} e^{-\frac{\eta_{ij}^2}{2} \omega_{ij}}
+pg(\omega_{ij} | n_{i}, 0).
+\]
+Conditional upon $\omega_{ij}$,
+\begin{align*}
+\ell(\psi_{ij} | \psi_{i,-j}, \omega_{ij}) 
+& \propto
+\prod_{i=1}^N \exp \Big( \kappa_{ij} \eta_{ij} - \frac{1}{2} \eta_{ij}^2
+\omega_{ij} \Big) \\
+& \propto
+\exp \Big( \sum_{i=1}^N 
+\kappa_{ij} (x_i \beta_j - c_{ij}) - 
+\frac{1}{2} \omega_{ij} (x_i\beta_j - c_{ij})^2 \Big) \\
+& \propto
+\exp \Big( \frac{-1}{2} \sum_{i=1}^N -2 \kappa_{ij} (x_i \beta_j - c_{ij}) +
+\omega_{ij} (x_i \beta_j - c_{ij})^2 \Big)
+\end{align*}
+Expanding the quadratic term, we can wewrite the sum as
+\[
+\sum_{i=1}^N \omega_{ij} (x_i \beta_j)^2 - 2 (\kappa_{ij} + \omega_{ij} c_{ij})
+x_i \beta_j + \textmd{the rest}.
+\]
+which is
+\[
+\beta_j' X' \Omega_j X \beta_j - 2 (\kappa_{\cdot,j} + \Omega_j c_{\cdot, j}) X
+\beta_j + \textmd{the rest}.
+\]
+If we have a normal prior for $\beta_j$ we can now calculate the posterior in a
+conjugate way.
+
+Conditioning on $\psi_{ij}$ we have
+\begin{align*}
+\ell(\omega_{ij} | \psi_{ij}, \psi_{i,-j}) & \propto
+\prod_{i=1}^N e^{-\eta_{ij}^2/2 \omega_{ij}} pg(\omega_{ij} | n_i, 0) \\
+& = \prod_{i=1}^N pg(\omega_{ij} | n_i, \eta_{ij}).
+\end{align*}
+
+Thus to sample the posterior, we can employ Gibss and the following steps.
+\begin{algorithm}
+\begin{algorithmic}
+\State Assume $\tilde y$ is the \textbf{proportional} response data.
+\State Assume $\beta_J = 0$ for identification.
+\State $\kappa \leftarrow (\tilde y - 1/2) n$
+% \State $A \leftarrow \sum_{k \neq 1} \exp X \beta_{k}$.
+\Loop
+\For{$j = 1 \to J-1$}
+% \State Calculate $c_{ij} = \log \sum_{k \neq j} \exp(x_i \beta_k)$, that is
+% $c_{\cdot, j} \leftarrow \log A$.
+\State $c_{\cdot, j} \leftarrow \log \sum_{k \neq j} \exp(X \beta_k)$
+\State Let $\eta_{\cdot, j} = X \beta_j - c_{\cdot, j}$.
+\State Draw $\omega_{ij} \sim PG(n_i, \eta_{ij})$, $i = 1, \ldots, N$.
+\State Draw $\beta_j \sim N(m_{1j}, V_{1j})$ where
+\[
+\begin{cases}
+P_{1j} = P_{\ell j} + P_{0 j} \\
+V_{1j} = P_{1j}^{-1} \\
+m_{1j} = V_{1j} ( b_{\ell j} + P_{0 j} m_{0 j} ).
+\end{cases}
+\]
+% \State $A += \exp X \beta_j - \exp X \beta_{j+1 \mod J}$.
+\EndFor
+\EndLoop
+\end{algorithmic}
+\end{algorithm}
+
+%% \subsubsection*{Binary Trees}
+
+I need to look up what precisely polychotomous means.
+
+Note: James mentions that a problem with multinomial data is that it is may be
+perfectly seperable.  Intuitively, as you increase the number of categories,
+then it is easier to find a few points that may be isolated from the rest.
+Geometrically, I think this comes down to finding a way to split things by
+hyperplanes or something like that.  Anyway, something is weird about the
+likelihood in that case.  I think that there is a saddle or something in that
+case so that $\beta$ might go off to $\infty$ in one of its coordinates.  I'm
+not sure what it is.  I think this matters.  It is one thing for the likelihood
+to be flat.  It is another for it to grow.
+
+In any event, the multinomial logit is a problem for everyone.  In the PG case
+the Gibbs sampling of $\beta$ is a huge problem.
+
+\subsection*{EM}
+
+From Gelman's red book... We want to maximize the posterior mode of $\phi$.
+In addition we have another (auxillery) variable $\gamma$, which seems to ensure
+that one has convenient densities.  From probability calculus,
+\[
+p(\phi | y) = \frac{p(\gamma, \phi | y)}{p(\gamma | \phi, y)}.
+\]
+Taking the log of both sides one gets
+\[
+\log p(\phi | y) = \log p(\gamma, \phi | y) - \log p(\gamma | \phi, y).
+\]
+Taking the expectation of both over $\gamma$ using the density $p(\gamma |
+\phi^{old}, y)$ one has
+\[
+\log p(\phi | y) = \bbE_{old} [\log p(\gamma, \phi | y)] - \bbE_{old} [\log
+p(\gamma | \phi, y)].
+\]
+The key is that the last term of the right side, \( \bbE_{old} [\log p(\gamma |
+\phi, y)] \) is maximized over $\phi$ at $\phi = \phi^{old}$.  Thus if you
+choose any value, $\phi^*$, that increases the first term on the right hand
+side, \( \bbE_{old} [ \log p(\gamma, \phi | y) ], \), then you will have
+\[
+\log p(\phi^* | y) \geq \log p(\phi^{old} | y).
+\]
+One way to pick $\phi^*$: at each step
+\[
+\phi^* = \argmax{\phi} \bbE_{old} [\log p(\gamma, \phi | y)].
+\]
+Thus one can break this into two steps:
+\begin{enumerate}
+\item Expectation: $f(\phi | \phi^{old}) = \bbE_{old} [\log p(\gamma, \phi |
+  y)]$ where we are integrating over $p(\gamma | \phi^{old}, y) d\gamma$.
+\item Maximization: $\argmax{\phi} f(\phi | \phi^{old})$.
+\end{enumerate}
+When $p(\gamma, \phi | y)$ is an exponentially tilted version of some underlying
+distribution for $\gamma$ things are particularly convenient.  For intance, in
+our case we have ($z_i = x_i \beta$)
+\begin{align*}
+p(\beta, \omega | y) & = p(\beta | y) p(\omega | \beta, y) \\
+& \propto e^{u \beta} \prod_{i=0}^N \exp( -\frac{z_i^2}{2} w_i ) p_{PG(n,0)}(w_i).
+\end{align*}
+Taking the expectation of the log of the joint density we have
+\[
+C + u \beta + \sum_{i=0}^N -\frac{z_i^2}{2} w_i
+\]
+where $C$ does not depend on $\beta$.  If we let $w_i^\bbE = \bbE[w_i | p(w_i |
+z^{old}, y)] = \bbE[w_i | PG(n_i, z_i^{old})]$ then we want to maximize
+\[
+u \beta + \sum_{i=0}^N - \frac{z_i^2}{2} w_i^\bbE = u \beta - \frac{1}{2} \beta'
+(X' \Omega^\bbE X) \beta,
+\]
+for which we can complete the square to get
+\[
+C - \frac{1}{2} (\beta - m)' (X' \Omega^\bbE X) (\beta - m), \textmd{ where }
+(X' \Omega^\bbE X) m = u.
+\]
+
+Thus we want to calculate the expectation $\bbE[PG(w|n,z)]$.  We know from above
+that
+\[
+PG(n, z) = \frac{1}{4} J^*(n, z/2).
+\]
+We will use this connection to help construct our EM algorithm.  A key component
+of the algorithm is the first moment of $PG$, which we can derive from the first
+moment of $J^*$.  Let $\mcL(X)(\lambda) = \bbE[\exp(-\lambda X)]$ denote the
+``Laplace transform'' of $X$.  We will abuse notation and also use $\mcL$ for
+the Laplace transoform of a function.  Then we know from above that
+\[
+\bbE[ e^{-\lambda J^*} ] = \cosh(\sqrt{2\lambda}).
+\]
+Hence the Laplace transform of $J^*(1,z)$ is
+\begin{align*}
+\bbE[ e^{-\lambda J^*(1,z)} ]
+& = \cosh(z) \mcL(e^{-\frac{z^2}{2} w} p_{J^*}(w))(\lambda) \\
+& = \cosh(z) \mcL(p_{J^*})(\lambda + \frac{z^2}{2}) \\
+& = \cosh (z) / \cosh( \sqrt{2 \lambda + z^2} ).
+\end{align*}
+Immediately, we have that
+\[
+\bbE[e^{-\lambda J^*(n,z)}] = \frac{\cosh^n(z)}{\cosh^n(\sqrt{2\lambda+z^2})}.
+\]
+We also know that the moment generating function is related to the ``Laplace
+transform'' by
+\[
+MGF(X)(\lambda) = \mcL(X)(-\lambda).
+\]
+Further, we know that
+\[
+MGF[PG(n,z)](\lambda)
+= MGF[\frac{1}{4}J^*(n,z/2)](\lambda)
+= MGF[J^*(n,z/2)](\frac{\lambda}{4}).
+\]
+Thus to get the first moment of $J^*(n,z)$ we calculate
+\[
+\del_\lambda MGF[J^*(n,z)](0) = - \del_\lambda \mcL[J^*(n,z)] (-0).
+\]
+Differentiating we have
+\begin{align*}
+\del_\lambda \mcL[J^*(n,z)] & = \\
+ \cosh^n(z) 2 & \frac{1}{2} (2 \lambda + z^2)^{-1/2}
+    \sinh(\sqrt{2 \lambda + z^2})
+    (-n) \cosh^{-n-1} (\sqrt{2 \lambda + z^2}) \\
+& = -n \cosh^n(z) (2 \lambda + z^2)^{-1/2} \tanh(\sqrt{2 \lambda + z^2}) \cosh^{-n}(\sqrt{2
+  \lambda + z^2}) \\
+& = -n \Big(\frac{\cosh(z)}{\cosh(\sqrt{2\lambda+z^2})}\Big)^{n} (2 \lambda + z^2)^{-1/2} \tanh(\sqrt{2 \lambda + z^2}).
+\end{align*}
+Hence
+\[
+\del_\lambda MGF[J^*(n,z)](0) = n |z|^{-1} \tanh(|z|).
+\]
+Since
+\[
+\del_\lambda MGF[PG(n,z)](\cdot) = \frac{1}{4} \del_\lambda MFG[J^*(n,z/2)](\cdot/4)
+\]
+we have that
+\begin{align*}
+\del_\lambda MGF[PG(n,z)](0) & = \frac{n}{4} \frac{2}{|z|} \tanh(|z|/2) \\
+& = \frac{n}{2} \frac{\tanh(z/2)}{z}.
+\end{align*}
+
+\section{Expected number of iterations}
+
+Theorem 5.1 (p. 155) of Devroye can be used to calculate the expected number of
+iterations for the algorithm.  It relies upon Wald's equation, which can be
+found on p. 50 (Thm 3.5), i.e. section 3.4.  The introduction to that section
+explains things well.  Imagine a rejection-like algorithm.  Each time you make a
+proposal and then check it you generate a vector of random variables, $W_i =
+(X_i, Y_i)$.  It may be the case that $W_i$ has more than two random variables.
+The $W_i$ are iid.  Furthermore, there is some stopping rule $N$, which I assume
+is the same thing as a stopping time and there is some function which maps $W_i$
+to some quantity of interest $\psi(W_i)$, such as the number of floating point
+operations, the number of if statements evaluated, or the number of terms
+evaluted in a partial sum.  We know that $N$ is a stopping time because, as
+pointed out by Devroye, since $P(N=n)$ is determined by $W_1, \ldots, W_n$
+residing in some set $B_n$.  Thus $N = n$ is $\mcF_n$-measurable.  Wald's
+theorem tells us how to calculate the \emph{total} expected number of whatever
+we are interested in, i.e. the expected value of
+\[
+\sum_{i=1}^N \psi(W_i).
+\]
+Given the above assumptions, Wald's theorem says that
+\[
+\bbE \Big[ \sum_{i=1}^N \psi(W_i) \Big] = E(N) E(\psi(W_1)).
+\]
+The proof is succinct.  The key is to recognize that (let $Z_i = \psi(W_i)$)
+$Z_i$ and $\bbI \{N \geq i\}$ are independent for all $i$ as $Z_i$ and $\bbI \{N
+< i\}$ are independent.
+
+Devroye's theorem 5.1 is a bit short on detail.  Since I am used to thinking in
+terms of the partial sums without the proposal factored out, I will phrase
+things in an alternate manner.  The theorems says: Suppose $f$ can be
+represented as an alternating sum
+\[
+f(x) = \sum_{i=0}^\infty (-1)^i a_i(x)
+\]
+where $a_i(x)$ is positive and decreasing in $i$ for all $x$ and that the
+proposal you will use is $g(x) \propto a_0(x)$.  Let $N$ be the number of
+``outer-loop'' iterations in the alternating sum algorithm, that is the total
+number of times you make a proposal, and let $Z_i = \psi(X_i, Y_i)$ be the total
+number of inner-loop interations, that is the the total number of times you
+compare $Y_i$ to $S_n(X_i)$.  Then
+\[
+\bbE(N) = \int_0^\infty \sum_{i=0}^\infty a_i(x) dx.
+\]
+
+One can see this by an application of Wald's equation.  Consider the following:
+When following the alternating sum algorithm one proposes $X \sim g$, generates
+$Y \sim \mcU(0, cg(X))$, and then check $Y \leq f(X)$ by iterating through the
+partial sums.  We can calculate the probability that $Y$ will be
+accpeted/rejected on the $i$th iteration by checking that $Y \in (S_{i-2}, S_i]$
+if $i$ is odd (with the convention that $S_{-1} = 0$) and that $Y
+\in (S_i, S_{i-2}]$ if $i$ is even.  Given $X$, this probability is just the
+length of that interval divided by $S_0 = a_0$ as seen in the figure below.
+\begin{center}
+\includegraphics[scale=0.75]{expected_iterations.png}
+\end{center}
+Further more
+\[
+a_{i-1} - a_{i} = 
+\begin{cases}
+S_{i} - S_{i-2}, & \text{$i$ is even} \\
+S_{i-2} - S_i, & \text{$i$ is odd}
+\end{cases}
+\]
+Thus the probability on getting out of the inner loop on iteration $i$ given $X=x$
+is
+\[
+P(Z = i | X = x) = \frac{a_{i-1}(x) - a_i(x)}{a_0(x)}
+\]
+where $Z = \psi(X, Y)$.  And hence the expected value of
+getting out of the inner loop when $X=x$ is
+\[
+\frac{1}{a_0} \sum_{i=1}^\infty i (a_{i-1} - a_i) = \frac{1}{a_0(x)}
+\sum_{i=0}^\infty a_i.
+\]
+Wald's theorem then tells us that
+\begin{align*}
+\bbE \Big[ \sum_{i=1}^N \psi(W_i) \Big] 
+& = \bbE(N) \bbE(\psi(W_1)) \\
+& = \bbE(N) \bbE( \bbE(\psi(W_1)|X_1) ).
+\end{align*}
+Since $\bbE(N) = c$ we have that this product is
+\[
+c \int_{0}^\infty \Big[ \frac{1}{a_0(x)} \sum_{i=0}^\infty a_i(x) \Big] g(x) dx
+= \int_{0}^\infty \sum_{i=0}^\infty a_i(x) dx.
+\]
+
+We may interchange the sum and the integral by the MCT.  We can calculate each
+integral analytically as the piecewise definition of $a_i$ is composed of the
+exponential kernel and the inverse Gaussian kernel.  For the exponential kernel
+we have (letting $r_n = a_n \bbI \{x > t\}$)
+\[
+r_n(x) = \cosh(z) \pi \Big(n + \frac{1}{2}\Big) 
+\exp \Big\{ -\frac{x}{2} \Big( z^2 + (n+1/2)^2 \pi^2 \Big) \Big\}.
+\]
+And for the inverse Gaussian kernel
+\[
+\cosh(z)
+\pi (n+\frac{1}{2}) \Big(\frac{2}{\pi x}\Big)^{3/2}
+  \exp \Big\{ - \Big( \frac{z^2}{2} x + \frac{(2n+1)^2}{2x} \Big) \Big\},
+\]
+we may rearrange the term in the exponent
+\begin{align*}
+- \frac{z^2}{2}x - \frac{(2n + 1)^2}{2x}
+& = -\frac{z^2}{2x} \Big( x^2 + \mu_n^2 \Big), \; \mu_n^2 = (2n+1)^2 / z^2
+\\
+& = \frac{-z^2}{2x} \Big( x^2 - 2 \mu_n x + \mu_n^2 + 2 \mu_n x \Big) \\
+& = -z^2 \mu_n - \frac{\lambda_n}{2x \mu_n^2} (x - \mu_n)^2, \; \lambda_n =
+(2n+1)^2.
+\end{align*}
+Thus we are left with an inverse Gaussian kernel (letting $\ell_n = a_n \bbI \{x
+< t\}$)
+\[
+\ell_n(x) = 
+\cosh(z) \pi (n + 1/2) \Big(\frac{2}{\pi}\Big)^{3/2} \exp(-z (2n+1))
+\Big(\frac{1}{x}\Big)^{3/2}
+\exp \Big\{ -\frac{\lambda_n}{2x\mu_n^2}(x-\mu_n)^2 \Big\}.
+\]
+which becomes
+% \[
+% \cosh(z) \pi \big(n + \frac{1}{2}) \exp(-z(2n+1))
+% \Big(\frac{2}{\pi}\Big)^{3/2} \Big(\frac{\lambda}{2\pi}\Big)^{-1/2}
+% \Big(\frac{\lambda}{2\pi}\Big)^{1/2} \Big(\frac{1}{x}\Big)^{3/2}
+% \exp \Big\{ -\frac{\lambda_n}{2x\mu_n^2}(x-\mu_n)^2 \Big\}.
+% \]
+\[
+2 \cosh(z) \exp(-z(2n+1))
+\Big(\frac{\lambda}{2 \pi x^3}\Big)^{1/2} 
+\exp \Big\{ -\frac{\lambda_n}{2x\mu_n^2}(x-\mu_n)^2 \Big\}.
+\]
+Closed form antiderivatives exists for both components.  We can use that to
+calculate the average number of iterations given $x$.
+
+I found that 
+\[
+\bbE \Big[\sum_{i=1}^N \psi(W_i) \Big]
+\]
+around $1.0014$ using empirical methods and $1.0016$ using analytical methods
+when $z = 1.37$.  The discrepency may be due to an error on my part or some sort
+of numerical accumulation.
+
+\subsection{Distribution of inner-loop iterations}
+
+The argument above shows how to compute $P(Z = j | X = x)$ thus one can also
+calculate
+\[
+P(Z = j) = \int_{0}^\infty P(Z = j | X = x) g(x) dx,
+\]
+the expected probability that $Z = j$, which one can compute using the kernels
+above.  In particular
+\[
+\int_{0}^\infty P(Z = j | X = x) g(x) dx = \int_0^\infty \frac{a_{j-1}(x) -
+  a_j(x)}{c} dx
+\]
+where $c = \int_0^\infty a_0(x)$ is our normalizing constant.  Once we have the
+integrals above we can calculate this via
+\[
+\frac{1}{c} \Big[ \int_0^\infty a_{j-1}(x) dx - \int_0^\infty  a_j(x) dx \Big].
+\]
+Doing this I found the first 4 probabilties to be (rouding to the 10th decimal
+place) 0.9991977085, 0.0008022898, 0.0000000017, 0.0000000000.  This is kind
+of absurd.
+
+% (I think) We could also let $\psi$ map $(X,Y)$ to the probability mass
+% function of $Z$ given $X$.  I need to think more about that.
+
+\section{EM Warning}
+
+When using the spambase dataset I run into problems.  In particular, I get okay
+results when I look at the data up till \texttt{word.freq.hp}.  When I include
+that variable then things go astray.
+
+Trying to figure out what is going on, I found out that while
+\texttt{word.freq.hp} is usually very small, $x_{i^*} = 20$ for $i^*=2552$.
+Then $psi_{i^*} = -72$, which is large, causing $w_{i^*}$ to be small.  This in
+turn affects $beta$, which in turn affects $\psi$.  Thus a feedback loop is
+created which diverges.
+
+The generalized linear model command uses an iteratively reweighted least
+squares (IRLS) method, which according to what I read, can handle outliers.
+Thus that method actually produces sensible coefficients, while the EM algorithm
+returns non-sense (or breaks).
+
+Another potential problem, when I start the EM algorithm at the MLE estimate
+than I move to values that decrease the log-likelihood.  This is unsatisfying
+because we want to maximize the log-likilihood, i.e the posterior mode (since I
+am using a constant prior inthis case example).
+
+UPDATE: If we write the likelihood as
+\[
+e^{u\beta} \prod_{i=0}^N \cosh^{-n_i}(z_i/2)
+\]
+then the log-likelihood is
+\[
+u \beta - \sum_{i=0}^N n_i \log \cosh (z_i/2).
+\]
+The first partial derivative of the log-likelihood is
+\[
+\del_j llh = u_j - \sum_{i=0}^N n_i \tanh(x_i \beta/2) \frac{x_{ij}}{2}
+\]
+and the second partial derivative is
+\[
+\del_k \del_j llh = - \sum_{i=0}^N \frac{n_i}{4} \cosh^{-2}(x_i \beta/2) x_{ij} x_{ik},
+\]
+which is certainly non-negative definite.
+
+\section{Random Notes}
+
+Factrs for FS\&F:
+\begin{outline}
+
+\;
+
+\1 She says this is based on \cite{scott-2004} and \cite{mcfadden-1974}, which
+is actually a representation for multinomial.  (I think my Scott reference may
+have been a technical paper in 2004, but wasn't published until 2011.  Or maybe
+I have the reference wrong.)
+
+\1 The type I extreme value distribution has density
+\[
+\frac{1}{\sigma} t(y) \exp (-t(y)) \; \text{ where } \;
+t(y) = \exp \Big(-\frac{y-\mu}{\sigma} \Big).
+\]
+
+\1 A ``standard'' EV(I) random variable $Y$ is a standard exponential random variable
+$X$ by the transformation $x = \exp(-y) \iff y = - \ln(x)$.
+
+Since $dx = e^{-y} dy$ we have
+\[
+\exp(-e^{-y}) e^{-y} dy = \exp(-x) dx.
+\]
+
+\1 This affects the auxiliary representation in that
+\[
+y_{iu} > y_{i0} \iff e^{y_{iu}} > e^{y_{i0}} \iff e^{-y_{i0}} > e^{-y_{iu}} \iff
+x_{i0} > x_{iu}.
+\]
+
+FS\&F use this fact for Gibbs sampling.
+
+\1 The ratio of independent exponential has PDF $(1+x)^{-2}$ and CDF $1 -
+(1+x)^{-1}$ or $x / (1+x)$.  
+
+You can see that this is the logistic distribution by letting $x = e^z$.  Thus,
+a difference of independent standard EV(I) distributions is standard logistic:
+\[
+P(x_0 / x_1 < e^{\alpha}) = P(-y_{0} + y_{1} < \alpha).
+\]
+
+\1 Doing an Albert and Chib type thing, we have
+\[
+\begin{cases}
+y_i = \one \{z_i > 0 \} \\
+z_i = \psi_i + \text{Lo}(0,1).
+\end{cases}
+\]
+Then we can let
+\[
+\text{Lo}(0,1) = \ep_{iu} - \ep_{i0} \; \text{ where } \ep_{ij} \sim EV(I)
+\]
+to get
+\[
+z_i = \psi_i + \ep_{iu} - \ep_{i0}.
+\]
+
+\1 The pdf for the logistic distribution is
+\[
+\frac{e^x}{(1+e^x)^2} = \cosh^{-2}(x/2).
+\]
+This comes up for HH.
+
+In the PG representation we have
+\[
+\frac{e^{x/2}}{1+e^x} = 2 \cosh^{-1}(x/2).
+\]
+What distribution is this?  Also, consider Andrews and Mallows for a moment.
+This can be written as a normal scale of mixtures, if it satisfies the totally
+monotone (or whatever) property.  (Update)  This distribution is related to the
+Cauchy distribution.  Let $y = e^{x/2}$ then $dy = 0.5 e^{x/2} dx$.  Hence
+\[
+\frac{1}{2} \frac{e^{x/2}}{1+e^x} dx = \frac{1}{1+y^2} dy.
+\]
+Hence
+\[
+\frac{1}{2 \pi} \frac{e^{x/2}}{1+e^x} dx = \frac{1}{\pi} \frac{1}{1+y^2} dy.
+\]
+Thus if $y$ is Cauchy then $x = 2 \ln (2y)$ comes from our distribution above.
+But his is only for $y > 0$.  Really we want $y \in \bbR$.  Thus we should have
+$x = 2 \ln (2 |y|)$.  But we now need to take into account the non-injective
+nature of the transformation.  Let's be more careful.
+
+Suppose $z = \ln y$ and $y$ is Cauchy.  Then
+\[
+\frac{1}{\pi} \frac{1}{1+y^2} dy = \frac{1}{\pi} \frac{y}{1+y^2} \frac{dy}{y},
+\; y \in (0, \infty).
+\]
+This is equal to
+\[
+\frac{1}{\pi} \frac{e^z}{1+e^{2z}} dz.
+\]
+If we let $z = \ln |y|$ then we get the same thing.  But this isn't an injective
+function.
+
+Integrating over $y \in (0, \infty)$ we only have half the mass of the Cauchy
+distribution.  Hence we need a normalizing constant of $1/2$ for $z$.  Thus the
+density in $z$ must be
+\[
+\frac{2}{\pi} \frac{e^z}{1+e^{2z}} dz,
+\]
+which is
+\[
+\frac{1}{\pi} \cosh^{-1}(z) dz.
+\]
+Letting $x = 2z$ we have $dx = 2 dz$ and hence
+\[
+\frac{1}{\pi} \frac{e^{x/2}}{1+e^{x}} dx.
+\]
+
+However, Nick and James have shown, really, that for Gibbs sampling you do not
+want to find a mixture of normals along those lines, but rather you want to use
+some sort of integral transformation.  This lets you ignore the normaization
+term in the normal.
+
+Can we use mixture theory from Polson and Scott for infinite sum representation?
+
+By Laplace transform
+\[
+\frac{1}{1+x^2} = \int_0^\infty e^{-xz} \sin(z) dz.
+\]
+
+
+
+\end{outline}
+
+\section{A note on priors}
+
+I think this must be known, though I don't recall encountering it.  The
+transformation we have is essentially
+\[
+p = \frac{1}{1 + e^{\psi}} \; \text{ where } \psi = x \beta.
+\]
+According to my simulations, as the prior for $\beta$ becomes more vague the
+distribution of $p$ approaches point mass mixture at 0 and 1.  In other words,
+the implicit prior on $p$ is that it is with certainty either 0 or 1.  Actually,
+this can't be right.  If it were, then your likelihood couldn't do anything.  I
+wonder a uniform prior on $\psi$ produces a binomial prior for $p$.
+
+When $p$ is uniform, then $\psi$ is logistic with cdf $\frac{1}{1+e^{-x}}$ and
+density
+\[
+2^{-2} \cosh^{-2}(x/2) dx.
+\]
+
+\section{Accept/Reject}
+
+How do you generate from $f$?  You could generate uniformly over $A = \{ (y,u) :
+0 \leq u \leq f(y) \}$ and the marginalize out $u$.  How can you generate from
+that though.  Well you could generate uniformly over a set $B$ that had $A
+\subset B$ and then simply keep those samples that were in $A$.  So how can you
+generate $B$?  Pick a distribution that is easy to sample from and for which
+there is $c$ such that $f < cg$ everywhere, i.e. the best $c$ is
+$\|f/g|_\infty$.  Generate $x \sim g$ and $u \sim \mcU(0, cg(x))$ and you have a
+sample that is uniform over $\{(x,u) : 0 \leq u \leq cg(x) \}$, which is
+precisly what we are looking for.  Save the sample as $y$ only if $u < f(x)$ and
+you will have a uniform draw from $A$.
+
+\includegraphics[scale=0.75]{accept-reject.png}
+
+Suppose for the moment one is doing accept/reject sampling with target density
+$f(x)$ and proposal $g(x)$, that $k_f(x)$ and $k_g(x)$ are the kernels of the
+respective densities, and that $\alpha \geq a(x) = k_f(x) / k_g(x)$ for all $x$.
+Then one may sample $f$ by proposing $X \sim g$ until $U \sim \mcU(0, \alpha
+k_g(X))$ has $U \leq k_f(X)$.  Then the probability of accepting a proposal is
+\[
+\bbE[ \bbE[\one \{U \leq k_f(X)\} | X] ] = \bbE \Big[ \frac{k_f(X)}{\alpha
+  k_g(X)} \Big] = \int \frac{k_f(X) / c_f}{\alpha k_g(X)/c_g}
+\frac{c_f}{g(x)}{c_g} dx = \frac{c_f}{\alpha c_g}
+\]
+where $c_f$ and $c_g$ are the normalizing constants of the kernels.
+
+Alternatively, we have that probability of accepting a proposal is
+\[
+\int \frac{k_f(x)}{\alpha k_g(x)} g(x) dx = \int \frac{a(x)}{\alpha} g(x) dx.
+\]
+
+\section{Inverse Gaussian}
+
+I spent way too long trying to figure this out, eventually had to look at a
+paper (Shuster, 1968) and even then it wasn't clear.  Both Devroye and Shuster
+say this is trivial.  I'm not sure how this is trial--this is the second time I
+tried to figure this out (I had forgot the first until I looked at Shuster's
+paper).
+
+Recall the inverse Gaussian distribution
+\[
+f(x) = \Big( \frac{\lambda}{2 \pi x^3} \Big)^{1/2} 
+\exp \Big[ - \frac{\lambda(x-\mu)^2}{2 \mu^2 x} \Big].
+\]
+
+Shuster breaks things into two pieces. First he says transform to $Y = \min(X,
+\mu^2 / X)$.  This ensures that $Y \in (0, \mu)$ and makes the next step
+easier.  The second transform is $Z = \frac{\lambda (x-\mu)^2}{\mu^2 x}$.
+
+Refering to p. 53 of Casella and berger we know that
+\[
+f_Y(y) = \sum_{i=1}^k f_X(g_i^{-1}(y)) |\frac{d}{dy} g_i^{-1}(y)|.
+\]
+The two pieces we have are
+\[
+h_1(y) = g_1^{-1}(y) = y, \; 0 < x < \mu
+\]
+and
+\[
+h_2(y) = g_2^{-1}(y) = \frac{\mu^2}{y}, \; x > \mu.
+\]
+Calculating the Jacobians etc. we have the density for $Y$ is
+\[
+\Big( \frac{\lambda}{2 \pi} \Big)^{1/2} 
+\exp \Big( -\frac{1}{2} \frac{\lambda (y - \mu)^2}{\mu^2 y} \Big)
+\Big[ \frac{1}{y^{3/2}} + \frac{1}{\mu y^{1/2}} \Big] dy, \; y \in (0, \mu).
+\]
+as
+\[
+dx = dy \text{ for } h_1
+\]
+and
+\[
+dx = \mu^2 dy / y^2 \text{ for } h_2.
+\]
+Since
+\[
+z = \frac{\lambda}{\mu^2} \Big( \frac{(y-\mu)^2}{y} \Big)
+\]
+we have
+\begin{align*}
+\frac{dz}{dy} 
+& = \frac{\lambda}{\mu^2} \Big(1 - \mu^2 / y^2) \\
+& = \frac{\lambda}{\mu^2} \Big(\frac{y^2 - \mu^2}{y^2}\Big) \\
+& = \frac{\lambda}{\mu^2} \Big(\frac{y - \mu}{y}\Big) \Big(\frac{y +
+  \mu}{y}\Big) \\
+& = \frac{\lambda^{1/2}}{\mu} \Big(\frac{y - \mu}{y^{1/2}}\Big)
+\frac{\lambda^{1/2} (y + \mu)}{\mu y^{3/2}} \\
+& = z^{1/2} \frac{\lambda^{1/2} (y + \mu)}{\mu y^{3/2}} .
+\end{align*}
+But the latter term is
+\[
+\lambda^{1/2} \Big[ \frac{1}{y^{3/2}} + \frac{1}{\mu y^{1/2}} \Big].
+\]
+Thus we get
+\[
+\frac{dz}{z^{1/2}} = \lambda^{1/2} \Big[ \frac{1}{y^{3/2}} + \frac{1}{\mu
+  y^{1/2}} \Big] dy
+\]
+and the density for $z$ is thus
+\[
+\frac{1}{(2\pi)^{1/2}} z^{-1/2} \exp(-z/2) dz.
+\]
+This is only clear by following that route with $dz/dy$.  I tried writing out
+$dy = stuff(z) dz$ and it did not work well.
+
+Of course, you work backwards to sample $X$.
+
+\section{Negative Binomial}
+
+If $y \sim NB(p, d)$ is negative binomial (this isn't necessarily the usual
+parameterization) then $y$ represents the number of successes before there are
+$d$ failures where $p$ is the probability of success.  The pdf is
+\[
+{y+d-1 \choose y} (1-p)^d p^y.
+\]
+(Note ${y+d-1 \choose y} = {y+d-1 \choose d-1}$.)  The first two moments are
+$\bbE[y] = \frac{pd}{1-p}$ and $\Var[y] = \frac{pd}{(1-p)^2}$.  Further we can
+write the negative binomial distribution as a mixture
+\[
+\begin{cases}
+y \sim \Pois(\lambda) \\
+\lambda \sim \Ga(d, \text{scale}=\alpha), & \alpha = \frac{p}{1-p}.
+\end{cases}
+\]
+In this case, $\bbE[y] = \mu = d \alpha$ and $\Var[y] = \mu / (1-p)$ so that
+\[
+\Var[y] = \mu + \mu \alpha = \mu + \mu^2 / d.
+\]
+
+Suppose now that we want $y_i \sim \NB$ where $\mu_i = x_i \beta$ and
+\[
+\bbE[y_i] = \mu_i \text{ and } \Var[y_i] = \mu_i + \mu_i^2 / d_i.
+\]
+Nelder and Mead have $\Var(y_i) = \mu_i \sigma_i^2$ in which case $\sigma_i^2 =
+1 + \alpha_i$.  Then $\alpha_i = \mu_i / d_i$, $\psi_i = \log(\alpha_i)$, $p_i =
+\frac{\alpha_i}{1+\alpha_i}$.  Hence we can go between the parameters $(\mu_i,
+d_i)$ and $(p_i, d_i)$ by these transformations.  Here $\psi_i$ is the log odds.
+I believe it is traditional to model $\mu_i$ as $\exp(x_i \beta)$ in which case
+\[
+x_i \beta = \log(\mu_i) = \log(\alpha_i) + \log(d_i) = \psi_i + \log(d_i).
+\]
+So the likelhood for a single term is
+\begin{align*}
+{y_i+d_i-1 \choose y_i} (1-p_i)^{d_i} p_i^{y_i} 
+& = {y_i+d_i-1 \choose y_i} \Big( \frac{e^{\psi_i}}{1+e^{\psi_i}} \Big)^{y_i} \Big(
+  \frac{1}{1+e^{\psi_i}} \Big)^{d_i} \\
+& = {y_i+d_i-1 \choose y_i} \frac{e^{\psi_i y_i}}{(1+e^{\psi_i y_i})^{y_i + d_i}}
+\end{align*}
+Of course, we could also model $\psi_i = x_i \beta$.  When $d_i =d$ for all $i$
+these are related by a linear change of variables (assuming we are including an
+intercept).  The forecasts should be the same I think, regardless.  Right?  What
+about identifiability?  If we model $\psi_i = x_i \beta$ then $\mu_i = x_i \beta
++ d_i$.  This isn't exactly the same.  However, there is nothing to stop us from
+putting $\psi_i = x_i \beta - \log d_i$ into our PG step.  In which case we
+would be doing traditional NB regression.  Nelder and Mead mention $\mu =
+\mu(\beta)$ so that must be the usual (p. 132).
+
+FSF use the formulation
+\[
+\begin{cases}
+y_i \sim \Pois(\lambda_i) \\
+\lambda_i \sim \Ga(\rho, \lambda_i^u \rho).
+\end{cases}
+\]
+You can see a slight alteration of that method in the DynLogit notes.  Instead
+of following FSF exactly, just take the decomposition we started with
+\[
+\begin{cases}
+y_i \sim \Pois(\lambda_i) \\
+\lambda_i \sim \Ga(d_i, \text{scale}=\alpha_i), & \alpha_i = \frac{p_i}{1-p_i}.
+\end{cases}
+\]
+Then
+\[
+\log \lambda_i = \log (\alpha_i) + \log( \Ga(d_i, 1) ).
+\]
+If we have $\psi_i = \log (\alpha_i)$ and $x_i \beta - \log(d_i) = \psi_i$ then
+this becomes
+\[
+\log \lambda_i = x_i \beta - \log(d_i) + \log (\Ga(d_i, 1)).
+\]
+And now we can use the mixture trick.  In that case our Gibbs sampler is
+\begin{enumerate}
+\item Sample $p(r, \lambda, d | y, \alpha)$:
+
+  \begin{enumerate} 
+
+  \item Sample $p(d | y, \alpha = e^{\psi})$, which we can do by NB lh and MH.
+    Notice this is not conditional on $\lambda$.
+
+  \item Then we can sample $p(\lambda | d, y, \alpha)$.
+
+  This gives us a joint draw $p(\lambda, d | y, \alpha)$.
+
+  \item Then sample $p(r | \lambda, d, y, \alpha)$
+
+  This gives us a joint draw $p(r, \lambda, d | y, \alpha)$.
+
+  \end{enumerate}
+
+\item Sample $p(\beta | y, r, \lambda, d)$.
+\end{enumerate}
+
+I need to think more about $r$.  Suppose for the momment that $d_i = d$ for all
+$i$.  I think this is reasonable.  First, we can compare the two methods by just
+fixing $d$, I think that is reasonable since they each lose the same MH step.
+Okay, instead, suppose $d$ is unknown.  Then $r$ depends on $d$ in the sense
+that we know the distribution of $r_i | d$.  We have not written down the
+distribution for $r_i$ marginally.  I think we want the dimension of $r$ to be
+the same in each instance, e.g. we should use all six component mixtures.  Maybe
+it is okay not to do that on the grounds that we can set some of the weights to
+$0$ to ``pad out'' r so that it has the proper number of components.  But if $d$
+is fixed over $i$ our current routine should work alright I think, though the
+above principle needs to be kept in mind.  The marginal distribution of $r$ is
+rather weird.
+
+I believe FSF may use $-\log(\Ga(d,1))$ so I need to reverse the mean values for
+their normal mixture.
+
+\subsection{Gibbs Sampling - PG}
+
+From above
+\[
+\ell(\beta | y, d) = \prod_{i=1}^n \frac{e^{\psi_i y_i}}{(1+e^{\psi_i y_i})^{y_i + d_i}}
+\]
+where $\psi_i = \log(\alpha_i)$.  Extracting a single term this becomes
+\[
+e^{\psi_i (y_i - (y_i + d_i)/2)} 2^{-(y_i + d_i) } \cosh^{-(y_i+d_i)}(\psi_i / 2)
+\]
+which becomes
+\[
+\propto e^{\psi_i \kappa_i} e^{-\omega_i \psi_i^2 / 2} p(\omega_i | y_i + d_i).
+\]
+so that
+\[
+\propto \exp \Big\{ (\zeta_i - m_i) \kappa_i  - \frac{(\zeta_i - m_i)^2}{2}
+\omega_i \Big\} p(\omega_i | y_i + d_i)
+\]
+where $\zeta_i = x_i \beta$ and $m_i = \log(d_i)$.  We are going to assume $d_i =
+d$ for all $i$.  Reconstituting the product and then summing within the exponent
+we have (for the exponent)
+\[
+\kappa' (X \beta - m) - \frac{1}{2} (X \beta - m)' \Omega (X \beta - m).
+\]
+which becomes
+\[
+\kappa' X \beta - \frac{1}{2} \Big( \beta' X' \Omega X \beta - 2 \beta' X'
+\Omega m + m' \Omega m \Big).
+\]
+Thus we have llh precision $X' \Omega X$ and
+\[
+a_\ell' = (m' \Omega X + \kappa' X) \implies a_\ell = (X' \kappa + X' \Omega m) .
+\]
+Thus if we have a normal prior with mean $b_0$ and precision $P_0$ then the
+posterior precisions is
+\[
+P_N = X' \Omega X + P_0
+\]
+and mean
+\[
+m_N = P_N^{-1} (a_\ell + P_0 b_0).
+\]
+The posterior $\omega | \beta, y, d$ is 
+\[
+\prod_{i=1}^n \PG(\psi_i,  y_i + d).
+\]
+
+We still need to explain how to sample from $(d | \beta, y)$.
+
+So in the Gibbs sampler we will do
+
+\begin{enumerate}
+\item Sample $p(d | \beta, y)$ and then $p(\omega | d, \beta, y)$ to get the
+  joint draw $p(d, \omega | \beta, y)$.
+\item Sample $p(\beta | \beta, d, y)$.
+\end{enumerate}
+
+\subsection{Gibbs Sampling - FSF}
+
+Recall we have
+\[
+\begin{cases}
+y_i \sim \Pois(\lambda_i) \\
+\lambda_i \sim \alpha_i \Ga(d_i, \text{scale}=1).
+\end{cases}
+\]
+We have $x_i \beta = \zeta_i = \log(\mu_i) = \log(\alpha_i) + \log(d_i) = \psi_i
++ \log(d_i)$.
+
+\begin{outline}
+
+\1 As explained above, we sample the joint $p(d, \lambda, r | y, \alpha)$:
+
+\2 We will sample $p(d | y, \alpha)$ using MH. 
+
+\2 To sample $(\lambda | d, y, \alpha)$, we have conditional independence and
+\[
+y_i \sim \Pois(\lambda_i) \text{ and } \lambda_i \sim \Ga(d, \alpha_i).
+\]
+Thus the posterior is
+\[
+\propto e^{-\lambda} \frac{\lambda^y}{y!} \; \frac{\lambda^{d-1}}{\alpha^k} e^{-\lambda / \alpha} 
+\]
+which is
+\[
+\propto \lambda^{y+d-1} e^{-\lambda (1 + 1/\alpha)} \sim \Ga(y + d, \text{scale}=\frac{\alpha}{1+\alpha}).
+\]
+Thus the posterior is $\Ga(y_i + d_i,
+\text{scale}=\frac{\alpha_i}{1+\alpha_i})$.
+
+\2 To sample $(r | \lambda, d, y, \alpha)$ we use $\lambda_i \sim \alpha_i
+  \Ga(d_i, 1)$
+\[
+\log(\lambda_i) = \log(\alpha_i) + \log(\Ga(d, 1))
+\]
+\[
+-\log(\lambda_i) = -\log(\alpha_i) + \ep_i, \; \ep_i \sim N(m_{r_i(d)}, v_{r_i(d)}).
+\]
+Thus let $res_i = \log(\alpha_i) - \log(\lambda_i)$.  Then use the usual
+posterior.
+
+Looking at Nelder and mean it appears that the parmeter that is used is $\phi_i
+= 1 / \alpha_i$, which is related to the odds of failure, I think.  Their
+mixture representation is for negative log gamma I think.
+
+\1 To sample $p(\beta | y, d, r, \lambda)$ we have 
+\[
+\log \lambda_i = x_i \beta - \log d_i - \ep_i, \; \ep_i \sim N(m_{r_i(d)}, v_{r_i(d)}).
+\]
+so
+\[
+\log \lambda_i + \log d_i = x_i \beta - \ep_i, \; \ep_i \sim N(m_{r_i(d)}, v_{r_i(d)}).
+\]
+
+\end{outline}
+
+\subsection{MH stop for $d$}
+
+For the moment, assume that $d$ is a natural number.
+
+The conditional density for y is
+\[
+\frac{(y_i+d-1)!}{(d-1)! y_i!} (1-p_i)^d p_i^{y_i}.
+\]
+The liklihood for $d$ is then
+\[
+\prod_{i} \frac{(y_i+d-1)!}{(d-1)!} (1-p_i)^d = \prod_i (1-p_i)^d \prod_{j=0}^{d-1} (y_i+ j).
+\]
+Thus the log-liklihood is
+\[
+f(d) = \sum_{i} \sum_{j=0}^{y_i-1} \log (d + j) + d \sum_i \log(1-p_i).
+\]
+Let $\alpha = \sum \log(1-p_i)$.  Take the first term.  We can write
+\[
+\sum_{i} \sum_{k=1}^{\max(y_i)} \sum_{j=0}^{k-1} \log(d+j) \one \{y_i = k\}
+\]
+which becomes
+\[
+\sum_{k=1}^{\max(y_i)} n_k \sum_{j=0}^{k-1} \log(d+j)
+\]
+where $n_k = \{ \# y_i = k \}$.  We have thus
+\begin{align*}
+\sum_{k=1}^{\max(y_i)} \sum_{j=0}^{\max(y_i)-1} n_k \log(d+j) \one\{j < k\}
+& = 
+\sum_{j=0}^{\max(y_i)-1} \log(d+j) \sum_{k=j+1}^{\max(y_i)} n_k \\
+& = \sum_{j=0}^{\max(y_i)-1} \log(d+j) G_j
+\end{align*}
+where $G_j = \{ \# y_i > j \}$.  We can preprocess $G$!  Thus it shouldn't be
+too much work to optimize $\texttt{sum}(\log(d+0:(M-1)) * G)$ over $d$.  That
+will give us a mean and variance and then we can use a ? proposal.  (Actually,
+it is harder than that.  We need to use a proposal that generates a Markov chain
+that will traverse the space and have the proper stationary distribution.
+Initially, I thought about just using a normal proposal, but we need to keep
+things discrete and that walk the entire space.  See below for options.)  Notice
+that $1-G_j = F(j) = \{\# y_i \leq j\}$.
+
+We must deal with something.  If we were using the model $\psi_i = x_i \beta$,
+then we would be good to go.  BUT! we are using $\phi_i = x_i \beta$ and $\mu_i
+= e^{\phi_i}$.  We know that
+\[
+\mu_i = d \alpha_i, \; \text{ where } \alpha_i = \frac{p_i}{1-p_i};
+\]
+Thus
+\[
+\phi_i = \log(\mu_i) = \log(d) + \psi_i
+\]
+along with
+\[
+p_i = \frac{e^{\psi_i}}{1 + e^{\psi_i}}
+\]
+yield
+\[
+p_i = \frac{\mu_i/d}{1+\mu_i/d}.
+\]
+Thus
+\[
+1 - p_i = \frac{1}{1+\mu_i/d} = \frac{d}{d+\mu_i}.
+\]
+I think we need to use that when picking $d$.  This becomes more clear if we think
+about our parameterization in terms of $\mu$.  The conditional density is then
+\[
+\frac{\Gamma(y+d)}{\Gamma(d) \Gamma(y) y} \Big( \frac{\mu}{\mu+d} \Big)^d
+\Big(\frac{d}{\mu+d}\Big)^y.
+\]
+I suppose this shows why it is so noice to model the probability $p$.  Our work
+above is still valid for the sum, but really we are interested in
+\[
+\sum_{j=0}^{\max(y_i)-1} G_j \log(d+j) + d \sum_{i} \log \frac{\mu_i}{\mu_i+d} +
+\sum_i y_i \log \frac{d}{\mu_i+d}.
+\]
+
+If one includes an intercept, which is often the case, and would seem to be
+necessary when modeling counts, then I think one can reconcile the two models.
+In that case, let $\gamma = \beta - a e_1$.  Then
+\[
+x_i \gamma = x_i \beta - a.
+\]
+If we let $a = \log(d)$ then we have
+\[
+\psi_i = x_i \gamma = x_i \beta - \log(d).
+\]
+In any event we get a joint estimate of $(\beta, d)$ or $(\gamma, d)$.  It may
+be easier to produce the joint density $(\gamma, d)$.  At the same time, we have
+to MH $d$ either way, so why not just get $\beta$ since that is what we are after.
+
+Another possibility.  If we use a continuous proposal, e.g. $\Ga(\mu, \sigma^2)$
+where now the distribution is parameterized in terms of a mean and variance,
+then given $X \sim \Ga(\mu, \sigma^2)$ we have
+\[
+P(\floor{X} = k) = \int_{k}^{k+1} \Ga(x; \mu, \sigma^2) dx.
+\]
+Thus calculating the ratio of proposals for Ind. MH is okay so long as
+calculating the CDF of the proposal distribution isn't too computationally
+intensive.
+
+\section{Regression}
+
+This is something I have been over before, but need to go over again.  Suppose
+we have $x$ and $y$ and these are collections of elements in an inner product
+space.  If we want to project $x$ onto $y$ that is equivalent to projecting each
+element of $x$ onto $y$.  Imagine $\{x,y\} \sim N(0, V)$.
+
+First, Grahm-Schmidt $y$ so that we have $e = Ly$ where $e$ is now a collection
+of orthonormal elements.  $L$ will have full rank when $y$ is a linearly
+independent collection.  $L$ will have less than full rank when $y$ is a
+linearly dependent collection.  When $L$ has full rank we know that $I = L (y,
+y') L'$ so that $L'L = (y,y')^{-1}$.  I write $(y,x')$ to mean
+$[(y_i,x_j)]_{ij}$.
+
+Now to project $x$ onto $Y$ we can project $x$ onto $e$ and then use the
+tranform above.  Specifically, $\text{proj } x_i = \sum_{j} (x_i, e_j) e_j$.
+Further we know that $(x_i, e_j) = \sum_{k} (x_i, L_{jk} y_k)$ so that $(x_i,
+e_j)$ = $\sum_{k} L_{jk} (x,y')_{ik} = (x,y')_{i\cdot} L'$.  Thus we have
+$\text{proj } x = (x,y') L' L y$.  When $(y,y')$ is full rank that is
+$\text{proj } x = (x,y') (y,y')^{-1} y$, otherwise we are left using $L$.  I may
+want to use $L$ instead of $(y,y')^{-1}$ because sometimes we have rank
+deficiency.
+
+But the question I ultimately wanted to ask was what happens when elements of
+$x$ and $y$ are perfectly correlated?  That enters the picture through the
+variance of $x|y$.  To this point we have taken $x$ and $y$ to have mean zero.
+Thus the variance and the uncentered second moment are the same.  From the above
+decomposition we have
+\[
+x = Ay + \ep \; \text{ where } y \perp \ep.
+\]
+The variance can then be written as
+\[
+\Var(x) = A\Var(y)A' + \Var(ep).
+\]
+The distribution of $(x|y)$ is centered at $\bbE[x|y] = Ay$ and has variance
+$\Var(\ep)$.  The variance of $\Var(\ep) = \Var(x) - A \Var(y) A' = V_{11} -
+V_{12} L'L V_{12}'$.
+
+Really, what I set out to show though was that it is possible to have
+projections with zero variance.  We can have
+\[
+x_i = a \cdot y + \ep \; \text{ where } y \perp \ep.
+\]
+We know that $A_{il} = \sum_{k,j} L_{jk} (x_i, y_k) L_{jl} = \sum_{k,j}
+(x_i,y_k) L_{kj}' L_{jl}$, which is $[V_{12} L'L]_{il}$.  So
+\[
+a = V_{12,i\cdot} L'L.
+\]
+The variance is then
+\[
+\Var(x)_{ii} = V_{12,i \cdot} L'L V_{12,i\cdot}' + \Var(\ep).
+\]
+so that
+\[
+\Var(\ep) = \Var(x)_{ii} - V_{12,i \cdot} L'L V_{12,i\cdot}'
+\]
+
+Really, what I am trying to show is that if $z = \{x, y\}$ (where $x$ is
+scalar-valued) has rank deficient variance then we can write $x$ as a linear
+combination of $y$.  I believe we can do this from the perspective of linaer
+transormations.  We can find a matrix $A$ so that $AVA$ has zeros in the first
+row and the first column.  Then $A z$ will have a first element that has zero
+variance and zero covariance.  An element with zero variance must be zero, since
+we are assuming no means.  In that case, $0 = a_{00} x + \sum_{a_{0j}} y_j$ and
+we can hence write $x$ as a linear comibination of $y$ and the variance of $x -
+a \cdot y$ will be zero.
+
+To construct: Consider the columns space of $V$.  Suppose it has rank $n-1$.
+Then you can use the $n-1$ last columns to negate the first column.  Something
+like
+\[
+0 = V a \; \text{ where } a = (1, b).
+\]
+Then also $a' V = 0'$.  So $V [a \; I] = [0 \; V_{:,2:n+1}]$.  And further $[a
+\; I]' V [a \; I]$ is
+\[
+\begin{bmatrix}
+0 & 0 \\
+0 & V_{22}
+\end{bmatrix}.
+\]
+So it must be the case that when you have a rank deficient variance matrix that
+you can project some elements onto a subspace of the random vector and end up
+with no residual variance.
+
+In the case of dynamic regression with a coefficient that doesn't change in
+time, call it $\iota$, that the submatrix of $(\iota_{t}, \iota_{t-1})$ is rank
+deficient of the correct order so that $\iota_{t-1}$ projects perfectly onto
+$\iota_t$ (i.e. there is no residual variance).  It may not be obvious from the
+matrix algebra, but that is gaurenteed to be the case from the discussion above.
+
+\section{Relationship between PG and KS}
+
+Andrews and Mallows show that one may express the logistic distribution as a
+normal mixture.  In particular,
+\[
+2^{-2} \cosh^{-2}(x/2) = \int_0^\infty \frac{1}{\sqrt{2\pi}y} e^{-x^2 / 2 y^2}
+p_{2KS}(y) dy.
+\]
+Similarly, we know that we can write the logistic distribution using the PG
+distribution as
+\[
+2^{-2} \cosh^{-2}(x/2) = 2^{-2} \int_0^\infty e^{-\omega x^2 / 2} p(\omega | 2, 0).
+\]
+In the second, representation we can get a normal mixture by doing
+\[
+\int_0^\infty \frac{\omega^{1/2}}{\sqrt{2\pi}} e^{-\omega x^2 / 2} \frac{\sqrt{2
+    \pi}}{4} \omega^{-1/2} p(\omega | 2, 0) d \omega.
+\]
+Notice the first representation is a scale mixture while the second is a
+precision mixture.  We can do a change of variables in the first representation
+to generate a precision mixture.  Let $w = 1/y^2$.  Then $1/2\omega d \omega =
+1/y dy$ so that 
+\[
+p_{2KS}(y) dy = y p_{2KS}(y) \frac{dy}{y} = \frac{1}{\sqrt{z}} \frac{1}{2z}
+p_{2KS}(1/\sqrt{z}) dz.
+\]
+Then the scale mixture becomes a precision mixture
+\[
+\frac{\sqrt{z}}{\sqrt{2 \pi}} e^{-zx^2/2} \; \frac{1}{\sqrt{z}} \frac{1}{2z}
+p_{2KS}(1/\sqrt{z}) dz.
+\]
+Since a normal mixture uniquely defines a distribution we must have that
+\[
+\frac{1}{\sqrt{z}} \frac{1}{2z} p_{2KS}(1/\sqrt{z}) dz \eqd \frac{\sqrt{2
+    \pi}}{4} \omega^{-1/2} p(\omega | 2, 0) d \omega.
+\]
+Thus if $Y \sim 2 \KS$ then $Z \sim 1/(2KS)^2$ and $X \sim \propto \omega^{-1/2}
+p(\omega | 2, 0)$ then $Z \sim X$.  In other words, there is a connection between
+$\KS$ and a polynomial tilted $\PG(2,0)$.
+
+Further, this shows that the distribution of $\omega^{-1/2}$ tilted $\PG(2,0)$
+is, in fact,
+\[
+\frac{\sqrt{2 \pi}}{4} \omega^{-1/2} p(\omega | 2, 0);
+\]
+since we can integrate in both $\omega$ and $x$ we can reverse the order of
+integration to see that this is a density.
+
+Since $PG(2,0) = J^*(2,0) / 4$ if we let $\omega = \omega^*/4$ we have
+\[
+\omega^{-1/2} p(\omega | 2, 0) d\omega = (\omega^*/4)^{-1/2} p(\omega^*/4 | 2,
+0) d(\omega^*/4) = 2 (\omega^{*})^{-1/2} p_{J^*}(\omega^* | 2, 0) d \omega^*.
+\]
+Further, we know that $4 KS^2 = \pi^2 J$.  Hence we have that
+\[
+\frac{1}{\pi^2 J} = \propto {\omega^*}^{-1/2} p_{J^*}(\omega^* | 2, 0).
+\]
+
+\subsection{Marginalizing $\psi$}
+
+If we assume a non-informative prior on $\beta$ then we may be able to do
+something like the following.  We have joint distribution
+\[
+e^{\psi \kappa} e^{-\omega \psi^2 / 2} pg(\omega | 1, 0).
+\]
+Marginalize that to get something like
+\[
+\sqrt{\omega} e^{\kappa^2}{2} pg(\omega | 1, 0).
+\]
+Thus a joint draw will be from polynomial tilted $\PG$.  The problem here is
+that when we marginalize over $\beta$ we will actually get $|X'\Omega X|$
+somewhere, which won't exactly be a polynomial tilted PG, it will be something
+else completely.
+
+\section{Data Generating Data Augmentation}
+
+Above I showed how to do the data augmentation for data generation as opposed to
+for posterior simulation in binary logistic regression.  We can generalize this
+approach.  For logistic regression we have
+\begin{align*}
+{n_i \choose y_i}
+\Big( \frac{e^{\psi_i}}{1 + e^{\psi_i}} \Big)^{y_i}
+\Big( \frac{1}{1 + e^{\psi_i}} \Big)^{n_i-y_i}
+& = 
+{n_i \choose y_i}
+\frac{e^{\psi_i y_i}}{(1+e^{\psi_i})^{n_i}} \\
+& = 
+{n_i \choose y_i}
+\frac{e^{\psi_i (y_i-n_i/2)}}{(e^{-\psi_i/2}+e^{\psi_i/2})^{n_i}} \\
+& = 
+{n_i \choose y_i} e^{\psi_i (y_i-n_i/2)} 2^{-n_i} \cosh^{-n_i}(\psi_i/2).
+\end{align*}
+We can augment this with $PG(n_i, \psi_i)$ to get
+\[
+{n_i \choose y_i} e^{\psi_i \kappa_i} 2^{-n_i} \cosh^{-n_i}(\psi_i/2) p(\omega_i
+|n_i, \psi_i)
+= {n_i \choose y_i} e^{\psi_i \kappa_i} 2^{-n_i} e^{-\omega_i \psi_i^2/2}
+p(\omega_i | n_i, 0).
+\]
+The point being that we can do data generation by
+\[
+\begin{cases}
+y_i \sim \text{Binom}(p_i, n_i), & \psi_i = \log \frac{p_i}{1-p_i} \\
+\omega_i \sim \PG(n_i, \psi_i).
+\end{cases}
+\]
+Again, $y_i$ and $\omega_i$ are independent given $\psi_i$!
+
+The negative binomial case is slightly different.  There we have
+\begin{align*}
+{d_i + y_i - 1 \choose y_i} \Big( \frac{e^{\psi_i}}{1 + e^{\psi_i}} \Big)^{y_i}
+\Big( \frac{1}{1 + e^{\psi_i}} \Big)^{d_i}
+& = 
+{d_i + y_i - 1 \choose y_i} \frac{e^{\psi_i (y_i - d_i) /
+    2}}{(e^{-\psi_i/2}+e^{\psi_i/2})^{d_i+y_i}} \\
+& = {d_i + y_i - 1 \choose y_i} e^{\psi_i \kappa_i} 2^{-(d_i+y_i)}
+\cosh^{-(d_i+y_i)}(\psi_i/2). 
+\end{align*}
+Augmenting with $\PG(n_i = d_i + y_i, \psi_i)$ we have
+\[
+ {d_i + y_i - 1 \choose y_i} e^{\psi_i \kappa_i} 2^{-(d_i+y_i)}
+\cosh^{-(d_i+y_i)}(\psi_i/2) pg(\omega_i | n_i, \psi_i)
+= {d_i + y_i - 1 \choose y_i} e^{\psi_i \kappa_i} 2^{-(d_i+y_i)} e^{-\omega_i
+\psi_i^2 / 2} p(\omega_i | n_i, 0).
+\]
+Thus the data is generated by
+\[
+\begin{cases}
+\omega_i \sim \PG(d_i+y_i, \psi_i), & \psi_i = \log(\mu_i) - \log(d_i) \\
+y_i \sim \NB(\mu_i, d_i).
+\end{cases}
+\]
+Notice that in this case $\omega_i$ is not independent of $y_i$.  Also, we
+worked initially with $p_i$ but that is related to $mu_i$ by $p_i =
+\frac{\mu_i}{\mu_i + d_i}$
+
+\section{Sum of Logistics - Normal Mixture}
+
+If we want to do dynamic binomial logistic regression we need to have $n$ latent
+$z$'s at each time step.  We can work with the sufficient statistic
+$\sum_{i=1}^n z_{it}$ to estimate the log-mean.  But that still creates a lot
+more work when estimatign $z$ and when estimating $r$ since there are $nT$
+variables instead of just $T$.  We could remedy that by find a normal mixture
+for the sum of independent Logistics, which is
+\[
+\sum_{i=1}^n Lo_i = log(\Ga(n,1)) - \log(Ga(n,1)).
+\]
+
+% If you have a bibliography.
+% The file withe bibliography is name.bib.
+\bibliography{bayeslogit}{}
+\bibliographystyle{abbrvnat}
+
+\end{document}
+
+% \begin{algorithm}
+% \begin{algorithmic}
+% \REQUIRE A real number $z$
+% \STATE $z \leftarrow |z|$,
+%        $t \leftarrow 0.64$,
+%        $K \leftarrow \pi^2 / 8 + z^2 / 2$
+% \STATE $p \leftarrow \frac{\pi}{2 K} \exp(-K t)$
+% \STATE $q \leftarrow 2 \exp(-|z|) \; \texttt{pigauss}(t, \mu = 1/z, 1.0)$
+% % \STATE Set $p, q$ given $z$
+% \LOOP
+% \STATE Generate $U, V \sim \mathcal{U}(0,1)$
+% \IF{$U < p / (p+q)$}
+% \STATE $X \leftarrow t + E/K$ where $E \sim \mathcal{E}(1)$
+% \ELSE
+% %\STATE $X \sim \mathcal{IN}(\mu=1/z, 1.0) \bbI_{(0,t)}$
+% \STATE $\mu \leftarrow 1/z$
+% \IF {$\mu > t$}
+% \REPEAT
+% \STATE Generate $1/W \sim \chi^2_1 \bbI_{(t,\infty)}$
+% \UNTIL {$\mathcal{U}(0,1) < \exp(-\frac{z^2}{2} W)$}
+% \ELSE
+% \REPEAT
+% \STATE Generate $W \sim \mathcal{IN}(\mu, 1.0) \bbI_{(0,t)}$
+% \UNTIL {$W < t$}
+% \ENDIF
+% % \STATE if $\mu > t$ generate $1/W \sim \chi^2_1 \bbI_{(t,\infty)}$ until $\mathcal{U}(0,1) < \exp(-\frac{z^2}{2} W)$
+% % \STATE else generate $W \sim \mathcal{IN}(\mu, 1.0) \bbI_{(0,t)}$
+% \ENDIF
+% \STATE $S \leftarrow a_0(X)$, $Y \leftarrow VS$, $n \leftarrow 0$
+% \LOOP
+% \STATE $n \leftarrow n + 1$
+% \IF{$n$ is odd}
+% \STATE $S \leftarrow S - a_n(X)$; if $Y < S$, then return $X$
+% \ELSE
+% \STATE $S \leftarrow S + a_n(X)$; if $Y > S$, then break
+% \ENDIF
+% \ENDLOOP
+% \ENDLOOP
+% \end{algorithmic}
+% \end{algorithm}
