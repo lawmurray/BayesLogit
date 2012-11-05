@@ -33,6 +33,108 @@
 
 \section{Introduction}
 
+\subsection{Dynamic Generalized Linear Models}
+
+Generalized linear models (GLMs) arise when the response variable is categorical
+or integral in nature as opposed to continuous.  For instance, one may be
+interested in forecasting the political affiliation of citizens using their
+habits of consumption, entertainment choices, etc. to get out the vote during an
+election \citep{becker-12-0922}, or perhaps one wants to neuronal activity as a
+function of some stimulus.  In either case, the response does not take on a
+continuous range of values but rather takes on either on a finite number of
+values, as in the former, or a whole number, as in the latter.
+
+In GLMs, one models the distribution of the response $(y_i | \psi_i)$ by
+assuming that $\psi_i$ can be written as a linear combination of some
+predictors, $x_i \beta$.  The parameter $\psi_i$ may not be the most common way
+to parameterize the distribution of the reponse $y_i$ and hence one often starts
+with a representation $(y_i | \mu_i)$ and then transforms $\mu_i$ to $\psi_i$
+under some function $g$ that maps to a coordinate system in which it is
+reasonable to use the linear model $\psi_i = x_i \beta$.  Such models may be
+summarized as
+\[
+\begin{cases}
+y_i \sim \bbP(\mu_i), & i=1,\ldots, N \\
+\psi_i = g(\mu_i) = x_i \beta.
+\end{cases}
+\]
+One may proceed by the usual rules of Bayesian inference to calculate the
+posterior distribution of $\beta$; however, the exact form of the this
+distribution is often unrecognizable and not easy to simulate.  For instance,
+when modeling binary data one may prefer to describe the distribution of $y_i$
+by the probability $p_i$ of observing a certain outcome but to model $p_i$
+linearly on the log-odds scale, $\psi_i = \log \frac{p_i}{1-p_i}$.  The model is
+then
+\[
+\begin{cases}
+y_i \sim \text{Binom}(1,p_i) \\
+\psi_i = \log \frac{p_i}{1-p_i} = x_i \beta.
+\end{cases}
+\]
+The posterior distribution for $\beta$ is not easy to simulate directly.
+
+Dynamic GLMs (DGLMs) are useful when the underlying relationship between the
+covariates and response changes slowly in time.  Following on the example above,
+suppose the binary response denotes voter affiliation in the United States:
+either a Repulican voter or a non-Republican voter.  It may be the case that the
+characteristics that increase the likelihood of finding a Republican voter
+change in time.  Perhaps the voting profile of white mothers that drive minivans
+has shifted over the last two election cycles due to some factors not considered
+by the model.  Instead of using the last election's regression coefficient one
+might want to update to a new regression coefficient as information is aquired.
+A DGLM would allow one to do just that.
+
+Dynamic generalized linear models extend the static framework to the case that
+the regression coefficient changes with the index of the observation, which we
+will interpret as time.  In that case the model becomes
+\[
+\begin{cases}
+  y_t \sim \bbP(\mu_t), & t=1, \ldots, T \\
+  \psi_t = g(\mu_t) = x_t \beta_t \\
+  \beta_t \sim \text{AR}(1).
+\end{cases}
+\]
+We describe the evolution of $\beta_t$ above using an AR(1) process, but there
+is nothing in what follows that limits one to that class of stochastic
+processess.  So long as one is comfortable modeling $\beta$ using a Gaussian
+process the methods suggested in this paper will hold.  The challenges
+associated with exact posterior simulation are compounded in the dynamic case
+since instead of $p$ covariates one must now handles $p \times T$.  
+
+The main focus of this paper is exact posterior simulation when working within a
+few specific class of DGLMs: dynamic binary and binomial logistic regression and
+dynamic negative binomial regression for count data.  In general, the method we
+outline will work whenever the response induces a logistic likelihood, which is
+a likelihood in the transformed coordiantes $\psi = (\psi_i)$ of the form
+\[
+\ell(\psi | y) \propto \prod_{t=1}^T
+\frac{(e^{\psi_i})^{a_i}}{(1+e^{\psi_i})^{b_i}}.
+\]
+
+\subsection{Previous Work}
+
+\point Normal Mixture Models
+
+One may do posterior inference by Metropolis-Hastings approach, data
+augmentation for Gibbs sampling, or some combination thereof.  Early attempts,
+like \cite{west-etal-1985} employed approximations to the true posterior to do
+inference for dynamic linear models for exponential families.  Building upon
+that work, \cite{ravines-etal-2006} use this approximation with a
+Metropolis-Hastings step for exact posterior inference.  Fr\"{u}hwirth-Schnatter
+and her various colaborators have a collection of papers using data augmentation
+and a discrete mixture of normals approximation for posterior inference.
+However, we find neither method completely satisfactory.
+
+Previous work
+includes the CUBS algorithm of \cite{ravines-etal-2006} which builds upon the
+work of \cite{west-etal-1985}
+
+Previous attempts for inference in dynamic generalized linear models 
+
+\subsection{Contributions of the Paper}
+
+
+
 Recently, \cite{polson-etal-2012} introduced a new data augmentation scheme for
 posterior distributions derived from logisitic likelihoods.  Such models arise
 when the distribution of the reponse variable $y_i$ depends upon a proportion
@@ -191,8 +293,6 @@ The sampling procedure is then
 \end{enumerate}
 
 \section{Dynamic Negative Binomial Regression}
-
-\section{Normal Mixture Methods}
 
 \section{Comparison}
 
