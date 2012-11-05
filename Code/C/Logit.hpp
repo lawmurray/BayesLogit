@@ -86,6 +86,10 @@ public:
   inline void draw_beta(MF beta, MF w, MF beta_prev, RNG& r);
   void gibbs(Matrix& w, Matrix& beta, int samp, int burn, RNG& r);
 
+  double gibbs_block(MF beta_space, MF w_space, 
+		     MF beta_init, MF w_init,
+		     int samp, int period, RNG& r);
+
   // Exepectation Maximization.
   int EM(Matrix& beta, double tol, int max_iter);
 
@@ -283,6 +287,62 @@ inline void Logit::draw_beta(MF beta, MF w, MF beta_prev, RNG& r)
 //   gemm(psi, X, beta[CIDX], 'T');
 //   R_CheckUserInterrupt(void);
 
+double Logit::gibbs_block(MF beta_space, MF w_space, 
+			  MF beta_init, MF w_init,
+			  int samp, int period, RNG& r)
+{
+  // Basically, implementing a simple iterator here.
+
+  double *beta_curr = &beta_space(0);
+  double *beta_prev = beta_curr;
+  double *w_curr = &w_space(0);
+
+  MF beta_curr_mf(beta_curr, (int)P, 1, 1);
+  MF beta_prev_mf(beta_prev, (int)P, 1, 1);
+  MF w_curr_mf(w_curr, (int)N, 1, 1);
+  Matrix psi((int)N, 1, 1);
+
+  // Initialize.
+  beta_curr_mf.copy(beta_init);
+  beta_prev_mf.copy(beta_curr_mf);
+  w_curr_mf.copy(w_init);
+  gemm(psi, tX, beta_curr_mf, 'T');
+
+  clock_t start, end;
+  start = clock();
+
+  for (int m=1; m<=samp*period; m++) {
+
+    draw_w   (w_curr_mf,  psi, r);
+    draw_beta(beta_curr_mf, w_curr_mf, beta_prev_mf, r);
+    gemm(psi, tX, beta_curr_mf, 'T');
+
+    // Increment on i-th iteration % period.
+    if (m % period == 0) {
+      beta_prev = beta_curr;
+      beta_curr += P;
+      w_curr += N;
+      // Could also do something like:
+      // beta_curr += P * sizeof(double) * (double)(m % thin);
+
+      beta_curr_mf.setp(beta_curr);
+      beta_prev_mf.setp(beta_prev);
+      w_curr_mf.setp(w_curr);
+    } // Increment.
+
+    #ifdef USE_R
+    if (m%100==0) R_CheckUserInterrupt();
+    #endif
+
+  }
+
+  end = clock();
+
+  double total_time = (double)(end - start) / CLOCKS_PER_SEC;
+
+  return total_time;
+} // gibbs_block
+
 // Gibbs sampling -- Default Logit.
 void Logit::gibbs(Matrix& w, Matrix& beta, int samp, int burn, RNG& r)
 {
@@ -292,47 +352,18 @@ void Logit::gibbs(Matrix& w, Matrix& beta, int samp, int burn, RNG& r)
   beta.resize(P, 1, M);
   // beta.fill(-1.0);
 
-  Matrix psi(N);
-  gemm(psi, tX, beta[0], 'T');
-  // psi.fill(0.0);
+  double total_time;
 
-  // Keep track of time.
-  clock_t start, end;
-
-  start = clock();
-  // Burn-in - Take an extra for first sample of MCMC.
-  for(int m = 0; m < burn+1; ++m){
-    draw_w   (w[0]   ,  psi, r);
-    draw_beta(beta[0], w[0], beta[0], r);
-    gemm(psi, tX, beta[0], 'T');
-    // In case we are using R.
-    #ifdef USE_R
-    if (m%1==0) R_CheckUserInterrupt();
-    #endif
-  }
-  end = clock();
-
-  double total_time = (double)(end - start) / CLOCKS_PER_SEC;
+  // Burn.
+  total_time = gibbs_block(beta, w, beta[0], w[0], 1, burn, r);
   printf("Burn-in complete: %g sec. for %i iterations.\n", total_time, burn);
   printf("Expect approx. %g sec. for %i samples.\n", total_time * samp / burn, samp);
 
-  start = clock();
-  // Sample - Already took one sample from burn-in.
-  for(int m = 1; m < samp; ++m){
-    draw_w   (w[m]   ,  psi, r);
-    draw_beta(beta[m], w[m], beta[m-1], r);
-    gemm(psi, tX, beta[m], 'T');
-    // In case we are using R.
-    #ifdef USE_R
-    if (m%1==0) R_CheckUserInterrupt();
-    #endif
-  }
-  end = clock();
-
-  total_time = (double)(end - start) / CLOCKS_PER_SEC;
+  // Sample.
+  total_time = gibbs_block(beta, w, beta[0], w[0], samp, 1, r);
   printf("Sampling complete: %g sec. for %i iterations.\n", total_time, samp);
 
-}
+} // gibbs
 
 ////////////////////////////////////////////////////////////////////////////////
 			   // POSTERIOR MODE BY EM //
