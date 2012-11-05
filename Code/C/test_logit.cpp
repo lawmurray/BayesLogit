@@ -1,4 +1,4 @@
-// -*- mode: c++ -*-
+// -*- mode: c++; -*-
 
 #include "Matrix.h"
 #include "RNG.hpp"
@@ -62,9 +62,11 @@ int main(int argc, char **argv)
   Logit logit(y, tX, n, 0.5, Matrix(0.0), 1.0);
 
   Matrix w, beta;
-  // logit.gibbs(w, beta, 10000, 100, r);
+  logit.gibbs(w, beta, 10000, 100, r);
 
-  test_mult();
+  // test_mult();
+
+  printf("End.\n");
 
   // // If I want to do clever Gibbs sampling.
   // int curr = 0;
