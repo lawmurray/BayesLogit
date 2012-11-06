@@ -6,6 +6,13 @@
 
 \newcommand{\Polya}{P\'{o}lya}
 \newcommand{\PG}{\text{PG}}
+\newcommand{\Pois}{\text{Pois}}
+\newcommand{\Ga}{\text{Ga}}
+\newcommand{\NB}{\text{NB}}
+\newcommand{\floor}[1]{\lfloor #1 \rfloor}
+\newcommand{\eqd}{\,{\buildrel d \over =}\,}
+\newcommand{\KS}{\text{KS}}
+
 \newcommand{\point}{\noindent $\bullet$ }
 
 % Page Layout
@@ -35,23 +42,19 @@
 
 \subsection{Dynamic Generalized Linear Models}
 
-Generalized linear models (GLMs) arise when the response variable is categorical
-or integral in nature as opposed to continuous.  For instance, one may be
-interested in forecasting the political affiliation of citizens using their
-habits of consumption, entertainment choices, etc. to get out the vote during an
-election \citep{becker-12-0922}, or perhaps one wants to neuronal activity as a
-function of some stimulus.  In either case, the response does not take on a
-continuous range of values but rather takes on either on a finite number of
-values, as in the former, or a whole number, as in the latter.
+This paper extends the work of \cite{polson-etal-2012} for static generalized
+linear models with logistic likelihoods to dynamic generalized linear models
+with logistic likelihoods.  
 
-In GLMs, one models the distribution of the response $(y_i | \psi_i)$ by
-assuming that $\psi_i$ can be written as a linear combination of some
-predictors, $x_i \beta$.  The parameter $\psi_i$ may not be the most common way
-to parameterize the distribution of the reponse $y_i$ and hence one often starts
-with a representation $(y_i | \mu_i)$ and then transforms $\mu_i$ to $\psi_i$
-under some function $g$ that maps to a coordinate system in which it is
-reasonable to use the linear model $\psi_i = x_i \beta$.  Such models may be
-summarized as
+Generalized linear models (GLMs) arise when the response variable is categorical
+or integral as opposed to continuous.  In that case, one models the distribution
+of the response $(y_i | \psi_i)$ by assuming that $\psi_i$ can be written as a
+linear combination of some predictors, $x_i \beta$.  The parameter $\psi_i$ may
+not be the most common way to parameterize the distribution of the reponse $y_i$
+and hence one often starts with a representation $(y_i | \mu_i)$ and then
+transforms $\mu_i$ to $\psi_i$ under some function $g$ that maps to a coordinate
+system in which it is reasonable to use the linear model $\psi_i = x_i \beta$.
+Such models may be summarized as
 \[
 \begin{cases}
 y_i \sim \bbP(\mu_i), & i=1,\ldots, N \\
@@ -60,33 +63,12 @@ y_i \sim \bbP(\mu_i), & i=1,\ldots, N \\
 \]
 One may proceed by the usual rules of Bayesian inference to calculate the
 posterior distribution of $\beta$; however, the exact form of the this
-distribution is often unrecognizable and not easy to simulate.  For instance,
-when modeling binary data one may prefer to describe the distribution of $y_i$
-by the probability $p_i$ of observing a certain outcome but to model $p_i$
-linearly on the log-odds scale, $\psi_i = \log \frac{p_i}{1-p_i}$.  The model is
-then
-\[
-\begin{cases}
-y_i \sim \text{Binom}(1,p_i) \\
-\psi_i = \log \frac{p_i}{1-p_i} = x_i \beta.
-\end{cases}
-\]
-The posterior distribution for $\beta$ is not easy to simulate directly.
-
-Dynamic GLMs (DGLMs) are useful when the underlying relationship between the
-covariates and response changes slowly in time.  Following on the example above,
-suppose the binary response denotes voter affiliation in the United States:
-either a Repulican voter or a non-Republican voter.  It may be the case that the
-characteristics that increase the likelihood of finding a Republican voter
-change in time.  Perhaps the voting profile of white mothers that drive minivans
-has shifted over the last two election cycles due to some factors not considered
-by the model.  Instead of using the last election's regression coefficient one
-might want to update to a new regression coefficient as information is aquired.
-A DGLM would allow one to do just that.
+distribution is often unrecognizable and not easy to simulate.  Data
+augmentation schemes are one way to remedy this problem.
 
 Dynamic generalized linear models extend the static framework to the case that
-the regression coefficient changes with the index of the observation, which we
-will interpret as time.  In that case the model becomes
+the regression coefficient changes with the index of the observation, e.g. time.
+In that case the model above becomes
 \[
 \begin{cases}
   y_t \sim \bbP(\mu_t), & t=1, \ldots, T \\
@@ -94,84 +76,41 @@ will interpret as time.  In that case the model becomes
   \beta_t \sim \text{AR}(1).
 \end{cases}
 \]
-We describe the evolution of $\beta_t$ above using an AR(1) process, but there
-is nothing in what follows that limits one to that class of stochastic
-processess.  So long as one is comfortable modeling $\beta$ using a Gaussian
-process the methods suggested in this paper will hold.  The challenges
-associated with exact posterior simulation are compounded in the dynamic case
-since instead of $p$ covariates one must now handles $p \times T$.  
+In general, $\beta_t$ may be any Gaussian time series.  Again, data augmetation
+techniques allow one to simulate the posterior distribution of $\{\beta_t\}$;
+however, the computational burdern is exacerbated in the dynamic case since
+instead of simulating a $p$-dimensional regression coefficient one must now
+simulate a $p \times T$-dimensional process.
 
-The main focus of this paper is exact posterior simulation when working within a
-few specific class of DGLMs: dynamic binary and binomial logistic regression and
-dynamic negative binomial regression for count data.  In general, the method we
-outline will work whenever the response induces a logistic likelihood, which is
-a likelihood in the transformed coordiantes $\psi = (\psi_i)$ of the form
+The method we advocate applies whenever exact posterior simulation for dynamic
+linear models when the conditional density $p(y_i | \psi_i)$ generates a
+likelihood, in $\psi$, of the form
 \[
 \ell(\psi | y) \propto \prod_{t=1}^T
 \frac{(e^{\psi_i})^{a_i}}{(1+e^{\psi_i})^{b_i}}.
 \]
+We focus specificlaly on dynamic binary and binomial logistic regression and
+dynamic negative binomial regression for count data.
 
 \subsection{Previous Work}
 
-\point Normal Mixture Models
+Mention work in static case? -- Data augmentation vs. MH in static vs. dynamic.
 
-One may do posterior inference by Metropolis-Hastings approach, data
-augmentation for Gibbs sampling, or some combination thereof.  Early attempts,
-like \cite{west-etal-1985} employed approximations to the true posterior to do
-inference for dynamic linear models for exponential families.  Building upon
-that work, \cite{ravines-etal-2006} use this approximation with a
-Metropolis-Hastings step for exact posterior inference.  Fr\"{u}hwirth-Schnatter
-and her various colaborators have a collection of papers using data augmentation
-and a discrete mixture of normals approximation for posterior inference.
-However, we find neither method completely satisfactory.
+Bayesian inference for dynamic generalized linear models dates back to at least
+\cite{west-etal-1985} who used conjugate updating and linear Bayes filtering to
+filter the dynamic regression coefficients of dynamic generalized linear models
+when the observation equations $(y_i | \mu_i)$ comes from an exponential family.
+More recently, \cite{ravines-etal-2006} built upon that work by adding a
+Metropolis-Hastings step to sample from the exact complete conditional
+distribution of $\beta$ instead of using an approximation.
 
-Previous work
-includes the CUBS algorithm of \cite{ravines-etal-2006} which builds upon the
-work of \cite{west-etal-1985}
-
-Previous attempts for inference in dynamic generalized linear models 
-
-\subsection{Contributions of the Paper}
-
-
-
-Recently, \cite{polson-etal-2012} introduced a new data augmentation scheme for
-posterior distributions derived from logisitic likelihoods.  Such models arise
-when the distribution of the reponse variable $y_i$ depends upon a proportion
-$p_i$, which occurs when working with catogorical or count data, and one models
-this proportion on the log-odds scale, $\psi_i = \log \frac{p_i}{1-p_i}$, as the
-linear combination $x_i \beta$.  In this case, the likelihood takes the form
-\[
-\prod_{i=1}^n \frac{ (e^{\psi_i})^{a_i} }{ (1 + e^{\psi_i})^{b_i} }
-\]
-where $a_i$ and $b_i$ are some function of the response, explanatory variables,
-hyperparameters, or some combination thereof.  The \Polya-Gamma distribution
-possesses an integral identity so that the posterior distribution $p(\beta |
-y)$, derived from the logistic likelihodo above, may ``demarginalized'' to
-produce an augmented posterior distribution $p(\beta, \omega | y)$ in which the
-complete conditional $p(\omega | \beta, y)$ is the product of independent
-\Polya-Gamma distributions and, if one choses a normal prior for $\beta$, the
-complete conditional $p(\beta | \omega, y)$ is normal as well yielding a
-convenient, efficient Gibbs sampler.  \cite{polson-etal-2012} show that this
-method is superior to similar alternative methods, such as
-\cite{holmes-held-2006} and \cite{fruhwirth-schnatter-fruhwirth-2007}, for
-binary logistic regression and that it may be applied in a number of other
-settings including contingency tables, multinomial logistic regression, and
-negative binomial regression for count data.  However, they devote little
-attention to dynamic models.  This paper fills that void.
-
-% when $\omega \sim \PG(b, 0)$,
-% \[
-% \frac{(e^{\psi})^{a}}{(1+e^{\psi})^{b}} = 2^{-b} e^{\kappa \psi}
-% \int_0^\infty e^{-\omega \psi_i^2 / 2} p(\omega) d \omega
-% \]
-% where $\kappa = a - b / 2$; thus,
-
-\point Polya Gamma Augmentation for static models.
-
-\point Background of dynamic GLM.
-
-Prior models for dynamic generalized models include:
+Fruhwirth-Schnatter and her collabarators use a discrete mixture of normals
+approximation for posterior inference in a variety of static settings, including
+binary regression, multinomial regression, Poisson regression, and negative
+binomial regression for count data--all of which are or can be extended to the
+dynamic setting \citep{fruhwirth-schnatter-fruhwirth-2007,
+  fruhwirth-schnatter-fruhwirth-2010, fruhwirth-schnatter-wagner-2006,
+  fruhwirth-schnatter-etal-2009}.
 
 \begin{itemize}
 \item \cite{west-etal-1985}
@@ -203,100 +142,161 @@ Prior models for dynamic generalized models include:
 
 \end{itemize}
 
-\section{Dynamic Binary Logistic Regression}
+\subsection{Contributions of the Paper}
 
-Suppose $\psi_{it}$ is the log-odds of success for observation $i$ at time $t$,
-\[
-P(y_{it}=1) = p_{it} \; \textmd{ where } \psi_{it} = \log \frac{p_{it}}{1-p_{it}}.
-\]
-Furthormore, suppose that the system is not changing in time.  In that case, the
-we would model the log-odds using predictors we might find suitable yielding the
-static regression
-\[
-\psi_{it} = x_{it} \beta.
-\]
-Given the logistic likelihood one can infer $\beta$ by his or her favorite
-method, which in our case is the \Polya-Gamma auxiliary variable approach.
+This paper examines the relative merits of the three approaches discussed
+above--Linear Bayes with conjugate updating and Metroplis-Hastings, a discrete
+mixture of normals approximation, and the \Polya-Gamma data augmentation
+scheme--for dynamic generalized linear models.  We show that on an effective
+sampling rate basis, the \Polya-Gamma data augmentation scheme is as good or
+better than its competitors.
 
-Now suppose that this system is evolving in time and that the statistical
-manifestation of that evolution is a dynamic regression coefficients so that the
-log odds are modeled by \( \psi_{it} = x_{it} \beta_t.  \) If we do not have a
-strong sense of how the regression coefficient evolves, then a random walk for
-$\beta_t$ is appropriate and we arrive at the dynamic generalized linear model
+\subsection{Outline}
+
+Section () shows how the \Polya-Gamma data augmentation trick applies to dynamic
+binary logistic regression and dynamic negative binomail regression and their
+corresponding Gibbs samplers.  Section () discusses the benchmarking methods and
+results.  Section () concludes.
+
+\section{\Polya-Gamma Data Augmentation}
+
+Suppose that the data generating distribution $(y_t | \psi_t)$ has a conditional
+distribution of the form
+\[
+p(y_t | \psi_t) = c(y_t) \frac{(e^{\psi_t})^{a_t}}{(1+e^{\psi_t})^{b_t}}
+\]
+and that $a_t$ and $b_t$ are functions of the data, but not $\beta_t$.  By
+recognizing that
+\[
+\cosh^{-b_t}(\psi_t / 2) = \int_0^\infty e^{-\omega_t \psi_t^2 / 2} p(\omega_t |
+b_t, 0) d \omega_t,
+\]
+where $p(\omega_t | b_t, 0)$ is the density of a $\PG(b_t, 0)$ random variate,
+one may introduce the auxiliary variable $\omega_t$ so that
+\[
+p(y_t, \omega_t | \psi_t) = c(y_t) 2^{-b_t} e^{\kappa_t \psi_t -\omega_t
+  \psi_t^2/2} p(\omega_t | b_t, 0)
+\]
+where $\kappa_t = a_t - b_t / 2$.  The likelihood for $(\psi_t | y_t, \omega_t)$
+is proportional to the likelihood arising from the observation
+\[
+z_t = \psi_t + \ep_t, \; \ep_t \sim N(0, 1/\omega_t)
+\]
+where $z_t = \kappa_t / \omega_t$.  Thus the posterior distribution of $(\beta |
+\omega)$ can be calculated using a filter forward backwards sampler under the
+DLM
+\begin{equation}
+\label{eqn:dlm}
+\begin{cases}
+z_t = \psi_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
+\psi_t = x_t \beta_t \\
+\beta_t \sim \text{AR}(1).
+\end{cases}
+\end{equation}
+The posterior distribution of $(\omega | \beta)$ is $\prod_{t=1}^T \PG(b_t,
+\psi_t)$ as constructed by \cite{polson-etal-2012}.
+
+\subsection{Example: Dynamic Binomial Logistic Regression}
+
+Suppose one observes a binomial outcome $y_t$ where $P(y_t = 1) = p_t$ out of
+$n_t$ trials at time $t$.  Letting $\psi_t$ be the log-odds, the data generating
+distribution is
+\[
+p(y_t | \psi_t) = c(y_t) \frac{(e^\psi_t)^{y_t}}{(1+e^{\psi_t})^{n_t}}.
+\]
+Thus the complete conditional $(\{\beta_t\} | \omega)$ may be simulated by the
+FFBS the DLM (\ref{eqn:dlm}) where $z_t = \kappa_t / \omega_t$ and $\kappa_t =
+y_t - n_t / 2$ and the complete conditional $(\omega | \beta)$ may be simulated
+by sampling $\PG(n_t, \psi_t)$ for $t=1, \ldots, T$.
+
+
+\subsection{Example: Dynamic Negative Binomial Regression}
+
+Suppose that one observes counts according to $y_t \sim \NB(d, p_t)$ where $d$
+is the number of ``failures'' before observing $y_t$ successes and $p_t$ is the
+probability of observing a success.  Letting $\psi_t$ be the log-odds, the data
+generating distribution is
+\[
+p(y_t | \psi_t) = c(y_t, d) \frac{(e^{\psi_t})^{y_t}}{(1+e^{\psi_t})^{y_t+d}}.
+\]
+In negative binomial regression, it is common to model the log-mean, $\zeta_t =
+\psi_t + \log(d) = x_t \beta_t$, instead of the log-odds.  This requires only a
+slight modification.  Following the work above, the complete conditional
+$(\omega_t | \beta_t, d)$ is $\PG(b_t, \psi_t)$ where $b_t = y_t + d_t$.
+However, the DLM used to estimate $\{\beta_t\}$ is now
 \[
 \begin{cases}
-\psi_{it} = x_{it} \beta_t \\
-\beta_t = \beta_{t-1} + \omega_t, & \omega_t \sim N(0, W).
+z_t = \psi_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
+\psi_t = x_t \beta_t - \log(d) \\
+\beta_t = \text{AR}(1).
 \end{cases}
 \]
-
-To apply the \Polya-Gamma method, imagine fixing $t$ and looking at a single
-term in the likelihood.  You would have something like (where $y_i$ is the
-number of successes for covariate $i$--though for the PG code we have $y_i$ is
-the proportion of successes!)
-\[
-\exp \Big[ (y_{i} - n_{i}/2) x_{i} \beta - \frac{1}{2} \omega_{i} \psi_i^2
-\Big] 
-p(\omega_i | n_i, 0). 
-\]
-Collecting all the observations this becomes
-\[
-\exp \Big[ \alpha' X \beta - \frac{1}{2} \beta' X' \Omega X \beta \Big]
-p(\omega | n, 0) \;
-\textmd{ where } \;
-\alpha_i = (y_i - n_i/2) \; \textmd{ and } \; X = [x_i].
-\]
-Assuming that $\omega$ is fixed.  We want to find a quadratic form
-\[
-(z - X \beta)' \Omega (z - X \beta) = z' \Omega z - 2 z' \Omega X \beta + (X
-\beta)' \Omega (X \beta).
-\]
-Since $\omega$ is fixed we can just multiply the likelihood by $\exp
-\frac{-1}{2} z' \Omega z$ where $\Omega z = \alpha$ to generate this expression.
-Thus, for fixed $\omega$ the likelihood of $\beta$ can be interpreted as coming from
-\[
-z = X \beta + \ep, \; \ep \sim N(0, \Omega^{-1})
-\]
-where
-\[
-\Omega z = \alpha.
-\]
-\begin{comment}
-(Waving my hands: We have $\Omega z = \alpha = y - n/2$.  Thus we should have $y
-= \Omega z + n/2$.  Use for generating synthetic data?  No, its pseudo-data.)
-\end{comment}
-Reincorporating the time index, we have
-\[
-\begin{cases}
-z_t = X_t \beta_t + \ep_t, & \ep_t \sim N(0, \Omega_t^{-1}) \\
-\beta_t = \beta_{t-1} + \omega_t, & \omega_t \sim N(0, W).
-\end{cases}
-\]
-It is easy to calculate $z_t$ since $\Omega_t$ is diagonal.  One still produce a
-joint draw of $(\beta | W, D_T)$ when there are a different number of or no
-observations at each time step.
-\begin{comment}
-  The one place that we need to be careful is that there may be a variable
-  number of observations at each point in time.  Thus the number of rows in
-  $z_t$ and $X_t$ is $m_t$, which may vary.  Also, it may be the case that there
-  are no observations, in which case we have the equivalent of missing data.  I
-  believe the dynamic linear model shouldn't have a problem with that.
-\end{comment}
-The sampling procedure is then
-\begin{enumerate}
-\item Set $\beta_t = 0$ for all $t$.  This is a reasonable seed since it
-  represents even odds.
-\item Calculate $\psi_t = X_t \beta_t$.
-\item Sample $\omega_{it} \sim PG(n_{it}, \psi_{it})$.
-\item Sample $\beta_t$ using the dynamic linear model above.
-\item Repeat, starting at (2).
-\end{enumerate}
-
-\section{Dynamic Negative Binomial Regression}
+One may estimate $d$ as well using, for instance, a Metropolis-Hastings step.
+We include a brief disucssion of that step in the appendix.
 
 \section{Comparison}
 
+
+
 \section{Conclusion}
+
+\appendix
+
+\section{Sampling $d$ in dynamic negative binomial regression}
+
+We may sample $d$ by an indepedent Metropolis-Hastings or a random-walk
+Metropolis-Hastings.  In either case, we need the log-likelihood of $d$.
+
+The conditional density for a single term $y_t \sim N(d, p_t)$ is
+\[
+\frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t} p_t^{y_t} (1-p_t)^{d} ,
+\]
+or 
+\[
+\frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t} 
+\Big( \frac{\mu_t}{\mu_t + d} \Big)^{y_t} \Big( \frac{d}{\mu_t + d} \Big)^d
+\]
+in terms of the mean $\mu_t$.  Since we chose to model $\log \mu_t = x_t
+\beta_t$ it will be easier to work with the latter version.  In that case, the
+log-likelihood is
+\[
+\ell(d|\mu, y) = \sum_{t=1}^T [ \log \Gamma(y_t + d)  - \log \Gamma(d) ]  + 
+\sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
+d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
+\]
+
+If we assume that $d$ is a natural number then we can rid ourselves of $T$
+evaluations of the gamma function.  We may expand $\Gamma(y_t + d)$ and
+$\Gamma(d)$ as products, in which case the log-likelihood is
+\[
+\ell(d|\mu, y) = \sum_{t=1}^T \sum_{j=0}^{y_t-1} \log(d + j) + 
+\sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
+d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
+\]
+We can rewrite the first term of the sum as
+\[
+\sum_{t=1}^T \sum_{k=1}^{\max(y_t)} \sum_{j=0}^{k-1} \log(d+j) \one \{y_t = k\}
+\]
+which becomes
+\[
+\sum_{k=1}^{\max(y_t)} n_k \sum_{j=0}^{k-1} \log(d+j)
+\]
+where $n_k = \{ \# y_t = k \}$.  We have thus
+\begin{align*}
+\sum_{k=1}^{\max(y_t)} \sum_{j=0}^{\max(y_t)-1} n_k \log(d+j) \one\{j < k\}
+& = 
+\sum_{j=0}^{\max(y_t)-1} \log(d+j) \sum_{k=j+1}^{\max(y_t)} n_k \\
+& = \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j
+\end{align*}
+where $G_j = \{ \# y_t > j \}$.  Notice that $1-G_j = F(j) = \{\# y_t \leq j\}$
+and that $G$ may be pre-processed.  Hence the log-likelihood is
+\[
+\sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j + 
+\sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
+d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
+\]
+Preprocessing $G$ saves us from having to compute a doubly indexed summation.
+
 
 % If you have a bibliography.
 % The file withe bibliography is name.bib.
