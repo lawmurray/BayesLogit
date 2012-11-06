@@ -1616,14 +1616,14 @@ Thus
 I think we need to use that when picking $d$.  This becomes more clear if we think
 about our parameterization in terms of $\mu$.  The conditional density is then
 \[
-\frac{\Gamma(y+d)}{\Gamma(d) \Gamma(y) y} \Big( \frac{\mu}{\mu+d} \Big)^d
-\Big(\frac{d}{\mu+d}\Big)^y.
+\frac{\Gamma(y+d)}{\Gamma(d) \Gamma(y) y} \Big( \frac{\mu}{\mu+d} \Big)^y
+\Big(\frac{d}{\mu+d}\Big)^d.
 \]
 I suppose this shows why it is so noice to model the probability $p$.  Our work
 above is still valid for the sum, but really we are interested in
 \[
-\sum_{j=0}^{\max(y_i)-1} G_j \log(d+j) + d \sum_{i} \log \frac{\mu_i}{\mu_i+d} +
-\sum_i y_i \log \frac{d}{\mu_i+d}.
+\sum_{j=0}^{\max(y_i)-1} G_j \log(d+j) + \sum_{i} y_i \log \frac{\mu_i}{\mu_i+d} +
+d \sum_i \log \frac{d}{\mu_i+d}.
 \]
 
 If one includes an intercept, which is often the case, and would seem to be
