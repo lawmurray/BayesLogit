@@ -3,95 +3,12 @@
 
 ## Independent AR(1)'s.  Maybe should change this.
 source("~/RV-Project/Code/C_Examples/MyLib/Gibbs/Ind/AR1/Stationary/Stationary.R");
-
-FFBS <- function(z, X, mu, phi, W, w, m0, C0, with.alpha=FALSE)
-{
-  ## When tracking (alpha, beta_t) or (\beta_t)
-  ## z_t = alpha + x_t beta_t + ep_t, ep_t \sim N(0, 1/w_t)
-  ## beta_t = mu + phi * (beta_t - mu) + omega_t, omega_t \sim N(0,W).
-  
-  ## z : vector of observations.
-  ## X : design matrix
-  ## phi : vector
-  ## r : mixture indicators : list
-  ## W : covariance MATRIX of innovations of beta.
-  ## m0 : prior mean on (alpha, beta)
-  ## C0 : prior var on (alpha, beta)
-
-  T = length(z);
-  N = ncol(X);
-  N.b  = length(phi);
-  N.a = N - N.b;
-  if (with.alpha) a.idc = 1:N.a;
-  b.idc = 1:N.b+N.a;
-  
-  m = array(m0, dim=c(N, T+1));
-  C = array(C0, dim=c(N, N, T+1));
-  R = array(0., dim=c(N, N, T+1));
-  a = array(0., dim=c(N, T+1));
-
-  beta = array(0, dim=c(N.b, T+1));
-  
-  d = c( rep(1, N.a), phi );
-  D = diag(d, N);
-  big.W = matrix(0, N, N); big.W[b.idc, b.idc] = W;
-  
-  ## Feed Forward
-  for (i in 2:(T+1)) {
-    i.l = i-1;
-
-    a[,i]  = d * m[,i-1] + (1-d) * mu;
-    R[,,i] = D %*% C[,,i-1] %*% D  + big.W;
-
-    tF.i = t(X[i.l,])
-    f.i  = tF.i %*% a[,i];
-
-    Q    = tF.i %*% R[,,i] %*% t(tF.i) + diag(1.0 / w[i.l], 1);
-    QI = solve(Q);
-
-    Rtx = R[,,i] %*% X[i.l,];
-    ## xRtx = X[i.l,] %*% Rtx;
-    ## QI  = diag(nm.p, n.i) - (nm.p / (1/xRtx + sum(nm.p))) %*% t(nm.p);
-
-    e.i = z[i.l] - f.i;
-
-    ## A.i = R[,,i] %*% t(tF.i) %*% QI;
-    A.i = Rtx %*% QI;
-
-    ## We could simplify further.
-    m[,i] = a[,i] + A.i %*% e.i;
-    ## C[,,i] = R[,,i] - A.i %*% Q %*% t(A.i);
-    C[,,i] = R[,,i] - Rtx %*% QI %*% t(Rtx);
-    
-  }
-
-  ## Backward Sample
-  ## L = t( chol(C[,,T+1]) );
-  evd = eigen(C[,,T+1]);
-  Rt = evd$vectors %*% diag(sqrt(evd$values), N) %*% t(evd$vectors);
-  theta = m[,T+1] + Rt %*% rnorm(N);
-  alpha = ifelse(with.alpha, theta[a.idc], 0);
-  beta[,T+1] = theta[b.idc];
-  
-  for (i in (T+1):2) {
-
-    B = C[,,i-1] %*% (solve(R[,,i]) * d);
-    theta.V = C[,,i-1] - B %*% R[,,i] %*% t(B);
-    L = t( chol(theta.V[b.idc, b.idc]) );
-    
-    e = beta[,i] - a[b.idc,i];
-    beta.m = m[b.idc,i-1] + B[b.idc, b.idc] %*% e;
-
-    beta[,i-1] = beta.m + L %*% rnorm(N.b);
-  }
-  
-  list("alpha"=alpha, "beta"=beta);
-} ## FFBS
+source("FFBS.R")
 
 ##------------------------------------------------------------------------------
 ## Binomial Logistic Regression.
 
-dyn.logit.PG <- function(y, X, n=rep(1, length(y)),
+dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
                          samp=1000, burn=100, verbose=100000,
                          m.0=NULL, C.0=NULL,
                          mu.m0=NULL, mu.V0=NULL,
@@ -100,57 +17,79 @@ dyn.logit.PG <- function(y, X, n=rep(1, length(y)),
                          beta.true=NULL, iota.true=NULL, w.true=NULL,
                          mu.true=NULL, phi.true=NULL, W.true=NULL)
 {
-  ## y: the counts
-  ## X: the design matrix.
-  ## n: the number of trials.
+  ## y: the counts (T)
+  ## X: the design matrix (including covariates for non-dynamic coef.) (T x P)
+  ## n: the number of trials (T)
 
-  ## m.0 = prior mean for (iota,beta_0) or (beta_0).
-  ## C.0 = prior var  for (iota,beta_0) or (beta_0).
+  ## m.0: prior mean for (iota,beta_0) or (beta_0).  (P)
+  ## C.0: prior var  for (iota,beta_0) or (beta_0).  (P)
+
+  ## mu: mean of (beta_t) (K)
+  ## phi: ar coef. of (beta_t) (K)
+  ## W: innovation variance of (beta_t) (K).
+
+  ## A few things to keep in mind.
+  ## 1) phi = 1 ==> mu = 0.
+  ## 2) phi = 1 && X==1 ==> iota = 0.
+  ## 3) iota = unknown ==> beta = unknown.
+
+  ## Process for (alpha, beta_t):
+  ## alpha_t = alpha_{t-1}
+  ## beta_t \sim AR(1).
   
-  ## NOTE: We do note combine data. ##
-  
+  ## NOTE: We do not combine data. ##
+
   ## Dimension ##
   y = as.matrix(y)
-  X = as.matrix(X)
-  N = nrow(X);
+  X = cbind(X.stc, X.dyn)
+  T = nrow(X);
   P = ncol(X);
+  P.b = ncol(X.dyn);
+  P.a = P - P.b
   M = samp;
-  
-  ## Default prior parameters ##
-  if (is.null(m.0))    m.0    = rep(0.0, P);
-  if (is.null(C.0))    C.0    = diag(1.0, P);
-  if (is.null(mu.m0))  mu.m0  = rep(0.0 , P);
-  if (is.null(mu.V0))  mu.V0  = rep(0.01, P);
-  if (is.null(phi.m0)) phi.m0 = rep(0.99, P);
-  if (is.null(phi.V0)) phi.V0 = rep(0.01, P);
-  if (is.null(W.a0))   W.a0   = rep(1.0, P);
-  if (is.null(W.b0))   W.b0   = rep(1.0, P);
+
+  ## Default prior parameters -- almost a random walk for beta ##
+  if (is.null(m.0)    || is.null(C.0))    { m.0    = rep(0.0, P)   ; C.0    = diag(1.0, P  ); }
+  if (is.null(mu.m0)  || is.null(mu.V0))  { mu.m0  = rep(0.0 ,P.b) ; mu.V0  = rep(0.01, P.b); }
+  if (is.null(phi.m0) || is.null(phi.V0)) { phi.m0 = rep(0.99,P.b) ; phi.V0 = rep(0.01, P.b); }
+  if (is.null(W.a0)   || is.null(W.b0))   { W.a0   = rep(1.0, P.b) ; W.b0   = rep(1.0,  P.b);  }
 
   ## Output data structure ##
   out = list(
-    w    = array(0, dim=c(M, N)),
-    iota = array(0, dim=c(M)),
-    beta = array(0, dim=c(M, P, N+1)),
-    mu   = array(0, dim=c(M, P)),
-    phi  = array(0, dim=c(M, P)),
-    W    = array(0, dim=c(M, P))
+    w    = array(0, dim=c(M, T)),
+    iota = array(0, dim=c(M, max(P.a, 1))),
+    beta = array(0, dim=c(M, P.b, T+1)),
+    mu   = array(0, dim=c(M, P.b)),
+    phi  = array(0, dim=c(M, P.b)),
+    W    = array(0, dim=c(M, P.b))
     )
 
   ## Initialize ##
-  beta = matrix(0.0, P, N+1);  # even odds.
-  mu   = matrix(0.0, P);
-  phi  = matrix(0.99, P);
+  beta = matrix(0.00, P.b, T+1);  # even odds.
+  iota = rep(0.00, P.a);
+  mu   = matrix(0.00, P.b);
+  phi  = matrix(0.99, P.b);
   W    = W.b0 / W.a0;
-  om   = rep(0, N);
-  with.iota = TRUE
+  om   = rep(0, T);
   
   ## In case we are doing testing or we want to constrain to local level model.
-  if (!is.null(beta.true)) beta = beta.true;
-  if (!is.null(mu.true))   mu   = mu.true;
-  if (!is.null(phi.true))  phi  = phi.true;
-  if (!is.null(W.true))    W    = W.true;
-  if (!is.null(w.true))    om   = w.true;
-  if (!is.null(iota.true)) {iota = iota.true; with.iota=FALSE}
+  know.beta = FALSE;
+  know.w    = FALSE;
+  know.phi  = FALSE;
+  know.mu   = FALSE;
+  know.W    = FALSE;
+  know.iota = FALSE;
+  
+  if (!is.null(beta.true)) { beta = beta.true; know.beta = TRUE; }
+  if (!is.null(w.true))    { om   = w.true;    know.w    = TRUE; }
+  if (!is.null(phi.true))  { phi  = phi.true;  know.phi  = TRUE;
+                             if (phi==1) {mu.true = rep(0, P.b);}}
+  if (!is.null(mu.true))   { mu   = mu.true;   know.mu   = TRUE; }
+  if (!is.null(W.true))    { W    = W.true;    know.W    = TRUE; }
+  if (!is.null(iota.true)) { iota = iota.true; know.iota = TRUE; }
+
+  ## Check that we are okay.
+  if (know.beta && P.a > 0 && !know.iota) {printf("Know beta, not iota, X.stc!=NULL."); return(0);}
   
   kappa = (y-n/2)
 
@@ -161,14 +100,16 @@ dyn.logit.PG <- function(y, X, n=rep(1, length(y)),
   for ( j in 1:(samp+burn) )
   {
     if (j==burn+1) start.ess = proc.time();
+
+    psi = apply(X.dyn * t(beta)[-1,], 1, sum);
+    if (P.a > 0) psi = psi + X.stc %*% iota;
     
     ## draw om
-    psi = iota + apply(X * t(beta)[-1,], 1, sum);
-    om = rpg.devroye(N, n, psi);
+    om = rpg.devroye(T, n, psi);
 
     ## Draw beta;
     z = kappa / om;
-    ffbs = FFBS(z, X, mu, phi, diag(W, P), om,  m.0, C.0, with.alpha=with.iota);
+    ffbs = FFBS(z, X, mu, phi, diag(W, P), 1/om,  m.0, C.0);
     iota = ffbs$alpha;
     beta = ffbs$beta;
     
@@ -180,7 +121,7 @@ dyn.logit.PG <- function(y, X, n=rep(1, length(y)),
     # Record if we are past burn-in.
     if (j > burn) {
       out$w[j-burn,]      = om;
-      out$iota[j-burn]    = iota;
+      out$iota[j-burn,]   = iota;
       out$beta[j-burn,,]  = beta;
       out$mu[j-burn, ]    = mu;
       out$phi[j-burn, ]   = phi;
@@ -203,7 +144,7 @@ dyn.logit.PG <- function(y, X, n=rep(1, length(y)),
 
 if (FALSE) {
 
-  T = 500;
+  T = 400;
   P = 1;
 
   beta = array(0, dim=c(P, T+1));
@@ -245,7 +186,7 @@ if (FALSE) {
                       mu.m0=NULL, mu.V0=NULL,
                       phi.m0=NULL, phi.V0=NULL,
                       W.a0=W.a0, W.b0=W.b0,
-                      beta.true=NULL, iota.true=iota, w.true=NULL,
+                      beta.true=NULL, iota.true=NULL, w.true=NULL,
                       mu.true=0.0, phi.true=1.0, W.true=NULL)
 
   ess = apply(out$beta[, 1, ], 2, ESS);
