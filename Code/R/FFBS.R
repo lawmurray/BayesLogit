@@ -1,6 +1,8 @@
 ## FFBS for generalized dynamic linear models.
 
-FFBS <- function(z, X, mu, phi, W, V, m0, C0)
+if(!is.loaded("FFBS.so")) dyn.load("FFBS.so");
+
+FFBS.R <- function(z, X, mu, phi, W, V, m0, C0)
 {
   ## When tracking (alpha, beta_t).  It may be the case that there is no alpha.
   ## z_t = x_t (alpha_t, beta_t) + ep_t, ep_t \sim N(0, V_t).
@@ -21,7 +23,7 @@ FFBS <- function(z, X, mu, phi, W, V, m0, C0)
   N   = ncol(X);
   N.a = N - N.b;
   b.idc = (N.a+1):N;
-  with.alpha = ifelse(N.a > 0, TRUE, FALSE);
+  with.alpha = N.a > 0;
   
   m = array(m0, dim=c(N, T+1));
   C = array(C0, dim=c(N, N, T+1));
@@ -35,7 +37,7 @@ FFBS <- function(z, X, mu, phi, W, V, m0, C0)
   mu = c(rep(0, N.a), mu);
   big.W = matrix(0, N, N); big.W[b.idc, b.idc] = W;
   
-  ## Feed Forward
+  ## Filter Forward
   for (i in 2:(T+1)) {
     i.l = i-1;
 
@@ -91,3 +93,43 @@ FFBS <- function(z, X, mu, phi, W, V, m0, C0)
   
   list("alpha"=alpha, "beta"=beta);
 } ## FFBS
+
+FFBS.C <- function(z, X, mu, phi, W, V, m0, C0)
+{
+  T = length(z)
+
+  T = length(z);
+  N.b = length(mu);
+  N   = ncol(X);
+  N.a = N - N.b;
+
+  ## Check
+  ok = rep(6);
+  ok[1] = length(mu)==length(phi)
+  ok[2] = length(mu)==nrow(W) 
+  ok[3] = nrow(W)==ncol(W) 
+  ok[4] = T==nrow(X) 
+  ok[5] = N==length(m0) 
+  ok[6] = N==nrow(C0) && N==ncol(C0);
+
+  if (!prod(ok)) {
+    printf("FFBS.C: problem", ok, "\n");
+    return(0)
+  }    
+
+  alpha = rep(0, max(N.a, 1));
+  beta  = array(0, dim=c(N.b, T+1));
+  
+  OUT <- .C("ffbs", alpha, beta,
+            z, X,
+            mu, phi, W,
+            V, m0, C0,
+            as.integer(N.b), as.integer(N), as.integer(T),
+            PACKAGE="FFBS");
+
+  ## void ffbs(double *alpha_, double *beta_,
+  ##         double *z_, double *X_, double *mu_, double *phi_, double *W_, double *V_,
+  ##         double *m0_, double *C0_, int N_b, int N, int T)
+     
+  out = list("alpha"=OUT[[1]], "beta"=OUT[[2]]);
+}
