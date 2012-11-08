@@ -1,9 +1,7 @@
-
 ## Binomial Logistic Regression using PolyaGamma augmentation.
 
-## Independent AR(1)'s.  Maybe should change this.
-source("~/RV-Project/Code/C_Examples/MyLib/Gibbs/Ind/AR1/Stationary/Stationary.R");
 source("FFBS.R")
+source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
 
 ##------------------------------------------------------------------------------
 ## Binomial Logistic Regression.
@@ -24,9 +22,9 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
   ## m.0: prior mean for (iota,beta_0) or (beta_0).  (P)
   ## C.0: prior var  for (iota,beta_0) or (beta_0).  (P)
 
-  ## mu: mean of (beta_t) (K)
-  ## phi: ar coef. of (beta_t) (K)
-  ## W: innovation variance of (beta_t) (K).
+  ## mu: mean of (beta_t) (P.b)
+  ## phi: ar coef. of (beta_t) (P.b)
+  ## W: innovation variance of (beta_t) (P.b) -- ASSUMED DIAGONAL.
 
   ## A few things to keep in mind.
   ## 1) phi = 1 ==> mu = 0.
@@ -39,9 +37,13 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
   
   ## NOTE: We do not combine data. ##
 
-  ## Dimension ##
+  ## Structure.
   y = as.matrix(y)
   X = cbind(X.stc, X.dyn)
+  W = as.matrix(W);
+  C.0 = as.matrix(C.0);
+  
+  ## Dimension ##
   T = nrow(X);
   P = ncol(X);
   P.b = ncol(X.dyn);
@@ -92,11 +94,11 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
   if (know.beta && P.a > 0 && !know.iota) {printf("Know beta, not iota, X.stc!=NULL."); return(0);}
   
   kappa = (y-n/2)
-
-  start.time = proc.time();
   
   ## SAMPLE ##
-  
+
+  start.time = proc.time();
+ 
   for ( j in 1:(samp+burn) )
   {
     if (j==burn+1) start.ess = proc.time();
@@ -109,7 +111,7 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
 
     ## Draw beta;
     z = kappa / om;
-    ffbs = FFBS(z, X, mu, phi, diag(W, P), 1/om,  m.0, C.0);
+    ffbs = FFBS.C(z, X, mu, phi, diag(W, P.b), 1/om,  m.0, C.0);
     iota = ffbs$alpha;
     beta = ffbs$beta;
     
@@ -181,7 +183,7 @@ if (FALSE) {
   source("DynLogitPG.R")
   samp = 500
   burn = 0
-  out <- dyn.logit.PG(y, X, samp=samp, burn=burn, verbose=100,
+  out <- dyn.logit.PG(y, X, samp=samp, burn=burn, verbose=1,
                       m.0=b.m0, C.0=b.C0,
                       mu.m0=NULL, mu.V0=NULL,
                       phi.m0=NULL, phi.V0=NULL,
