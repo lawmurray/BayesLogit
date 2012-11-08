@@ -1,5 +1,8 @@
 ## FFBS for generalized dynamic linear models.
 
+## Depends:
+## - FFBS.so
+
 if(!is.loaded("FFBS.so")) dyn.load("../C/FFBS.so");
 
 FFBS.R <- function(z, X, mu, phi, W, V, m0, C0)

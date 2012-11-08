@@ -26,13 +26,16 @@ test_pgpar : test_pgpar.cpp PolyaGamma.hpp PolyaGammaPar.hpp
 test_logit : test_logit.cpp Logit.hpp
 	g++ -o test_logit test_logit.cpp $(OPTS) $(INC) $(GLIB) -lgsl -lblas -llapack
 
-GLogit.so : LogitWrapper.h LogitWrapper.cpp Logit.hpp
+BayesLogit.so : hh_lambda.so Logit.so
+	g++ -o BayesLogit.so hh_lambda.so Logit.so $(OPTS) $(RLNK) -shared -fPIC
+
+GLogit.so : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp
 	g++ -o Logit.so LogitWrapper.cpp $(OPTS) $(INC) $(GLIB) -shared -fPIC -lgsl -lblas -llapack
 
-RLogit.so : LogitWrapper.h LogitWrapper.cpp Logit.hpp
+RLogit.so : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp
 	g++ -o Logit.so LogitWrapper.cpp -DUSE_R $(OPTS) $(INC) $(RINC) $(RLNK) -shared -fPIC -lblas -llapack
 
-hh_lambda : HHWrapper.hpp HHWrapper.cpp
+hh_lambda.so : HHWrapper.hpp HHWrapper.cpp
 	g++ -o hh_lambda.so HHWrapper.cpp -DUSE_R $(OPTS) $(INC) $(RINC) $(RLNK) -shared -fPIC -lblas -llapack
 
 FSF_nmix.so : FSF_nmix.hpp FSF_nmix.cpp

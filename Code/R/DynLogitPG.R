@@ -1,5 +1,9 @@
 ## Binomial Logistic Regression using PolyaGamma augmentation.
 
+## Depends:
+## - FFBS.R
+## - Stationary.R
+
 source("FFBS.R")
 source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
 

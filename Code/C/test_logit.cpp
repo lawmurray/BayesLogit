@@ -19,9 +19,9 @@ int test_mult()
   Matrix y(N, J-1);
   Matrix X(N,   P);
   Matrix n(N);
-  y.read("y.dat", false);
-  X.read("X.dat", false);
-  n.read("n.dat", false);
+  y.read("IO/y.dat", false);
+  X.read("IO/X.dat", false);
+  n.read("IO/n.dat", false);
 
   Matrix ty(J-1, N);
   Matrix tX(  P, N);

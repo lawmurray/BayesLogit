@@ -250,7 +250,7 @@ rpg.alt <- function(num=1, Z=0.0)
 }
 
 ################################################################################
-## PG(n, Z) - Sum of Gammas ##
+                         ## PG(n, Z) - Sum of Gammas ##
 ################################################################################
 
 ## Sample PG(n, z) using sum of Gammas representation.
@@ -267,7 +267,7 @@ rpg.gamma.R <-function(num=1, n=1, z=0.0, trunc=200)
 }
 
 ################################################################################
-## FOR PURPOSES OF TESTING ##
+                         ## FOR PURPOSES OF TESTING ##
 ################################################################################
 
 test.igauss <- function(Z, M=100)
@@ -308,7 +308,7 @@ if (FALSE) {
 
 }
 
-                                        # test.igauss(20.0, 10000);
+## test.igauss(20.0, 10000);
 
 ################################################################################
 ## Covergence ##
@@ -407,9 +407,11 @@ if (FALSE) {
                      ## Check rejection rate by sampling ##
 ################################################################################
 
-Z = 1.37
-outp <- mass.detail(Z);
-samp <- rpg.devroye.R(100000, 1.0, Z);
-
-1/outp$c
-samp$rate
+if (FALSE) {
+  Z = 1.37
+  outp <- mass.detail(Z);
+  samp <- rpg.devroye.R(100000, 1.0, Z);
+  
+  1/outp$c
+  samp$rate
+}
