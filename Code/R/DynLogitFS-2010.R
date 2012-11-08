@@ -253,7 +253,7 @@ dyn.logit.FS <- function(y, X.dyn, n=1, X.stc=NULL,
       out$W[j-burn, ]    = W;
     }
 
-    if (j %% verbose == 0) cat("Dyn Binary Logit FS: Iteration", j, "\n");
+    if (j %% verbose == 0) cat("Dyn Logit FS: Iteration", j, "\n");
     
   }
 
