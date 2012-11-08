@@ -111,7 +111,7 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
 
 if (run$tokyo) {
   
-  tokyo = read.csv("DataSets/tokyo-rain.csv");
+  tokyo = read.csv("Benchmark-DataSets/tokyo-rain.csv");
   tkrain = as.numeric(na.omit(as.numeric(as.matrix(tokyo))))
 
   T = length(tkrain)
