@@ -1,8 +1,8 @@
 
-library("BayesLogit", lib.loc="~/RPackage/BayesLogit/Code/BLPackage/Test/");
-source("~/RPackage/BayesLogit/Code/R/logit-MCMC.R")
-source("~/RPackage/BayesLogit/Code/R/Probit.R")
-source("~/RPackage/BayesLogit/Code/R/Efficiency.R")
+library("BayesLogit");
+source("logit-MCMC.R")
+source("Probit.R")
+source("Efficiency.R")
 
 y = y.heart
 X = as.matrix(X.heart)

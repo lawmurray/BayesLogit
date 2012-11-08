@@ -1,6 +1,6 @@
 
 ## Independent componenent AR1.
-source("~/RV-Project/Code/C_Examples/MyLib/Gibbs/Ind/AR1/Stationary/Stationary.R");
+source("Stationary.R");
 
 ## Define normal mixture.  FS&F p. 3511.
 normal.mixture = list(

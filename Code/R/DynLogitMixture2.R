@@ -2,7 +2,7 @@
 ## of a binary response at each time step.
 
 ## Independent AR(1)'s.  Maybe should change this.
-source("~/RV-Project/Code/C_Examples/MyLib/Gibbs/Ind/AR1/Stationary/Stationary.R");
+source("Stationary.R");
 source("LogitByMixture.R")
 
 ## Define normal mixture.  FS&F (2007) p. 3511.

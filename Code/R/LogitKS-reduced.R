@@ -2,7 +2,7 @@
 
 ################################################################################
 
-if (!is.loaded("hh_lambda")) dyn.load("~/RPackage/BayesLogit/Code/R/hh_lambda.so")
+if (!is.loaded("hh_lambda")) dyn.load("../C/hh_lambda.so")
 
 draw.lambda.C <- function(N, r)
 {

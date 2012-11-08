@@ -1,5 +1,5 @@
 
-library("BayesBridge", lib.loc="~/RPackage/BayesBridge/Code/BBPackage/Test");
+library("BayesBridge");
 source("DynLogitPG.R")
 
 dyn.probit <- function(y, X, tpred, 

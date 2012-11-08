@@ -2,8 +2,8 @@
 ## Negative Binomial Regression using discrete mixture of normals.
 
 ## Load files.
-source("~/RPackage/BayesLogit/Code/R/ComputeMixture.R")
-if (!is.loaded("FSF_nmix.so")) dyn.load("~/RPackage/BayesLogit/Code/R/FSF_nmix.so");
+source("ComputeMixture.R")
+if (!is.loaded("FSF_nmix.so")) dyn.load("../C/FSF_nmix.so");
 
 ################################################################################
                              ## When Modeling MU ##

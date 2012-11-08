@@ -1,6 +1,6 @@
+## Dynamic Logit using PG with an irregular grid for time.
 
-## Independent AR(1)'s.  Maybe should change this.
-source("~/RV-Project/Code/C_Examples/MyLib/Gibbs/Ind/AR1/Stationary/Stationary.R");
+source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
 
 FFBS.PG <- function(y.u, X, tpred, mu, phi, Omega, W, m0, C0, tm)
 {
