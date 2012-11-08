@@ -1,8 +1,8 @@
-## This follows Holmes and Held (2006).
+## This follows Holmes and Held (2006) 
+
+if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so")
 
 ################################################################################
-
-if (!is.loaded("hh_lambda")) dyn.load("../C/hh_lambda.so")
 
 draw.lambda.C <- function(N, r)
 {
@@ -16,13 +16,16 @@ draw.lambda.C <- function(N, r)
   lambda = rep(0.0, N)
   iter   = rep(0.0, N);
   
-  for (i in 1:N) {
-    OUT = .C("hh_lambda", lambda[i], r[i], iter[i]);
-    lambda[i] = OUT[[1]];
-    iter[i]   = OUT[[3]];
-  }
-    
-  lambda
+  ## for (i in 1:N) {
+  ##   OUT = .C("hh_lambda", lambda[i], r[i], iter[i]);
+  ##   lambda[i] = OUT[[1]];
+  ##   iter[i]   = OUT[[3]];
+  ## }
+  ## lambda
+  
+  OUT = .C("hh_lambda_vec", lambda, r, N); 
+  OUT[[1]]
+  
 }
 
 ################################################################################
