@@ -319,13 +319,14 @@ if (FALSE) {
   source("DynLogitPG.R")
   samp = 500
   burn = 0
-  out = dyn.logit.PG(y, X, n, samp=samp, burn=burn, verbose=100,
-                     m.0=b.m0, C.0=b.C0,
-                     mu.m0=NULL, mu.V0=NULL,
-                     phi.m0=NULL, phi.V0=NULL,
-                     W.a0=W.a0, W.b0=W.b0,
-                     beta.true=NULL, iota.true=0, w.true=NULL,
-                     mu.true=0.0, phi.true=1.0, W.true=NULL)
+  out <- dyn.logit.PG(y, X, n,
+                      samp=samp, burn=burn, verbose=100,
+                      m.0=b.m0, C.0=b.C0,
+                      mu.m0=NULL, mu.V0=NULL,
+                      phi.m0=NULL, phi.V0=NULL,
+                      W.a0=W.a0, W.b0=W.b0,
+                      beta.true=NULL, iota.true=0, w.true=NULL,
+                      mu.true=0.0, phi.true=1.0, W.true=NULL)
 
   ess = apply(out$beta[, 1, ], 2, ESS);
   mean(ess)
