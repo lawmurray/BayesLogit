@@ -1,62 +1,81 @@
+## PARAMETERS
+
 # Include for Matrix and GSL.
-INC =   -I$(HOME)/RV-Project/Code/C_Examples/MyLib/Matrix/ \
-	-I$(HOME)/RV-Project/Code/C_Examples/MyLib/RNG/ \
-	-I$(HOME)/RV-Project/Code/C_Examples/MyLib/RandomVariates \
-	-I$(HOME)/Code/include/
+UINC = -I./include
 
+GINC = -I$(HOME)/Code/include
 GLIB = -L$(HOME)/Code/lib
-
-OPTS = -O2 -g -Wall 
-## OPTS = -g -Wall -pedantic
-
-## Note: pedantic kills eigen.
 
 RINC = $(shell R CMD config --cppflags)
 RLNK = $(shell R CMD config --ldflags)
 
+# USE_R = -DUSE_R
+USE_R = 
+
+# ## For BLAS and LAPACK -- I need to figure out how to find these libraries for any system.
+# MKLLNK = -undefined dynamic_lookup -single_module -multiply_defined suppress \
+#        -L/Library/Frameworks/R.framework/Resources/lib/x86_64 -lRblas -lgfortran \
+#        -L/Library/Frameworks/R.framework/Resources/lib/x86_64 -lRlapack
+
+VANLNK = -lblas -llapack
+
+MATLNK = $(VANLNK)
+
+ifndef USE_R
+INC = $(UINC) $(GINC)
+LNK = $(GLIB) $(MATLNK) -lgsl
+else
+INC = $(UINC) $(RINC)
+LNK = $(MATLNK) $(RLNK) 
+endif
+
+OPTS = -O2 $(USE_R)
+## OPTS = -g -Wall -pedantic $(USE_R)
+## Note: pedantic kills eigen.
+
+objects = LogitWrapper.so FSF_nmix.so FFBS.so hh_lambda.so
+
+## TESTS -- set USE_R = ""
+
 test2: test2.cpp FFBS.cpp FFBS.h
-	g++ -o test2 test2.cpp $(OPTS) $(INC) $(GLIB) -lgsl
+	g++ -o test2 test2.cpp $(OPTS) $(INC) $(LNK) 
 
 test3: test3.cpp
-	g++ -o test3 test3.cpp $(OPTS) $(INC) $(GLIB) -lgsl
+	g++ -o test3 test3.cpp $(OPTS) $(INC) $(LNK)
 
 test_pgpar : test_pgpar.cpp PolyaGamma.hpp PolyaGammaPar.hpp
-	g++ -o test_pgpar test_pgpar.cpp $(OPTS) $(INC) $(GLIB) -fopenmp -lgsl -lblas -llapack 
+	g++ -o test_pgpar test_pgpar.cpp $(OPTS) $(INC) -fopenmp $(LNK)
 
 test_logit : test_logit.cpp Logit.hpp
-	g++ -o test_logit test_logit.cpp $(OPTS) $(INC) $(GLIB) -lgsl -lblas -llapack
+	g++ -o test_logit test_logit.cpp $(OPTS) $(INC) $(LNK)
 
-BayesLogit.so : hh_lambda.so Logit.so
-	g++ -o BayesLogit.so hh_lambda.so Logit.so $(OPTS) $(RLNK) -shared -fPIC
+## OBJECTS
 
-GLogit.so : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp
-	g++ -o Logit.so LogitWrapper.cpp $(OPTS) $(INC) $(GLIB) -shared -fPIC -lgsl -lblas -llapack
+BayesLogit.so : $(objects)
+	g++ -o BayesLogit.so $(objects)	$(OPTS) -shared -fPIC $(LNK)
 
-RLogit.so : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp
-	g++ -o Logit.so LogitWrapper.cpp -DUSE_R $(OPTS) $(INC) $(RINC) $(RLNK) -shared -fPIC -lblas -llapack
-
-hh_lambda.so : HHWrapper.hpp HHWrapper.cpp
-	g++ -o hh_lambda.so HHWrapper.cpp -DUSE_R $(OPTS) $(INC) $(RINC) $(RLNK) -shared -fPIC -lblas -llapack
+LogitWrapper.so : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp
+	g++ -o LogitWrapper.so LogitWrapper.cpp $(OPTS) $(INC) -shared -fPIC $(LNK)
 
 FSF_nmix.so : FSF_nmix.hpp FSF_nmix.cpp
-	g++ -o FSF_nmix.so FSF_nmix.cpp -DUSE_R $(OPTS) $(INC) $(RINC) $(RLNK) -shared -fPIC -lblas -llapack
+	g++ -o FSF_nmix.so FSF_nmix.cpp $(OPTS) $(INC) -shared -fPIC $(LNK)
 
 FFBS.so : FFBS.h FFBS.cpp
-	g++ -o FFBS.so FFBS.cpp -DUSE_R $(OPTS) $(INC) $(RINC) $(RLNK) -shared -fPIC
+	g++ -o FFBS.so FFBS.cpp $(OPTS) $(INC) -shared -fPIC $(LNK)
+
+hh_lambda.so : HHWrapper.hpp HHWrapper.cpp
+	g++ -o hh_lambda.so HHWrapper.cpp $(OPTS) $(INC) -shared -fPIC $(LNK)
+
+## CLEAN
+
+clean: 
+	rm *.so
+
+cleandebug:
+	rm -r *.dSYM
 
 ################################################################################
+				 ## APPENDIX ##
+################################################################################
 
-hh_lambda.c : HHWrapper.hpp HHWrapper.cpp
-	R CMD COMPILE CXXFLAGS="-DUSE_R $(OPTS) $(INC) $(RINC) -fPIC" HHWrapper.cpp
-
-hh_lambda.o : HHWrapper.o
-	R CMD SHLIB HHWrapper.o "-shared $(RLNK) -lblas -llapack -o hh_lambda.so" 
-
-hh_lambda.c.2 : HHWrapper.hpp HHWrapper.cpp
-	g++ -o HHWrapper.o -c HHWrapper.cpp -DUSE_R $(OPTS) $(INC) $(RINC) -fPIC
-
-hh_lambda.o.2 : HHWrapper.o
-	g++ -shared HHWrapper.o $(RLNK) -lblas -llapack -o HHWrapper.so
-
-hh_lambda.gsl : HHWrapper.hpp HHWrapper.cpp
-	g++ -o hh_lambda.so HHWrapper.cpp $(OPTS) $(INC) $(RINC) $(RLNK) $(GLIB) -shared -fPIC -lblas -llapack -lgsl
+## Link order matters.  First symbol found is used.
