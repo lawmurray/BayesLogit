@@ -1,5 +1,5 @@
 #include <Eigen/dense>
-#include "RNG.hpp"
+#include "RNG/RNG.hpp"
 #include "FFBS.cpp"
 
 using std::cout;

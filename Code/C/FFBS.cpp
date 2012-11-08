@@ -1,7 +1,7 @@
 
 #include <Eigen/dense>
 #include <stdexcept>
-#include "RNG.hpp"
+#include "RNG/RNG.hpp"
 #include "FFBS.h"
 
 using Eigen::Map;

@@ -25,7 +25,7 @@
 #include "LogitWrapper.hpp"
 #include "Logit.hpp"
 #include "MultLogit.hpp"
-#include "RNG.hpp"
+#include "RNG/RNG.hpp"
 #include "PolyaGamma.hpp"
 #include <exception>
 #include <stdio.h>

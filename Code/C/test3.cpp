@@ -1,6 +1,6 @@
 
 #include <Eigen/dense>
-#include "RNG.hpp"
+#include "RNG/RNG.hpp"
 
 using std::cout;
 using std::endl;

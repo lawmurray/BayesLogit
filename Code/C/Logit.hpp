@@ -24,8 +24,8 @@
 #ifndef __LOGIT__
 #define __LOGIT__
 
-#include "Matrix.h"
-#include "RNG.hpp"
+#include "Matrix/Matrix.h"
+#include "RNG/RNG.hpp"
 #include "PolyaGamma.hpp"
 #include "Normal.hpp"
 #include <stdexcept>
