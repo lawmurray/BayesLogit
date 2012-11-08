@@ -5,7 +5,7 @@
 ################################################################################
 
 ## if (exists("TESTING")) {
-if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so");
+source("Logit-Indicators.R")
 ## } ## TESTING
 
 ################################################################################
@@ -101,34 +101,6 @@ draw.beta <- function(z, X, r, b.0=NULL, B.0=NULL, P.0=NULL)
   beta = b.N + t(chol(B.N)) %*% rnorm(P)
 } ## draw.beta
 
-draw.indicators.R <- function(z, lambda)
-{
-  ## y.u - N x 1 - latent variable y^u in paper.
-  ## lambda = X beta
-
-  res = z - log(lambda)
-  log.wds = log(NM$w) - log(NM$s);
-
-  ## Safer to work on log scale.  Columns correspond to outcome index i!
-  log.post = -0.5 * outer(1/NM$s, res, "*")^2 + log.wds;
-  unnrm.post = exp(log.post);
-
-  ## Now sample. 
-  r = apply(unnrm.post, 2, function(x){sample.int(n=NM$N, size=1, prob=x)})
-}  ## draw.indicators
-
-draw.indicators.C <- function(z, lambda)
-{
-  n = length(z);
-  r = rep(0, n);
-  
-  OUT <- .C("draw_indicators_logistic",
-            as.integer(r), as.double(z), as.double(lambda), as.integer(n),
-            as.double(NM$w), as.double(NM$s), as.integer(NM$N))
-
-  OUT[[1]]
-} ## draw.indicators.C
-
 draw.z <- function(lambda, y){
   n = length(lambda)
   u = runif(n)
@@ -179,7 +151,7 @@ logit.mix.gibbs <- function(y, X, samp=1000, burn=100, b.0=NULL, B.0=NULL, P.0=N
     ## WARNING: (z | r, beta, y) != (z | beta, y).
     ## JOINT DRAW: (z, r | beta, y) = (z | beta, y) (r | z, beta, y)
     z    = draw.z(lambda, y);
-    r    = draw.indicators.C(z, lambda)
+    r    = draw.indicators.logis.C(z, lambda, nmix)
     ## I tried inserting the code directly.  It did not speed things up.
     
     ## (beta | r, z, y)
