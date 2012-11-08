@@ -6,11 +6,22 @@ INC =   -I$(HOME)/RV-Project/Code/C_Examples/MyLib/Matrix/ \
 
 GLIB = -L$(HOME)/Code/lib
 
-OPTS = -O2 -g -Wall -pedantic
+OPTS = -O2 -g -Wall 
 ## OPTS = -g -Wall -pedantic
+
+## Note: pedantic kills eigen.
 
 RINC = $(shell R CMD config --cppflags)
 RLNK = $(shell R CMD config --ldflags)
+
+test2: test2.cpp FFBS.cpp FFBS.h
+	g++ -o test2 test2.cpp $(OPTS) $(INC) $(GLIB) -lgsl
+
+test3: test3.cpp
+	g++ -o test3 test3.cpp $(OPTS) $(INC) $(GLIB) -lgsl
+
+test_pgpar : test_pgpar.cpp PolyaGamma.hpp PolyaGammaPar.hpp
+	g++ -o test_pgpar test_pgpar.cpp $(OPTS) $(INC) $(GLIB) -fopenmp -lgsl -lblas -llapack 
 
 test_logit : test_logit.cpp Logit.hpp
 	g++ -o test_logit test_logit.cpp $(OPTS) $(INC) $(GLIB) -lgsl -lblas -llapack
@@ -24,11 +35,11 @@ RLogit.so : LogitWrapper.h LogitWrapper.cpp Logit.hpp
 hh_lambda : HHWrapper.hpp HHWrapper.cpp
 	g++ -o hh_lambda.so HHWrapper.cpp -DUSE_R $(OPTS) $(INC) $(RINC) $(RLNK) -shared -fPIC -lblas -llapack
 
-FSF_nmix : FSF_nmix.hpp FSF_nmix.cpp
+FSF_nmix.so : FSF_nmix.hpp FSF_nmix.cpp
 	g++ -o FSF_nmix.so FSF_nmix.cpp -DUSE_R $(OPTS) $(INC) $(RINC) $(RLNK) -shared -fPIC -lblas -llapack
 
-test_pgpar : test_pgpar.cpp PolyaGamma.hpp PolyaGammaPar.hpp
-	g++ -o test_pgpar test_pgpar.cpp $(OPTS) $(INC) $(GLIB) -fopenmp -lgsl -lblas -llapack 
+FFBS.so : FFBS.h FFBS.cpp
+	g++ -o FFBS.so FFBS.cpp -DUSE_R $(OPTS) $(INC) $(RINC) $(RLNK) -shared -fPIC
 
 ################################################################################
 
