@@ -22,7 +22,7 @@ $rsyncit $MYLIB/RNG/RRNG.hpp                $BLDIR/src/RRNG.h
 $rsyncit $MYLIB/RandomVariates/Normal.hpp   $BLDIR/src/Normal.h
 
 # R files.
-$rsyncit $BASE/C/LogitWrapper.R  $BLDIR/R/
+$rsyncit $BASE/R/LogitWrapper.R  $BLDIR/R/
 $rsyncit $BASE/R/KS.R            $BLDIR/R/
 ## The function calls in these files are not in the NAMESPACE.
 $rsyncit $BASE/R/LogitPG.R    $BLDIR/R/

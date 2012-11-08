@@ -1,6 +1,8 @@
 ## This follows Holmes and Held (2006) 
 
+## if (exists("TESTING")) {
 if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so")
+## } ##
 
 ################################################################################
 

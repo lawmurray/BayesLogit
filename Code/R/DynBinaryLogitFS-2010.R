@@ -1,10 +1,11 @@
 ## Dynamic BINARY logistic regression using FS's 2010 discrete mixture of
 ## normals.
 
-if (!is.loaded("FSF_nmix.so")) dyn.load("../C/FSF_nmix.so");
-
+## if (exists("TESTING")) {
+if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so");
 source("FFBS.R")
 source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
+## } ## TESTING
 
 ################################################################################
                               ## NORMAL MIXTURE ##
@@ -73,7 +74,7 @@ NM = normal.mixture
 
 ##------------------------------------------------------------------------------
 
-draw.indicators <- function(z, lambda)
+draw.indicators.logis.R <- function(z, lambda)
 {
   ## y.u - N x 1 - latent variable y^u in paper.
   ## lambda = X beta
@@ -89,7 +90,7 @@ draw.indicators <- function(z, lambda)
   r = apply(unnrm.post, 2, function(x){sample.int(n=NM$N, size=1, prob=x)})
 }  ## draw.indicators
 
-draw.indicators.C <- function(z, lambda, nmix)
+draw.indicators.logis.C <- function(z, lambda, nmix)
 {
   n = length(z);
   r = rep(0, n);
@@ -219,7 +220,7 @@ dyn.logit.FS <- function(y, X.dyn, X.stc=NULL,
     if (P.a > 0) psi = psi + X.stc %*% iota;
     lambda = exp(psi);
     z    = draw.z(lambda, y);
-    r    = draw.indicators.C(z, lambda, nmix)
+    r    = draw.indicators.logis.C(z, lambda, nmix)
     
     ## (iota, beta | r, z, y)
     ffbs = FFBS.C(z, X, mu, phi, diag(W,P), nmix$v[r], m.0, C.0)

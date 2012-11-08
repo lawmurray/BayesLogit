@@ -1,6 +1,15 @@
 ## This R script implements Fruhwirth-Schnatter and Fruhwirth's normal-mixture
 ## approximation to logistic regression (2010).
 
+
+################################################################################
+
+## if (exists("TESTING")) {
+if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so");
+## } ## TESTING
+
+################################################################################
+
 ## Based on Monahan & Stefanski means based on their method.  They do not use
 ## the numbers in their article.  I'm not sure what it is.  They use the same
 ## probabilities but different variances?
@@ -58,8 +67,6 @@ NM = normal.mixture
 
 ################################################################################
 
-if (!is.loaded("FSF_nmix")) dyn.load("../C/FSF_nmix.so")
-
 ################################################################################
 
 draw.beta <- function(z, X, r, b.0=NULL, B.0=NULL, P.0=NULL)
@@ -94,7 +101,7 @@ draw.beta <- function(z, X, r, b.0=NULL, B.0=NULL, P.0=NULL)
   beta = b.N + t(chol(B.N)) %*% rnorm(P)
 } ## draw.beta
 
-draw.indicators <- function(z, lambda)
+draw.indicators.R <- function(z, lambda)
 {
   ## y.u - N x 1 - latent variable y^u in paper.
   ## lambda = X beta

@@ -1,7 +1,7 @@
 
-dyn.unload("Logit.so");
-dyn.load("Logit.so")
-source("LogitWrapper.R");
+if (!is.loaded("BayesLogit.so")) dyn.load("BayesLogit.so")
+else { dyn.unload("BayesLogit.so"); dyn.load("BayesLogit.so"); }
+source("../R/LogitWrapper.R", local="TRUE");
 
 out.D = rpg.devroye(100, 1.0, 0.0);
 

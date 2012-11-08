@@ -1,8 +1,10 @@
 ## This follows Holmes and Held (2006).
 
-################################################################################
+## if (exists("TESTING")) {
+if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so")
+## } ## TESTING
 
-if (!is.loaded("hh_lambda")) dyn.load("../C/hh_lambda.so")
+################################################################################
 
 draw.lambda.C <- function(N, r)
 {

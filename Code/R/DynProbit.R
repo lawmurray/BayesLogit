@@ -1,6 +1,10 @@
 
-library("BayesBridge");
+## if (exists("TESTING")) {
+if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so");
 source("DynLogitPG.R")
+## } ## TESTING
+
+################################################################################
 
 dyn.probit <- function(y, X, tpred, 
                        samp=1000, burn=100, verbose=100000,

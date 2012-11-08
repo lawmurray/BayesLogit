@@ -1,19 +1,19 @@
 ## Negative binomial regression using FSF's log-gamma parameterization.
 ## We model the log-mean here.
 
-if (!is.loaded("FSF_nmix.so")) dyn.load("../C/FSF_nmix.so");
-
+## if (exists("TESTING")) {
+if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so");
 source("ComputeMixture.R")
 source("FFBS.R")
-source("NBDF.R")
+source("NBDF.R") ## Routine for sampling shape.
 source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
-
+## } ## TESTING
 
 ################################################################################
 
 ##------------------------------------------------------------------------------
 
-draw.indicators <- function(res, nmix)
+draw.indicators.R <- function(res, nmix)
 {
   ## y.u - N x 1 - latent variable y^u in paper.
   ## lambda = X beta

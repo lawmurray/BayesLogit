@@ -58,7 +58,7 @@ draw.utility <- function(y, lambda)
   y.u = -1 * log( -1 * log(U) / (1+lambda) - (1-y) * log(V) / lambda )
 } ## draw.utility
 
-draw.indicators <- function(y.u, lambda)
+draw.indicators.R <- function(y.u, lambda)
 {
   ## y.u - N x 1 - latent variable y^u in paper.
   ## lambda = X beta
@@ -114,7 +114,7 @@ logit.mix.gibbs <- function(y, X, samp=1000, burn=100, b.0=NULL, B.0=NULL, P.0=N
     ## (y.u, r | beta)  = (y.u | beta) (r | y.u, \beta)
     ## (y.u | beta, r) != (y.u | beta)
     y.u  = draw.utility(y, lambda)
-    r    = draw.indicators(y.u, lambda)
+    r    = draw.indicators.R(y.u, lambda)
     
     beta = draw.beta(y.u, X, r, b.0, "P.0"=P.0);
     

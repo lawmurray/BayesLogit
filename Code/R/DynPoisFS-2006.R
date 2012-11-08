@@ -1,6 +1,9 @@
 
-## Independent componenent AR1.
-source("Stationary.R");
+## if (exists("TESTING")) {
+source("Stationary.R"); ## Independent componenent AR1.
+## } ## TESTING
+
+################################################################################
 
 ## Define normal mixture.  FS&F p. 3511.
 normal.mixture = list(

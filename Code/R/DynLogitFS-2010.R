@@ -1,10 +1,11 @@
 ## Dynamic BINARY logistic regression using FS's 2010 discrete mixture of
 ## normals.
 
-if (!is.loaded("FSF_nmix.so")) dyn.load("../C/FSF_nmix.so");
-
+## if (exists("TESTING")) {
+if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so");
 source("FFBS.R")
 source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
+## } ## TESTING
 
 ################################################################################
                               ## NORMAL MIXTURE ##
@@ -73,7 +74,7 @@ NM = normal.mixture
 
 ##------------------------------------------------------------------------------
 
-draw.indicators <- function(z, lambda)
+draw.indicators.logis.R <- function(z, lambda)
 {
   ## y.u - N x 1 - latent variable y^u in paper.
   ## lambda = X beta
@@ -87,9 +88,9 @@ draw.indicators <- function(z, lambda)
 
   ## Now sample. 
   r = apply(unnrm.post, 2, function(x){sample.int(n=NM$N, size=1, prob=x)})
-}  ## draw.indicators
+}  ## draw.indicators.logis.R
 
-draw.indicators.C <- function(z, lambda, nmix)
+draw.indicators.logis.C <- function(z, lambda, nmix)
 {
   n = length(z);
   r = rep(0, n);
@@ -99,7 +100,7 @@ draw.indicators.C <- function(z, lambda, nmix)
             as.double(nmix$w), as.double(nmix$s), as.integer(nmix$N))
 
   OUT[[1]]
-} ## draw.indicators.C
+} ## draw.indicators.logis.C
 
 ##------------------------------------------------------------------------------
 
@@ -227,7 +228,7 @@ dyn.logit.FS <- function(y, X.dyn, n=1, X.stc=NULL,
     y.hat      = as.numeric(apply(y, 1, samp.y));
     
     z    = draw.z(lambda.hat, y.hat);
-    r    = draw.indicators.C(z, lambda.hat, nmix)
+    r    = draw.indicators.logis.C(z, lambda.hat, nmix)
 
     z.hat = apply(matrix(z        , nrow=n), 2, sum) / n;
     V.hat = apply(matrix(nmix$v[r], nrow=n), 2, sum) / n^2; 
