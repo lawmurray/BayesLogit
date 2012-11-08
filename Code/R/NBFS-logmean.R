@@ -212,7 +212,7 @@ NB.FS.gibbs <- function(y, X,
 
 if (FALSE) {
 
-  dyn.load("FSF_nmix.so")
+  dyn.load("../C/FSF_nmix.so")
   
   N = 500
   X = cbind(1, rnorm(N))

@@ -58,7 +58,7 @@ NM = normal.mixture
 
 ################################################################################
 
-if (!is.loaded("FSF_nmix")) dyn.load("~/RPackage/BayesLogit/Code/R/FSF_nmix.so")
+if (!is.loaded("FSF_nmix")) dyn.load("../C/FSF_nmix.so")
 
 ################################################################################
 
