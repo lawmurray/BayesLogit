@@ -42,7 +42,7 @@ rpg.gamma <- function(num=1, n=1, z=0.0, trunc=200)
     if (length(n) != num) { n = array(n, num); }
     if (length(z) != num) { z = array(z, num); }
 
-    OUT = .C("rpg_gamma", x, n, z, as.integer(num), as.integer(trunc), PACKAGE="Logit");
+    OUT = .C("rpg_gamma", x, n, z, as.integer(num), as.integer(trunc), PACKAGE="BayesLogit");
 
     OUT[[1]]
 }
@@ -62,7 +62,7 @@ rpg.devroye <- function(num=1, n=1, z=0.0)
     if (length(n) != num) { n = array(n, num); }
     if (length(z) != num) { z = array(z, num); }
 
-    OUT = .C("rpg_devroye", x, as.integer(n), z, as.integer(num), PACKAGE="Logit");
+    OUT = .C("rpg_devroye", x, as.integer(n), z, as.integer(num), PACKAGE="BayesLogit");
 
     OUT[[1]]
 }
@@ -132,7 +132,7 @@ logit.combine <- function(y, X, n=rep(1,length(y)),
              as.double(y), as.double(tX), as.double(n),
              as.double(y.prior), as.double(x.prior), as.double(n.prior),
              as.integer(N), as.integer(P),
-             PACKAGE="Logit");
+             PACKAGE="BayesLogit");
 
     N = OUT[[7]];
 
@@ -188,7 +188,7 @@ logit <- function(y, X, n=rep(1,length(y)),
              as.double(y.prior), as.double(x.prior), as.double(n.prior),
              as.integer(N), as.integer(P),
              as.integer(samp), as.integer(burn),
-             PACKAGE="Logit");
+             PACKAGE="BayesLogit");
 
     N = OUT[[9]];
 
@@ -228,7 +228,7 @@ logit.EM <- function(y, X, n=rep(1, length(y)),
              as.double(y.prior), as.double(x.prior), as.double(n.prior),
              as.integer(N), as.integer(P),
              as.double(tol), as.integer(max.iter),
-             PACKAGE="Logit");
+             PACKAGE="BayesLogit");
 
     list("beta"=OUT[[1]], "iter"=OUT[[11]]);
 }
@@ -291,7 +291,7 @@ mlogit.combine <- function(y, X, n=rep(1,nrow(as.matrix(y))))
     OUT = .C("mult_combine",
              as.double(ty), as.double(tX), as.double(n),
              as.integer(N), as.integer(P), as.integer(J),
-             PACKAGE="Logit");
+             PACKAGE="BayesLogit");
 
     N = OUT[[4]];
 
@@ -347,7 +347,7 @@ mlogit <- function(y, X, n=rep(1,nrow(as.matrix(y))),
              as.double(m.0), as.double(P.0),
              as.integer(N), as.integer(P), as.integer(J),
              as.integer(samp), as.integer(burn),
-             PACKAGE="Logit");
+             PACKAGE="BayesLogit");
 
     N = OUT[[8]];
 
