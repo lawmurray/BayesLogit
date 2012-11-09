@@ -9,8 +9,8 @@ GLIB = -L$(HOME)/Code/lib
 RINC = $(shell R CMD config --cppflags)
 RLNK = $(shell R CMD config --ldflags)
 
-# USE_R = -DUSE_R
-USE_R = 
+USE_R = -DUSE_R
+# USE_R = 
 
 # ## For BLAS and LAPACK -- I need to figure out how to find these libraries for any system.
 # MKLLNK = -undefined dynamic_lookup -single_module -multiply_defined suppress \
@@ -24,16 +24,19 @@ MATLNK = $(VANLNK)
 ifndef USE_R
 INC = $(UINC) $(GINC)
 LNK = $(GLIB) $(MATLNK) -lgsl
+DEP = GRNG.o
 else
 INC = $(UINC) $(RINC)
 LNK = $(MATLNK) $(RLNK) 
+DEP = RRNG.o
 endif
 
 OPTS = -O2 $(USE_R)
 ## OPTS = -g -Wall -pedantic $(USE_R)
 ## Note: pedantic kills eigen.
 
-objects = LogitWrapper.so FSF_nmix.so FFBS.so hh_lambda.so
+sobj = LogitWrapper.so FSF_nmix.so FFBS.so hh_lambda.so
+obj = LogitWrapper.o FSF_nmix.o FFBS.o hh_lambda.o RNG.o $(DEP)
 
 ## TESTS -- set USE_R = ""
 
@@ -49,27 +52,36 @@ test_pgpar : test_pgpar.cpp PolyaGamma.hpp PolyaGammaPar.hpp
 test_logit : test_logit.cpp Logit.hpp
 	g++ -o test_logit test_logit.cpp $(OPTS) $(INC) $(LNK)
 
-## OBJECTS
+################################################################################
 
-BayesLogit.so : $(objects)
-	g++ -o BayesLogit.so $(objects)	$(OPTS) -shared -fPIC $(LNK)
+BayesLogit.so : $(obj)
+	g++ -o BayesLogit.so $(obj) $(OPTS) -shared -fPIC $(LNK)
 
-LogitWrapper.so : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp
-	g++ -o LogitWrapper.so LogitWrapper.cpp $(OPTS) $(INC) -shared -fPIC $(LNK)
+LogitWrapper.o : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp
+	g++ $(OPTS) $(INC) -o LogitWrapper.o -c LogitWrapper.cpp
 
-FSF_nmix.so : FSF_nmix.hpp FSF_nmix.cpp
-	g++ -o FSF_nmix.so FSF_nmix.cpp $(OPTS) $(INC) -shared -fPIC $(LNK)
+FSF_nmix.o : FSF_nmix.hpp FSF_nmix.cpp
+	g++ $(OPTS) $(INC) -o FSF_nmix.o -c FSF_nmix.cpp 
 
-FFBS.so : FFBS.h FFBS.cpp
-	g++ -o FFBS.so FFBS.cpp $(OPTS) $(INC) -shared -fPIC $(LNK)
+FFBS.o : FFBS.h FFBS.cpp
+	g++ $(OPTS) $(INC) -o FFBS.o -c FFBS.cpp 
 
-hh_lambda.so : HHWrapper.hpp HHWrapper.cpp
-	g++ -o hh_lambda.so HHWrapper.cpp $(OPTS) $(INC) -shared -fPIC $(LNK)
+hh_lambda.o : HHWrapper.hpp HHWrapper.cpp
+	g++ $(OPTS) $(INC) -o hh_lambda.o -c HHWrapper.cpp 
+
+RNG.o : $(DEP)
+	g++ $(OPTS) $(INC) -c include/RNG/RNG.cpp -o RNG.o 
+
+GRNG.o: 
+	g++ $(INC) $(OPTs) -c include/RNG/GRNG.cpp -o GRNG.o
+
+RRNG.o: 
+	g++ $(INC) $(OPTs) -c include/RNG/RRNG.cpp -o RRNG.o
 
 ## CLEAN
 
 clean: 
-	rm *.so
+	rm *.o
 
 cleandebug:
 	rm -r *.dSYM
@@ -79,3 +91,11 @@ cleandebug:
 ################################################################################
 
 ## Link order matters.  First symbol found is used.
+
+## I believe the way that I am making BayesLogit.so is now more in line with how
+## R does things.
+
+## You can created a shared object with any name and use it in R via dyn.load.
+## However, R will created a shared object with the same name as the package.
+## Thus you might as well do the same thing so that your wrapper functions use
+## the correct parameters.
