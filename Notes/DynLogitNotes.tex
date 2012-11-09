@@ -3,6 +3,7 @@
 \input{commands}
 \usepackage{outlines}
 \usepackage{natbib}
+\usepackage{parskip}
 
 \newcommand{\Polya}{P\'{o}lya}
 \newcommand{\Pois}{\text{Pois}}
@@ -186,7 +187,66 @@ known.  (Aside: we could store $y_t$ and $X_t$ as lists.  But we could also
 store them as vectors or matrices and keep track of the indexing using another
 variable.)
 
-The evolution equations are as follows:
+\section{DLM}
+
+It turns out that we can represent both the PG DLMs and the FS DLMs using the
+same model.  FS includes a static term, which we can do and which we discuss
+below, though not much changes when that is the case.  \textbf{What we discuss
+  here informs our implementation of the FFBS in the BayesLogit package.}  The
+basic model is
+\[
+\begin{cases}
+z_t = x_{s,t} \alpha + x_{d,t} \beta_t + \ep_t, & \ep_t \sim N(0, V_t) \\
+\beta_t = (1-\phi) \mu + \Phi \beta_t + \omega_t, & \omega_t \sim N(0, w).
+\end{cases}
+\]
+Thus we have covariates that are associated with a static coefficient and
+covariates that are associated with a dynamic coefficient. 
+
+This encapsulates all of the models we encounter.  In the PG case, $V_t =
+1/\omega_t$.  In the FS logistic case, $V_t = V_{r_t}$.  In the FS NB case $V_t
+= V_{r_t}$ and we must use $z_t = \log(\lambda_t) + \log(d) + m_{r_t}$. where
+$m_{r_t}$ and $V_{r_t}$ in this case from the representation of $-\log \Ga$.
+
+We may further clarify what is going on by rewriting the system letting $x_t =
+[x_{s,t}, x_{d,t}]$ (row vector) and $\theta_t = [\alpha_t; \beta_t]$ (col
+vector) and then using the DLM
+\[
+\begin{cases}
+z_t = x_t \theta_t + \ep_t, & \ep_t \sim N(0, V_t) \\
+\theta_t = (1-\Phi) \mu + \Phi \theta_t + \omega_t, & \omega_t \sim N(0, W) \\
+\Phi = 
+\begin{pmatrix}
+I & 0 \\
+0 & \phi
+\end{pmatrix}
+\text{ and }
+W = 
+\begin{pmatrix}
+0 & 0 \\
+0 & w
+\end{pmatrix}.
+\end{cases}
+\]
+When there is no $\alpha$, then this just reduces to $\Phi = \phi$ and $W = w$.
+We can filter forward as normal using $\Phi$ and $W$.  To backwards sample we
+draw $\Theta_T | D_T$ and let $\alpha = \Theta_{0:P_a-1}$ if $P_a > 0$ (the
+dimension of $\alpha$) and we let $\beta_T = \theta[P_a:P_b-1,T]$ where $P_b$ is
+the dimension of $\beta_T$.  At this point, we may consider $\alpha$ a fixed
+quantity.  When backwards sampling we just need to look at the joint
+distribution of $(\beta_t, \beta_{t-1})$, which we can calculate using the
+submatrices of $a_t, R_t, m_t, C_t$ from when we filtered forward.  In
+particular, we just let (\texttt{il} stands for $i$ lag)
+\begin{itemize}
+\item \texttt{a.i  = a[b.idc,i]}
+\item \texttt{m.il = m[b.idc,i-1]}
+\item \texttt{R.i  = R[b.idc, b.idc, i]}
+\item \texttt{C.il = C[b.idc, C.idc, i-1]}.
+\end{itemize}
+
+Thus, given these small caveats, we just need the FFBS described below with the
+adjustments discussed above.  Think of $\beta_t$ as $\theta_t$ when including
+$\alpha$.
 \begin{outline}
 \1 Time $t-1$ posterior:
 \[
@@ -241,7 +301,9 @@ C_t & = R_t - \rho_t' Q_t^{-1} \rho_t \\
 \end{outline}
 
 When calculating $Q_t^{-1}$ you want to consider the dimension of $X_t$, which
-we will call $N \times P$.  If $N > P$ then you might want to use SWM, i.e.
+we will call $N \times P$.  In the PG/FS Logit/NB case, $X_t$ is $1 \times P$
+and $Q_t$ is $1 \times 1$!  Thus just do $1/Q_t$ if in \textbf{PG/FS Logit/NB}
+case.  If $N > P$ then you might want to use SWM, i.e.
 \[
 (V + XRX')^{-1} = V^{-1} + V^{-1} X(R^{-1} + X'V^{-1}X)^{-1}X' V^{-1}.
 \]
@@ -251,7 +313,7 @@ NOTICE that in former case, you do not need to calculate $Q$.  Thus $Q$ is $N
 \times N$ ($N$ is the number of ``data points'' and $P$ is the dimension of
 $\beta_t$) and
 \begin{outline}
-\1 $P \geq N$
+\1 $P \geq N$ and $P > 1$
 
   \2 Note: $A_t' = Q_t^{-1} \rho_t \iff Q_t A_t' = \rho_t$.
   \2 $L L' = Q_t$ so $LL' A_t' = \rho_t$.
@@ -389,11 +451,9 @@ Germany   & 4736.249 & 2401.344
   over observations and simulations.  Degenerate ESS removed.}
 \end{table}
 
-\section*{FS\&F method for NB}
+\section*{FS\&F for NB}
 
-I don't know if this is out there.  It seems pretty obvious, so I don't know why
-it isn't in FS's paper on Poisson regression, since it seems like people prefer
-negative binomial regression anyway.
+See FS 2009.
 
 The distribution for $k$ is
 \[
