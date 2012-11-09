@@ -1,9 +1,10 @@
 #!/bin/bash
 # Copy the necessary files to the BayesLogit Package directory.
 
+## BASE=THE DIRECTORY WHERE YOU GIT CLONED BAYESLOGIT.
 BASE=/Users/jwindle/RPackage/BayesLogit
 
-rsyncit="rsync -Crvzut --exclude-from=$HOME/.rsync-exclude"
+rsyncit="rsync -Crvzut --exclude-from=$BASE/.rsync-exclude"
 
 CODE=$BASE/Code
 INCL=$CODE/C/include
