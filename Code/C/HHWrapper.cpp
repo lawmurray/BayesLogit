@@ -1,7 +1,7 @@
 
 #include "HHWrapper.hpp"
-#include "RNG/RNG.hpp"
-// #include "/Users/jwindle/RV-Project/Code/C_Examples/MyLib/RNG/RNG/RNG.hpp"
+#include "RNG.hpp"
+// #include "/Users/jwindle/RV-Project/Code/C_Examples/MyLib/RNG/RNG.hpp"
 #include <cmath>
 #include <iostream>
 
@@ -176,5 +176,5 @@ void hh_lambda_vec(double *lambda, double *r, int *n)
 // better to use R CMD COMPILE and R CMD SHLIB.  I'm not sure if R does some
 // sort of internal checking when you use g++.  Otherwise you could presumably
 // do something nasty.  I did try compiling the above code using R CMD SHLIB
-// (you need to define USE_R and then uncomment the long version of RNG/RNG.hpp).
+// (you need to define USE_R and then uncomment the long version of RNG.hpp).
 // But that didn't seem to help that much.

@@ -20,8 +20,8 @@
 #ifndef __MULTLOGIT__
 #define __MULTLOGIT__
 
-#include "Matrix/Matrix.h"
-#include "RNG/RNG.hpp"
+#include "Matrix.h"
+#include "RNG.hpp"
 #include "PolyaGamma.hpp"
 #include "Normal.hpp"
 #include <stdexcept>

@@ -6,7 +6,7 @@
 #include <vector>
 #include <Eigen/dense>
 #include <stdio.h>
-#include "RNG/RNG.hpp"
+#include "RNG.hpp"
 
 #ifdef USE_R
 #include <R_ext/Utils.h>

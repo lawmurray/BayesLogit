@@ -3,7 +3,7 @@
 
 #include "FSF_nmix.hpp"
 #include <vector>
-#include "RNG/RNG.hpp"
+#include "RNG.hpp"
 #include <math.h>
 #include <stdio.h>
 

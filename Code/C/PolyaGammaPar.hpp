@@ -24,8 +24,8 @@
 #ifndef __POLYAGAMMAPAR__
 #define __POLYAGAMMAPAR__
 
-#include "RNG/RNG.hpp"
-// #include "Matrix/Matrix.h"
+#include "RNG.hpp"
+// #include "Matrix.h"
 #include <vector>
 #include <iostream>
 #include <stdexcept>

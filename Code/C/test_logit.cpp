@@ -1,7 +1,7 @@
 // -*- mode: c++; -*-
 
-#include "Matrix/Matrix.h"
-#include "RNG/RNG.hpp"
+#include "Matrix.h"
+#include "RNG.hpp"
 #include "PolyaGamma.hpp"
 #include "Logit.hpp"
 #include "MultLogit.hpp"
