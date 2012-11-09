@@ -1,7 +1,4 @@
-
-if (exists("TESTING")) {
-if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so");
-} ## TESTING
+## Draw indicators for binomial logistic regression.
 
 ##------------------------------------------------------------------------------
 

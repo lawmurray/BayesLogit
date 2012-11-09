@@ -2,8 +2,6 @@
 ## normals.
 
 ## if (exists("TESTING")) {
-if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so");
-source("FFBS.R")
 source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
 ## } ## TESTING
 

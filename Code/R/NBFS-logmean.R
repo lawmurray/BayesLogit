@@ -3,7 +3,6 @@
 
 ## if (exists("TESTING")) {
 source("ComputeMixture.R")
-source("NB-Indicators.R");
 source("NB-Shape.R") ## Routine for sampling shape.
 ## } ## TESTING
 

@@ -1,9 +1,5 @@
 ## Draw indicators for negative binomial.
 
-if (exists("TESTING")) {
-if (!is.loaded("BayesLogit.so")) dyn.load("../C/BayesLogit.so");
-} ## TESTING
-
 ##------------------------------------------------------------------------------
 
 draw.indicators.R <- function(res, nmix)

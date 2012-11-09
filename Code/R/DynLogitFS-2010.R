@@ -2,8 +2,6 @@
 ## normals.
 
 ## if (exists("TESTING")) {
-source("Logit-Indicators.R")
-source("FFBS.R")
 source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
 ## } ## TESTING
 

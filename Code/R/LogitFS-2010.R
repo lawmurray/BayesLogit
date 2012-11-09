@@ -1,13 +1,6 @@
 ## This R script implements Fruhwirth-Schnatter and Fruhwirth's normal-mixture
 ## approximation to logistic regression (2010).
 
-
-################################################################################
-
-## if (exists("TESTING")) {
-source("Logit-Indicators.R")
-## } ## TESTING
-
 ################################################################################
 
 ## Based on Monahan & Stefanski means based on their method.  They do not use

@@ -1,10 +1,5 @@
 ## FFBS for generalized dynamic linear models.
 
-## Depends:
-## - FFBS.so
-
-if(!is.loaded("FFBS.so")) dyn.load("../C/FFBS.so");
-
 FFBS.R <- function(z, X, mu, phi, W, V, m0, C0)
 {
   ## When tracking (alpha, beta_t).  It may be the case that there is no alpha.
@@ -97,6 +92,8 @@ FFBS.R <- function(z, X, mu, phi, W, V, m0, C0)
   list("alpha"=alpha, "beta"=beta);
 } ## FFBS
 
+##------------------------------------------------------------------------------
+
 FFBS.C <- function(z, X, mu, phi, W, V, m0, C0)
 {
   T = length(z)
@@ -116,7 +113,7 @@ FFBS.C <- function(z, X, mu, phi, W, V, m0, C0)
   ok[6] = N==nrow(C0) && N==ncol(C0);
 
   if (!prod(ok)) {
-    printf("FFBS.C: problem", ok, "\n");
+    cat("FFBS.C: problem", ok, "\n");
     return(0)
   }    
 
@@ -128,7 +125,7 @@ FFBS.C <- function(z, X, mu, phi, W, V, m0, C0)
             mu, phi, W,
             V, m0, C0,
             as.integer(N.b), as.integer(N), as.integer(T),
-            PACKAGE="FFBS");
+            PACKAGE="BayesLogit");
 
   ## void ffbs(double *alpha_, double *beta_,
   ##         double *z_, double *X_, double *mu_, double *phi_, double *W_, double *V_,

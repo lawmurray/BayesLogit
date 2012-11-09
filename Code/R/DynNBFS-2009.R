@@ -3,8 +3,6 @@
 
 ## if (exists("TESTING")) {
 source("ComputeMixture.R")
-source("FFBS.R")
-source("NB-Indicators.R");
 source("NB-Shape.R") ## Routine for sampling shape.
 source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
 ## } ## TESTING
