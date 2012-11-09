@@ -1,8 +1,7 @@
 ## Negative binomial regression using PG augmentation.
 ## We model the log-mean here.
 
-source("FFBS.R")
-source("NBDF.R")
+source("NB-Shape.R")
 source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
 
 ################################################################################
