@@ -64,3 +64,5 @@ Notes/notes.pdf
 Notes/temp.pdf
 compute_mixture.m
 fludata/
+Code/C/include/Matrix/*
+Code/C/include/RNG/*

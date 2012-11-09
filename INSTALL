@@ -4,11 +4,6 @@ load the R package before you call any of the Scripts.
 If you want to change the C files and then update the R package you
 need to go to <Code/BLPackage> and change <sync.bash> so that the
 variable BASE points to the directory in which this file is located.
-You also need to get the Matrix and RNG code.  Go to <Code/C/include>
-(you might have to create the <include> directory) and do
-
-git clone https://github.com/jwindle/Matrix.git
-git clone https://github.com/jwindle/RNG.git
 
 You also need to install Eigen and then tell the Makefile where it is.
 The easyiest thing to do would be to put Eigen in the <include>
