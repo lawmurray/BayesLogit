@@ -12,7 +12,7 @@ source("DynLogitFS-2010.R")
                                   ## SETUP ##
 ################################################################################
 
-run <- list("tokyo"=FALSE)
+run <- list("tokyo"=TRUE)
 
 write.dir = ""
 
@@ -20,7 +20,7 @@ write.it = FALSE
 plot.it  = FALSE
 print.it = FALSE
 
-samp = 100
+samp = 1000
 burn  = 100
 ntrials = 1
 
@@ -143,7 +143,7 @@ if (run$tokyo) {
                             mu.true=0.0, phi.true=1.0);
 
   if (print.it) { print("PG beta: "); print(pg$info.beta); print("FS beta:"); print(fs$info.beta); }
-  if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X.dyn, n, bmark1=pg, bmark2=fs); }
+  if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X, n=n, bmark1=pg, bmark2=fs); }
   if (write.it) save(pg, fs, file=file.path(write.dir, "bmark-tokyo.RData"))
   
 }

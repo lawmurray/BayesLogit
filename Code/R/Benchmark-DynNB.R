@@ -11,15 +11,15 @@ source("DynNBFS-2009.R")
 ################################################################################
 
 run <- list("flu"   =FALSE,
-            "synth1"=FALSE)
+            "synth1"=TRUE)
 
 write.dir = ""
 
 write.it = FALSE
 plot.it  = FALSE
-print.it = FALSE
+print.it = TRUE
 
-samp = 100
+samp = 1000
 burn  = 100
 ntrials = 1
 
