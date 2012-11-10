@@ -1,14 +1,14 @@
 
-if (!is.loaded("BayesLogit.so")) dyn.load("BayesLogit.so")
-else { dyn.unload("BayesLogit.so"); dyn.load("BayesLogit.so"); }
-source("../R/LogitWrapper.R", local="TRUE");
+if (!is.loaded("BayesLogit.so")) { dyn.load("BayesLogit.so") } else
+{ dyn.unload("BayesLogit.so"); dyn.load("BayesLogit.so"); }
+source("../R/LogitWrapper.R", local=TRUE);
 
 out.D = rpg.devroye(100, 1.0, 0.0);
 
 source("../R/PG.R");
 source("../R/logit-MCMC.R");
 source("../R/logit-EM.R");
-source("../R/Multinomial.R");
+source("../R/MultLogitPG.R");
 
 # If you want to generate some data.
 N = 1000;
@@ -26,7 +26,8 @@ n.prior = 1.0;
 glm.1 = glm(y~x+0, family=binomial(link="logit"))
 summary(glm.1)
 
-## logit.EM.R(y,x,n)
+logit.EM.R(y,x,n)
+logit.EM(y, x, n)
 
 out = logit(y, x, samp=1000, burn=100);
 out.C = mlogit(y, x, samp=1000, burn=100);
