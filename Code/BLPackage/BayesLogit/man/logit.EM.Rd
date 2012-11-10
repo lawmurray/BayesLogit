@@ -26,41 +26,38 @@
   given a total number of \eqn{n_i} observations at \eqn{x_i}.  We
   follow this method of encoding data.
 
-  Polson and Scott suggest placing a Jeffrey's Beta prior
-  Be(1/2,1/2) on
-
-  \deqn{ m(\beta) := P(y_0 = 1 | x_0, \beta) = (1 + \exp(-x_0 \beta))^{-1}, }
-
-  which generates a Z-distribution prior for \eqn{\beta},
-
-  \deqn{ p(\beta) = \exp(0.5 x_0 \beta) / (1 + \exp(0.5 x_0 \beta)). }
-
-  One may interpret this as "prior" data where the average response at
-  \eqn{x_0} is \eqn{1/2} based upon a "single" observation.  The
-  default value of \eqn{x_0=mean(x), x=\{x_i\}}.
+  A non-informative prior is used.
 
 }
+
+  % Polson and Scott suggest placing a Jeffrey's Beta prior
+  % Be(1/2,1/2) on
+
+  % \deqn{ m(\beta) := P(y_0 = 1 | x_0, \beta) = (1 + \exp(-x_0 \beta))^{-1}, }
+
+  % which generates a Z-distribution prior for \eqn{\beta},
+
+  % \deqn{ p(\beta) = \exp(0.5 x_0 \beta) / (1 + \exp(0.5 x_0 \beta)). }
+
+  % One may interpret this as "prior" data where the average response at
+  % \eqn{x_0} is \eqn{1/2} based upon a "single" observation.  The
+  % default value of \eqn{x_0=mean(x), x=\{x_i\}}.
 
 \usage{
-logit.EM(y, X, n=rep(1,length(y)),
-            y.prior=0.5, x.prior=colMeans(as.matrix(X)), n.prior=1.0,
-            tol=1e-9, max.iter=100)
+logit.EM(y, X, n=rep(1,length(y)), tol=1e-9, max.iter=100)
 }
-
-% logit.EM.R(y, X, n=rep(1,length(y)),
-%            y.prior=0.5, x.prior=colMeans(as.matrix(X)), n.prior=1.0,
-%            tol=1e-9, max.iter=100)
 
 \arguments{
   \item{y}{An N dimensional vector; \eqn{y_i} is the average response at \eqn{x_i}.}
   \item{X}{An N x P dimensional design matrix; \eqn{x_i} is the ith row.}
   \item{n}{An N dimensional vector; n_i is the number of observations at each \eqn{x_i}.}
-  \item{y.prior}{Average response at \code{x.prior}.}
-  \item{x.prior}{Prior predictor variable.}
-  \item{n.prior}{Number of observations at \code{x.prior}.}
   \item{tol}{Threshold at which algorithm stops.}
   \item{max.iter}{Maximum number of iterations.}
 }
+
+  % \item{y.prior}{Average response at \code{x.prior}.}
+  % \item{x.prior}{Prior predictor variable.}
+  % \item{n.prior}{Number of observations at \code{x.prior}.}
 
 \value{
 
