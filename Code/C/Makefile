@@ -36,7 +36,7 @@ OPTS = -O2 $(USE_R)
 ## Note: pedantic kills eigen.
 
 sobj = LogitWrapper.so FSF_nmix.so FFBS.so hh_lambda.so
-obj = LogitWrapper.o FSF_nmix.o FFBS.o hh_lambda.o RNG.o $(DEP)
+obj = LogitWrapper.o FSF_nmix.o FFBS.o hh_lambda.o RNG.o Matrix.o MatrixFrame.o $(DEP)
 
 ## TESTS -- set USE_R = ""
 
@@ -68,6 +68,12 @@ FFBS.o : FFBS.h FFBS.cpp
 
 hh_lambda.o : HHWrapper.hpp HHWrapper.cpp
 	g++ $(OPTS) $(INC) -o hh_lambda.o -c HHWrapper.cpp 
+
+Matrix.o : MatrixFrame.o 
+	g++ $(OPTS) $(INC) -c include/Matrix/Matrix.cpp -o Matrix.o
+
+MatrixFrame.o :
+	g++ $(OPTS) $(INC) -c include/Matrix/MatrixFrame.cpp -o MatrixFrame.o
 
 RNG.o : $(DEP)
 	g++ $(OPTS) $(INC) -c include/RNG/RNG.cpp -o RNG.o 

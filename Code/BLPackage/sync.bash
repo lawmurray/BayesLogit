@@ -23,7 +23,9 @@ $rsyncit $CODE/C/FSF_nmix.hpp     $BLDIR/src/FSF_nmix.h
 $rsyncit $CODE/C/FSF_nmix.cpp     $BLDIR/src/
 
 $rsyncit $INCL/Matrix/Matrix.h             $BLDIR/src/
+$rsyncit $INCL/Matrix/Matrix.cpp           $BLDIR/src/
 $rsyncit $INCL/Matrix/MatrixFrame.h        $BLDIR/src/
+$rsyncit $INCL/Matrix/MatrixFrame.cpp      $BLDIR/src/
 $rsyncit $INCL/RNG/RNG.hpp                 $BLDIR/src/RNG.h
 $rsyncit $INCL/RNG/RNG.cpp                 $BLDIR/src/
 $rsyncit $INCL/RNG/RRNG.hpp                $BLDIR/src/RRNG.h

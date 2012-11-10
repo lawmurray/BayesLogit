@@ -263,8 +263,7 @@ inline void Logit::draw_beta(MF beta, MF w, MF beta_prev, RNG& r)
 {
     Matrix tXOmega(tX);
     prodonrow(tXOmega, w);
-    Matrix tXOmX(tXOmega, tX, 'N', 'T');
-
+    Matrix tXOmX; mult(tXOmX, tXOmega, tX, 'N', 'T');
     // Joint draw.
     mvnorm.set_from_likelihood(Z, tXOmX);
     mvnorm.draw(beta[0], r);
@@ -280,12 +279,6 @@ inline void Logit::draw_beta(MF beta, MF w, MF beta_prev, RNG& r)
     //   beta(i) = r.norm(m_i, sqrt(1/tXOmX(i,i)));
     // }
 }
-
-// #define GIBBS_CORE(CIDX, PIDX)
-//   draw_w   (w[CIDX]   ,  psi, r);
-//   draw_beta(beta[CIDX], w[CIDX], beta[PIDX], r);
-//   gemm(psi, X, beta[CIDX], 'T');
-//   R_CheckUserInterrupt(void);
 
 double Logit::gibbs_block(MF beta_space, MF w_space, 
 			  MF beta_init, MF w_init,
@@ -401,7 +394,7 @@ int Logit::EM(Matrix& beta, double tol, int max_iter)
 
     Matrix tXOmega(tX);
     prodonrow(tXOmega, w);
-    Matrix tXOmX(tXOmega, tX, 'N', 'T');
+    Matrix tXOmX; mult(tXOmX, tXOmega, tX, 'N', 'T');
     beta.clone(Z); symsolve(tXOmX, beta);
 
     // Check how much we improved.
