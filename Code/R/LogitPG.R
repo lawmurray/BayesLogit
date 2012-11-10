@@ -22,15 +22,15 @@
 ## Bayesian logistic regression
 ##------------------------------------------------------------------------------
 logit.R <- function(y, X, n=rep(1, length(y)),
-                          y.prior=0.5, x.prior=colMeans(as.matrix(X)), n.prior=1.0,
-                          samp=1000, burn=500, verbose=500)
+                    m0, P0,
+                    samp=1000, burn=500, verbose=500)
 {
   ## X: n by p matrix
   ## y: n by 1 vector, avg response
   ## n: n by 1 vector, # of obs at distinct x
 
   ## Combine data.
-  new.data = logit.combine(y, X, n, y.prior, x.prior, n.prior);
+  new.data = logit.combine(y, X, n);
   y = new.data$y;
   X = new.data$X;
   n = new.data$n;
@@ -43,7 +43,7 @@ logit.R <- function(y, X, n=rep(1, length(y)),
 
   alpha = (y-1/2)*n
 
-  Z = colSums(X*alpha)
+  Z = colSums(X*alpha) + P0 %*% m0;
   ## PsiToBeta = solve(t(X) %*% X) %*% t(X);
 
   w = rep(0,N)
@@ -76,7 +76,7 @@ logit.R <- function(y, X, n=rep(1, length(y)),
     ## }
 
     # draw beta - Joint Sample.
-    PC = t(X) %*% (X * w);
+    PC = t(X) %*% (X * w) + P0;
     ## S = solve(PC); ## chol2inv works better for larger P?
     S = chol2inv(chol(PC));
     m = S %*% as.vector(Z);
