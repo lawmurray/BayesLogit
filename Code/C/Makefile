@@ -9,7 +9,8 @@ GLIB = -L$(HOME)/Code/lib
 RINC = $(shell R CMD config --cppflags)
 RLNK = $(shell R CMD config --ldflags)
 
-USE_R = -DUSE_R
+# make USE_R=-DUSE_R whatever
+# USE_R = -DUSE_R
 # USE_R = 
 
 # ## For BLAS and LAPACK -- I need to figure out how to find these libraries for any system.
@@ -47,12 +48,15 @@ test3: test3.cpp
 	g++ -o test3 test3.cpp $(OPTS) $(INC) $(LNK)
 
 test_pgpar : test_pgpar.cpp PolyaGamma.hpp PolyaGammaPar.hpp
-	g++ -o test_pgpar test_pgpar.cpp $(OPTS) $(INC) -fopenmp $(LNK)
+	g++ -o test_pgpar BayesLogit.so test_pgpar.cpp $(OPTS) $(INC) -fopenmp $(LNK)
 
-test_logit : test_logit.cpp Logit.hpp
-	g++ -o test_logit test_logit.cpp $(OPTS) $(INC) $(LNK)
+test_logit : test_logit.cpp Logit.hpp MatRNG.so
+	g++ -o test_logit MatRNG.so test_logit.cpp $(OPTS) $(INC) $(LNK)
 
 ################################################################################
+
+MatRNG.so : Matrix.o RNG.o
+	g++ $(OPTS) $(INC) -o MatRNG.so Matrix.o MatrixFrame.o RNG.o $(DEP) -fPIC -shared $(LNK)
 
 BayesLogit.so : $(obj)
 	g++ -o BayesLogit.so $(obj) $(OPTS) -shared -fPIC $(LNK)
