@@ -40,29 +40,38 @@ int test_mult()
 int main(int argc, char **argv)
 {
   uint P = 1;
-  uint N = 20;
+  uint N = 100;
 
   RNG r;
 
   Matrix tX(P, N);
   Matrix beta_known(P); beta_known.fill(0.5);
-  Matrix y(N);
+  Matrix y(N); y.fill(0.0);
   Matrix n(N); n.fill(1.0);
 
   r.norm(tX, 0, 1.0);
-  Matrix psi_known(tX, beta_known, 'T', 'N');
+  Matrix psi_known; mult(psi_known, tX, beta_known, 'T', 'N');
 
   Matrix p(N);
   for(uint i=0; i < N; i++){
-    p(i) = 1 / ( 1 + exp(psi_known(i)) );
-    double u = r.unif();
-    if (u < p(i)) y(i) = 1.0;
+    p(i) = 1 / ( 1 + exp(-1.*psi_known(i)) );
+    if (r.unif() < p(i)) y(i) = 1.0;
   }
 
-  Logit logit(y, tX, n, 0.5, Matrix(0.0), 1.0);
+  Logit logit(y, tX, n);
+
+  int M = 10000;
 
   Matrix w, beta;
-  logit.gibbs(w, beta, 10000, 100, r);
+  logit.gibbs(w, beta, M, 100, r);
+
+  beta.resize(P, M, 1);
+  std::cout << "Posterior mean: \n" << rowMeans(beta) << "\n";
+
+  Matrix pmode;
+  logit.EM(pmode);
+
+  std::cout << "Posterior mode: \n" << pmode << "\n";
 
   // test_mult();
 
