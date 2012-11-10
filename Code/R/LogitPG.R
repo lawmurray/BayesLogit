@@ -22,7 +22,7 @@
 ## Bayesian logistic regression
 ##------------------------------------------------------------------------------
 logit.R <- function(y, X, n=rep(1, length(y)),
-                    m0, P0,
+                    m0=rep(0, ncol(X)), P0=matrix(0, nrow=ncol(X), ncol=ncol(X)),
                     samp=1000, burn=500, verbose=500)
 {
   ## X: n by p matrix
