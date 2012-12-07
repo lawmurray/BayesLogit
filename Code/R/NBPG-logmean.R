@@ -5,7 +5,7 @@ source("NB-Shape.R");
                              ## When Modeling MU ##
 ################################################################################
 
-draw.beta <- function(X, kappa, d, w, b.0=NULL, B.0=NULL, P.0=NULL)
+draw.beta.PG <- function(X, kappa, d, w, b.0=NULL, B.0=NULL, P.0=NULL)
 {
   ## X: N x P design matrix.
   ## b.0: prior mean for beta
@@ -26,7 +26,7 @@ draw.beta <- function(X, kappa, d, w, b.0=NULL, B.0=NULL, P.0=NULL)
   m = S %*% (a.L + P.0 %*% b.0);
   beta = m + t(chol(S)) %*% rnorm(P);
 
-} ## draw.beta
+} ## draw.beta.PG
 
 NB.PG.gibbs <- function(y, X,
                         b.0=NULL, B.0 = NULL, P.0 = NULL,
@@ -85,7 +85,7 @@ NB.PG.gibbs <- function(y, X,
 
     ## draw beta
     kappa = 0.5 * (y-d)
-    beta = draw.beta(X, kappa, d, w, b.0=b.0, P.0=P.0);
+    beta = draw.beta.PG(X, kappa, d, w, b.0=b.0, P.0=P.0);
     
     # Record if we are past burn-in.
     if (j>burn) {

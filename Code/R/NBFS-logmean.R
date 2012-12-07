@@ -12,7 +12,7 @@ source("NB-Shape.R") ## Routine for sampling shape.
 
 ##------------------------------------------------------------------------------
 
-draw.beta <- function(X, lambda, d, r, nmix, b.0=NULL, B.0=NULL, P.0=NULL)
+draw.beta.FS <- function(X, lambda, d, r, nmix, b.0=NULL, B.0=NULL, P.0=NULL)
 {
   ## X: N x P design matrix.
   ## b.0: prior mean for beta
@@ -34,7 +34,7 @@ draw.beta <- function(X, lambda, d, r, nmix, b.0=NULL, B.0=NULL, P.0=NULL)
   m = S %*% (a.L + P.0 %*% b.0);
   beta = m + t(chol(S)) %*% rnorm(P);
 
-} ## draw.beta
+} ## draw.beta.FS
 
 NB.FS.gibbs <- function(y, X,
                         b.0=NULL, B.0 = NULL, P.0 = NULL,
@@ -99,7 +99,7 @@ NB.FS.gibbs <- function(y, X,
     r    = draw.indicators.C(res, nmix);
 
     ## draw beta
-    beta = draw.beta(X, lambda, d, r, nmix, b.0=b.0, P.0=P.0);
+    beta = draw.beta.FS(X, lambda, d, r, nmix, b.0=b.0, P.0=P.0);
     
     # Record if we are past burn-in.
     if (j>burn) {
