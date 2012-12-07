@@ -110,8 +110,8 @@ benchmark.NB <- function(y, X,
 
 if (FALSE) {
 
-  N = 100;
-  P = 2;
+  N = 1000;
+  P = 10;
 
   ##------------------------------------------------------------------------------
   ## Highly correlated predictors
@@ -124,9 +124,12 @@ if (FALSE) {
   ## Sparse predictors
   X   = matrix(rnorm(N*P, sd=0.0001), nrow=N, ncol=P);
   diag(X) = c(sign(rnorm(P)));
-  
-  
-  beta = rnorm(P, mean=0, sd=2);
+
+  ## Use an intercpet
+  X[,1] = 1.0
+  icept = 2.0
+  beta = rnorm(P, mean=0, sd=icept / 10);
+  beta[1] = icept
   
   ## beta = c(1.0, 0.4);
   ## X = matrix(rnorm(N*P), nrow=N, ncol=P);
@@ -150,15 +153,15 @@ if (FALSE) {
   burn = 1000;
   ntrials = 1;
 
-  out.pg <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+  out.pg <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                          method="PG", m.0=NULL, C.0=NULL, dset.name="")
 
-  out.fs <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+  out.fs <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                          method="FS", m.0=NULL, C.0=NULL, dset.name="", df=6)
 
   out = list();
   for (i in 1:2) {
-    out[[i]] <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+    out[[i]] <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                            method=logit.meth[i], m.0=NULL, C.0=NULL, dset.name="")
   }
 
