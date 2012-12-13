@@ -7,6 +7,7 @@
 ## Generates summary statistics for static coefficient.
 sum.stat <- function(beta, runtime, thin=1)
 {
+  beta = as.matrix(beta)
   n = nrow(beta);
   p = ncol(beta);
   beta = beta[seq(1, n, thin),];
@@ -24,7 +25,7 @@ sum.stat <- function(beta, runtime, thin=1)
   sstat[,7] = apply(beta, 2, function(x){quantile(x, 0.9)});
 
   ## colnames(sstat) = c("mean", "sd", "ESS", "ESS.sec", "myESS", "myESS.sec", "t", "Q.1", "Q.9");
-  colnames(sstat) = c("mean", "sd", "ESS", "ESS.sec", "t", "Q.1", "Q.9");
+  colnames(sstat) = c("mean", "sd", "ESS", "ESR", "t", "Q.1", "Q.9");
 
   sstat
 }
@@ -32,6 +33,11 @@ sum.stat <- function(beta, runtime, thin=1)
 ## Generates summary statistics for dynamic coefficient.
 sum.stat.dyn <- function(beta, runtime, thin=1)
 {
+  beta.dim = dim(beta);
+  n = nrow(beta);
+  p = ncol(beta);
+  if (length(beta.dim)==2) beta = as.array(beta, dim=c(n, 1, p));
+                             
   n = nrow(beta);
   p = ncol(beta);
   T = dim(beta)[3];
@@ -50,7 +56,7 @@ sum.stat.dyn <- function(beta, runtime, thin=1)
   sstat[,,7] = apply(beta, c(2,3), function(x){quantile(x, 0.9)});
 
   ## colnames(sstat) = c("mean", "sd", "ESS", "ESS.sec", "myESS", "myESS.sec", "t", "Q.1", "Q.9");
-  dimnames(sstat)[[3]] = c("mean", "sd", "ESS", "ESS.sec", "t", "Q.1", "Q.9");
+  dimnames(sstat)[[3]] = c("mean", "sd", "ESS", "ESR", "t", "Q.1", "Q.9");
 
   sstat
 }
@@ -161,3 +167,35 @@ plot.check.NB <- function(y, X.dyn, X.stc=NULL, bmark1, bmark2=NULL)
   }
   
 } ## plot.check.NB
+
+##------------------------------------------------------------------------------
+
+setup.table <- function(b.out) {
+
+  ave.sstat = lapply(b.out, function(x) apply(x$sstat$beta, c(1,2), mean));
+  ave.sstat = simplify2array(ave.sstat);
+
+  ave.time  = lapply(b.out, function(x) mean(x$ess.time));
+  ave.time  = simplify2array(ave.time)
+
+  ## min, median, max
+  mmm.ess = apply(ave.sstat[,3,], 2, function(x) quantile(x, c(0.0, 0.5, 1.0)) )
+  mmm.esr = apply(ave.sstat[,4,], 2, function(x) quantile(x, c(0.0, 0.5, 1.0)) )
+
+  ave.arate = simplify2array(lapply(b.out, function(x) x$info$ave.arate));
+  
+  the.table = rbind(ave.time, ave.arate, mmm.ess, mmm.esr);
+  rownames(the.table) = c("time", "ARate", "ESS.min", "ESS.med", "ESS.max", "ESR.min", "ESR.med", "ESR.max");
+
+  ## ave.alpha.indmh = mean(b.out[["IndMH"]]$sstat$alpha[1,1,])
+  ## ave.alpha.ram = mean(b.out[["RAM"]]$sstat$alpha[1,1,])
+
+  eval = eigen(-1*b.out[["IndMH"]]$gb$hess)$values;
+  cn.P = eval[1] / eval[length(eval)];
+
+  out <- list("ave.sstat"=ave.sstat, "eval.V"=eval,
+              "cn.P"=cn.P, "cn.X"=b.out[["IndMH"]]$info$cn.X,
+              "table"=the.table);
+
+  out
+}
