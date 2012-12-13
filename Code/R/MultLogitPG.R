@@ -105,3 +105,26 @@ mlogit.R <- function(y, X, n=rep(1,nrow(as.matrix(y))),
 
   out
 }
+
+################################################################################
+
+################################################################################
+
+if (FALSE) {
+
+  y = as.matrix(y)
+  X = as.matrix(X)
+  
+  N = nrow(X);
+  P = ncol(X);
+  J = ncol(y) + 1;
+  
+  n = rep(1, N)
+  
+  beta.0 = matrix(0, P, J-1);
+  
+  m.0 = array(0, dim=c(P, J-1));
+  p.0 = 0e-4
+  P.0 = array(diag(p.0, P), dim=c(P, P, J-1));
+  
+}
