@@ -30,6 +30,27 @@ norm.llh.2 <- function(beta, m, evalues, P)
   llh
 }
 
+std.norm.llh <- function(beta)
+{
+  beta = as.numeric(beta);
+  -0.5 * (beta %*% beta);
+}
+
+log.std.norm.dens <- function(ep)
+{
+  beta = as.numeric(beta);
+  d = length(beta);
+  -0.5 * d * log(2 * pi) - 0.5 * (ep %*% ep);
+}
+
+std.t.llh <- function(beta, df)
+{
+  ## Assume df is a FIXED parameter.
+  beta = as.numeric(beta);
+  p = length(beta);
+  -0.5 * (df + p) * log(1 + beta %*% beta / df);
+}
+
 t.llh <- function(beta, m, V, nu)
 {
   beta = as.numeric(beta)
@@ -111,70 +132,125 @@ hessian.mlogit.llh <- function(beta, y, X, n, P.0=array(0, dim=c(ncol(X), ncol(X
   hess.vec = array(hess, dim=c(P*(J-1), P*(J-1)));
 }
 
-ind.metroplis <- function(y, X, n, m0, P0, m, V, samp=1000, burn=100, tune = 0.25, verbose=1000)
+ind.metroplis <- function(y, X, n, m0, P0, m, V, samp=1000, burn=100, tune = 0.25, verbose=1000, df=6)
 {
+  ## y: response
+  ## X: design
+  ## n: number of trials per draw.
+  ## m: ppsl mean
+  ## V: ppsl scale
+  
   ## Set Metropolis ##
   evd = eigen(V);
   evalues = evd$values;
   Prec = evd$vectors %*% ( t(evd$vectors) / evd$values );  
-  L  = chol(V);
+  L  = t(chol(V));
+  df = abs(df)
+  use.t = df!=Inf
 
   N = nrow(X)
   P = ncol(X)
   J = ncol(y) + 1
   PJ1 = P * (J - 1);
 
-  output = list(
-    beta = array(0, dim=c(samp, P*(J-1))),
-    alpha = rep(0, samp)
-    )
+  out <- list(beta = array(0, dim=c(samp, P*(J-1))),
+              alpha = rep(0, samp)
+              )
 
-  beta = output$beta[1,]
+  ## start at ppsl mean.
+  ep   = rep(0, PJ1)
+  beta = m
 
+  ## Set mh.diff
+  if (use.t) ppsl.llh = std.t.llh(ep, df) else ppsl.llh = std.norm.llh(ep);
+  mh.diff = mlogit.llh(beta, y, X, n, m0, P0) - ppsl.llh
+
+  ## Timing
+  start.time = proc.time()
+  naccept = 0
+  
   ## Do Metropolis ##
   for (i in 1:(samp+burn)) {
 
-    ppsl = m + tune * L %*% rnorm(PJ1);
-    ## log.ratio = mlogit.llh(ppsl, y, X, n, m0, P0) + norm.llh.2(beta, m, evalues, Prec) -
-    ##   mlogit.llh(beta, y, X, n, m0, P0) - norm.llh.2(ppsl, m, evalues, Prec);
-    log.ratio = mlogit.llh(ppsl, y, X, n, m0, P0) + norm.llh(beta, m, V) -
-      mlogit.llh(beta, y, X, n, m0, P0) - norm.llh(ppsl, m, V);
+    ## beta.0 = beta
+    ## optim.out = optim(beta.0, mlogit.llh, gr=grad.mlogit.llh, method="BFGS", hessian=TRUE,
+    ##  y=y, X=X, n=n, m.0=m0, P.0=P0, control=list(fnscale=-1));
+    
+    if (i==burn+1) { start.ess = proc.time(); naccept = 0; }
+    
+    ## Proposal
+    if (use.t) { ep.ppsl = rt(PJ1, df); } else { ep.ppsl = rnorm(PJ1); }
+    ppsl = m + tune * (L %*% ep.ppsl);
+
+    ## Ratio -- this works
+    ## llh.ratio = mlogit.llh(ppsl, y, X, n, m0, P0) - mlogit.llh(beta, y, X, n, m0, P0);
+    ## if (use.t) { prop.ratio = std.t.llh(ep.ppsl, df) - std.t.llh(ep, df); } else
+    ## { prop.ratio = std.norm.llh(ep.ppsl) - std.norm.llh(ep); }
+    ## log.ratio = llh.ratio - prop.ratio;
+
+    if (use.t) ppsl.llh = std.t.llh(ep.ppsl, df) else ppsl.llh = std.norm.llh(ep.ppsl);
+    mh.diff.ppsl = mlogit.llh(ppsl, y, X, n, m0, P0) - ppsl.llh
+    log.ratio = mh.diff.ppsl - mh.diff
+
+    ## Accept/Reject
     alpha = min(exp(log.ratio), 1);
     if (runif(1) < alpha) {
+      naccept = naccept + 1
       beta = ppsl
+      ep   = ep.ppsl
+      mh.diff = mh.diff.ppsl
     }
     
     if (i > burn) {
-      output$beta[i-burn,] = beta;
-      output$alpha[i-burn] = alpha
+      out$beta[i-burn,] = beta;
+      out$alpha[i-burn] = alpha;
     }
 
     if (i %% verbose == 0) {
-      if (i > burn) cat("Ave alpha:", mean(output$alpha[1:(i-burn)]), ", ");
+      if (i > burn) cat("Ind MH: Ave alpha:", mean(out$alpha[1:(i-burn)]), ", ");
       cat("Iteration:", i, "\n");
     }
   }
 
-  output
+  end.time = proc.time()
+  out$total.time = end.time - start.time
+  out$ess.time   = end.time - start.ess
+  out$acceptr    = naccept / samp;
+
+  out
 }
 
-sym.rw.metroplis <- function(y, X, n, m0, P0, beta.0, samp=1000, burn=100, tune = 0.25, verbose=1000)
+sym.rw.metroplis <- function(y, X, n, m0, P0, beta.0, V, samp=1000, burn=100, tune = 0.25, verbose=1000, df=6)
 {
+  ## y: response
+  ## X: design
+  ## n: number of trials per draw
+  
   N = nrow(X)
   P = ncol(X)
   J = ncol(y) + 1
   PJ1 = P * (J - 1);
+  df = abs(df)
+  use.t = df!=Inf
 
-  output = list(
+  ## Scale of each variable as determined by Hessian.
+  sc = sqrt(diag(V));
+
+  out = list(
     beta = array(0, dim=c(samp, P*(J-1))),
     alpha = rep(0, samp)
     )
 
   beta = beta.0
 
+  ## Timing
+  start.time = proc.time()
+  
   ## Do Metropolis ##
   for (i in 1:(samp+burn)) {
 
+    if (i==burn+1) start.ess = proc.time();
+    
     ## ## Just making stuff up.
     ## H = hessian.mlogit.llh(beta, y, X, n, P0)
     ## evd = eigen(-1*H);
@@ -183,28 +259,165 @@ sym.rw.metroplis <- function(y, X, n, m0, P0, beta.0, samp=1000, burn=100, tune 
     ## evalues[evalues<=0] = pos.min;
     ## RtV = evd$vectors %*% ( t(evd$vectors) / evd$values^0.5 );
     ##  RtV %*%
-    
-    ppsl = beta + tune * rnorm(PJ1);
-    ## log.ratio = mlogit.llh(ppsl, y, X, n, m0, P0) + norm.llh.2(beta, m, evalues, Prec) -
-    ##   mlogit.llh(beta, y, X, n, m0, P0) - norm.llh.2(ppsl, m, evalues, Prec);
+
+    ## Proposal -- Symmetric
+    if (use.t) { ep = rt(PJ1, df); } else { ep = rnorm(PJ1); }
+    ppsl = beta + tune * sc * ep;
+
+    ## Ratio
     log.ratio = mlogit.llh(ppsl, y, X, n, m0, P0) - mlogit.llh(beta, y, X, n, m0, P0)
+
+    ## Accept/Reject?
     alpha = min(exp(log.ratio), 1);
     if (runif(1) < alpha) {
       beta = ppsl
     }
     
     if (i > burn) {
-      output$beta[i-burn,] = beta;
-      output$alpha[i-burn] = alpha
+      out$beta[i-burn,] = beta;
+      out$alpha[i-burn] = alpha
     }
 
     if (i %% verbose == 0) {
-      if (i > burn) cat("Ave alpha:", mean(output$alpha[1:(i-burn)]), ", ");
+      if (i > burn) cat("RW MH: Ave alpha:", mean(out$alpha[1:(i-burn)]), ", ");
       cat("Iteration:", i, "\n");
     }
   }
+  
+  end.time = proc.time()
+  out$total.time = end.time - start.time
+  out$ess.time   = end.time - start.ess
 
-  output
+  out
+}
+
+mlogit.laplace <- function(y, X, n, m.0, P.0, beta.0=NULL)
+{
+  y = as.matrix(y)
+  X = as.matrix(X)
+  
+  N = nrow(X);
+  P = ncol(X);
+  J = ncol(y) + 1;
+
+  if (is.null(beta.0)) beta.0 = matrix(0, P, J-1);
+  
+  optim.out = optim(beta.0, mlogit.llh, gr=grad.mlogit.llh, method="BFGS", hessian=TRUE,
+    y=y, X=X, n=n, m.0=m.0, P.0=P.0, control=list(fnscale=-1));
+  
+  beta.pm = matrix(optim.out$par, P, J-1);
+
+  ## num - numerically
+  ## pen - analytically (pen and paper)
+  
+  ## hess.num = optim.out$hessian
+  hess.pen = hessian.mlogit.llh(beta.pm, y, X, n, P.0)
+  
+  ## V.num = solve(-1*optim.out$hessian); ## I encountered some numerical instability in the German dataset.
+  V.pen = solve(-1*hess.pen);
+  ## Chol.ml = chol(V.pen);
+  
+  m = as.numeric(beta.pm);
+  V = V.pen;
+
+  out = list("m"=m, "V"=V)
+}
+
+mlogit.MH.R <- function(y, X, n, m.0=NULL, P.0=NULL, beta.0=NULL, samp=1000, burn=1000,
+                        method=c("Ind", "RW"), tune=1.0, df=Inf, verbose=1000)
+{
+  ## psi = X beta where beta = [beta_j], j=1,...,J-1.
+  ## J categories, n draws (scalar) for each observation.
+  
+  ## y: dim N x J-1 response vector of multinomial draw,
+  ##    Assume y_i = (y_{i1}, ..., y_{i,J-1}, y_{i,J} = n - ...).
+  ## X: dim N x P design matrix -- does not vary with beta_j
+  ## m.0: P x J-1 prior mean
+  ## P.0: P x P x J-1 prior var.
+  ## beta.0: initial value for numerically calculating map.
+  
+  y = as.matrix(y)
+  X = as.matrix(X)
+  
+  N = nrow(X);
+  P = ncol(X);
+  J = ncol(y) + 1;
+  
+  ## n = rep(1, N)
+  
+  if (is.null(beta.0)) beta.0 = matrix(0, P, J-1);
+
+  if (is.null(m.0)) m.0 = array(0, dim=c(P, J-1));
+  if (is.null(P.0)) {
+    p.0 = 0e-4
+    P.0 = array(diag(p.0, P), dim=c(P, P, J-1));
+  }
+  
+  optim.out = optim(beta.0, mlogit.llh, gr=grad.mlogit.llh, method="BFGS", hessian=TRUE,
+    y=y, X=X, n=n, m.0=m.0, P.0=P.0, control=list(fnscale=-1));
+  
+  beta.pm = matrix(optim.out$par, P, J-1);
+
+  ## num - numerically
+  ## pen - analytically (pen and paper)
+  
+  hess.num = optim.out$hessian
+  hess.pen = hessian.mlogit.llh(beta.pm, y, X, n, P.0)
+  
+  V.num = solve(-1*optim.out$hessian); ## I encountered some numerical instability in the German dataset.
+  V.pen = solve(-1*hess.pen);
+  ## Chol.ml = chol(V.pen);
+  
+  m = as.numeric(beta.pm);
+  V = V.pen;
+  
+  if (method[1]=="Ind")
+    mh = ind.metroplis(y, X, n, m.0, P.0, m, V, samp=samp, burn=burn, tune=tune, verbose=verbose, df=df)
+  if (method[1]=="RW" )
+    mh = sym.rw.metroplis(y, X, n, m.0, P.0, beta.pm, V, samp=samp, burn=burn, tune=tune, verbose=verbose, df=df);
+
+  mh$map  = beta.pm;
+  mh$var  = V.pen;
+  mh$hess = hess.pen;
+  
+  mh
+  
+}
+
+################################################################################
+                               ## EMPIRICAL KL ##
+################################################################################
+
+emp.mlogit.kl <- function(beta, y, X, n, m.0, P.0)
+{
+  print("THIS DOESN'T WORK.");
+
+  lap.approx = mlogit.laplace(y, X, n, m.0, P.0);
+  m = lap.approx$m;
+  V = lap.approx$V;
+  dim.beta = length(m);
+  
+  log.mlogit.post <- function(.beta.) { mlogit.llh(.beta., y, X, n, m.0, P.0) }
+  mlogit.post <- function(.beta.) { exp(mlogit.llh(.beta., y, X, n, m.0, P.0)) }
+  P.log.prop  = mean( apply(beta, 1, log.mlogit.post) )
+  log.P.cnst  = log( mean( apply(beta, 1, mlogit.post) ) )
+
+  U = chol(V);
+  UInv = backsolve(U, diag(1.0, dim.beta));
+  ep = apply(beta, 2, function(.x.) { .x. - m } );
+  ep = ep %*% UInv;
+
+  log.norm.post <- function(.ep.) { log.std.norm.dens(.ep.); }
+  norm.post <- function(.ep.) { exp(log.std.norm.dens(.ep.)); }
+  Q.log.prop = mean( apply(ep, 1, log.norm.post) );
+  log.Q.cnst = 0.0; ## log.norm.post is normalized
+
+  KL = P.log.prop - log.P.cnst - Q.log.prop + log.Q.cnst
+
+  out = list("KL"=KL, "P.log.prop"=P.log.prop, "log.P.cnst"=log.P.cnst,
+    "Q.log.prop"=Q.log.prop, "log.Q.cnst"=log.Q.cnst);
+
+  out
 }
 
 ################################################################################
@@ -213,41 +426,73 @@ sym.rw.metroplis <- function(y, X, n, m0, P0, beta.0, samp=1000, burn=100, tune 
 
 if (FALSE) {
 
-y = as.matrix(y)
-X = as.matrix(X)
+  N = 300;
+  P = 2;
 
-N = nrow(X);
-P = ncol(X);
-J = ncol(y) + 1;
+  ##------------------------------------------------------------------------------
+  ## Correlated predictors
+  rho = 0.0
+  Sig = matrix(rho, nrow=P, ncol=P); diag(Sig) = 1.0;
+  U   = chol(Sig);
+  X   = matrix(rnorm(N*P), nrow=N, ncol=P) %*% U;
 
-n = rep(1, N)
+  beta = rnorm(P, mean=0, sd=2);
+  
+  psi = X %*% beta;
+  p = exp(psi) / (1 + exp(psi));
+  y = rbinom(N, 1, p);
+  n = rep(1, N);
+  
+}
 
-beta.0 = matrix(0, P, J-1);
+if (FALSE) {
 
-m.0 = array(0, dim=c(P, J-1));
-p.0 = 0e-4
-P.0 = array(diag(p.0, P), dim=c(P, P, J-1));
+  y = as.matrix(y)
+  X = as.matrix(X)
+  
+  N = nrow(X);
+  P = ncol(X);
+  J = ncol(y) + 1;
 
-optim.out = optim(beta.0, mlogit.llh, gr=grad.mlogit.llh, method="BFGS", hessian=TRUE,
-                  y=y, X=X, n=n, P.0=P.0, control=list(fnscale=-1));
+  n = rep(1, N)
+  
+  beta.0 = matrix(0, P, J-1);
+  
+  m.0 = array(0, dim=c(P, J-1));
+  p.0 = 0e-4
+  P.0 = array(diag(p.0, P), dim=c(P, P, J-1));
+  
+  optim.out = optim(beta.0, mlogit.llh, gr=grad.mlogit.llh, method="BFGS", hessian=TRUE,
+    y=y, X=X, n=n, m.0=m.0, P.0=P.0, control=list(fnscale=-1));
+  
+  beta.pm = matrix(optim.out$par, P, J-1);
+  
+  hess.num = optim.out$hessian
+  hess.pen = hessian.mlogit.llh(beta.pm, y, X, n, P.0)
+  
+  V.num = solve(-1*optim.out$hessian);
+  V.pen = solve(-1*hess.pen);
+  Chol.ml = chol(V.pen);
+  
+  m = as.numeric(beta.pm);
+  V = V.pen;
 
-beta.ml = matrix(optim.out$par, P, J-1);
+  samp = 10000
+  burn = 1000
+  df = Inf
+  
+  mh.ind = ind.metroplis(y, X, n, m.0, P.0, m, V, samp=samp, burn=burn, tune=1.0, df=df)
+  mh.rw  = sym.rw.metroplis(y, X, n, m.0, P.0, beta.pm, V, samp=samp, burn=burn, tune=0.1, df=df);
+  ## beta.met.ave = colMeans(mh$beta);
+  ## beta.met.ave = array(beta.met.ave, dim=c(P, J-1));
+  
+  apply(mh.ind$beta[seq(1,samp,2),], 2, sd)
+  apply(mh.rw$beta[seq(1,samp,2),] , 2, sd)
 
-hess.num = optim.out$hessian
-hess.pen = hessian.mlogit.llh(beta.ml, y, X, n, P.0)
+  mh = mlogit.MH.R(y, X, n, m.0, P.0, beta.0=beta.pm, method="Ind", tune=1.0, df=Inf)
 
-V.num = solve(-1*optim.out$hessian);
-V.pen = solve(-1*optim.out$hessian);
-Chol.ml = chol(V.pen);
-
-m = as.numeric(beta.ml);
-V = V.pen;
-
-mh = ind.metroplis(y, X, n, m.0, P.0, m, V, samp=10000, burn=1000, tune=0.03)
-mh = sym.rw.metroplis(y, X, n, m.0, P.0, beta.ml, samp=10000, burn=1000, tune=0.02);
-## beta.met.ave = colMeans(mh$beta);
-## beta.met.ave = array(beta.met.ave, dim=c(P, J-1));
-
+  emp.mlogit.kl(mh$beta, y, X, n, m.0, P.0);
+  
 }
 
 ################################################################################
