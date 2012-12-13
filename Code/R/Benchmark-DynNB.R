@@ -19,8 +19,8 @@ write.it = FALSE
 plot.it  = FALSE
 print.it = TRUE
 
-samp = 1000
-burn  = 100
+samp = 10000
+burn  = 1000
 ntrials = 1
 
 ################################################################################
@@ -42,8 +42,8 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
   sstat.beta.list = list();
   sstat.iota.list = list();
 
-  info.beta = matrix(nrow=ntrials, ncol=5);
-  colnames(info.beta) = c("ave.ESS", "sd.ESS", "ave.ESS.sec", "sd.ESS.sec", "ess.time");
+  info.beta = matrix(nrow=ntrials, ncol=7);
+  colnames(info.beta) = c("ave.ESS", "sd.ESS", "ave.ESR", "sd.ESR", "ess.time", "min.ESS", "min.ESR");
   info.iota = info.beta;
 
   for(i in 1:ntrials) {
@@ -77,17 +77,21 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
     sstat.beta = sum.stat.dyn(gb$beta, gb$ess.time[1], thin=1);
     sstat.iota = sum.stat    (gb$iota, gb$ess.time[1], thin=1);
 
-    info.beta[i,"ave.ESS"]     = mean(sstat.beta[,,"ESS"]);
-    info.beta[i,"sd.ESS" ]     = sd(  sstat.beta[,,"ESS"]);
-    info.beta[i,"ave.ESS.sec"] = mean(sstat.beta[,,"ESS.sec"]);
-    info.beta[i,"sd.ESS.sec"]  = sd(  sstat.beta[,,"ESS.sec"]);
-    info.beta[i,"ess.time"]    = gb$ess.time[1]
+    info.beta[i,"ave.ESS"]  = mean(sstat.beta[,,"ESS"]);
+    info.beta[i,"sd.ESS" ]  = sd(  sstat.beta[,,"ESS"]);
+    info.beta[i,"ave.ESR"]  = mean(sstat.beta[,,"ESR"]);
+    info.beta[i,"sd.ESR"]   = sd(  sstat.beta[,,"ESR"]);
+    info.beta[i,"ess.time"] = gb$ess.time[1]
+    info.beta[i,"min.ESS"]  = min( sstat.beta[,,"ESS"]);
+    info.beta[i,"min.ESR"]  = min( sstat.beta[,,"ESR"]);
 
-    info.iota[i,"ave.ESS"]     = mean(sstat.iota[,"ESS"]);
-    info.iota[i,"sd.ESS" ]     = sd(  sstat.iota[,"ESS"]);
-    info.iota[i,"ave.ESS.sec"] = mean(sstat.iota[,"ESS.sec"]);
-    info.iota[i,"sd.ESS.sec"]  = sd(  sstat.iota[,"ESS.sec"]);
-    info.iota[i,"ess.time"]    = gb$ess.time[1]
+    info.iota[i,"ave.ESS"]  = mean(sstat.iota[,"ESS"]);
+    info.iota[i,"sd.ESS" ]  = sd(  sstat.iota[,"ESS"]);
+    info.iota[i,"ave.ESR"]  = mean(sstat.iota[,"ESR"]);
+    info.iota[i,"sd.ESR"]   = sd(  sstat.iota[,"ESR"]);
+    info.iota[i,"ess.time"] = gb$ess.time[1]
+    info.iota[i,"min.ESS"]  = min( sstat.iota[,"ESS"]);
+    info.iota[i,"min.ESR"]  = min( sstat.iota[,"ESR"]);
 
     sstat.beta.list[[i]] = sstat.beta;
     sstat.iota.list[[i]] = sstat.iota;
@@ -156,5 +160,42 @@ if (run$synth1) {
   
 }
 
+##------------------------------------------------------------------------------
+
+if (run$synth2) {
+
+  load("Benchmark-DataSets/DynNB-synth-2.RData")
+
+  y = dyn.nb.2$y;
+  X.dyn = dyn.nb.2$X;
+
+  ## Prior
+  b.m0 = 3.0;
+  b.C0 = 3.0;
+  W    = 0.1;
+  W.a0   = 300;
+  W.b0   = W.a0 * W;
+
+  ## source("Benchmark-DynNB.R")
+  pg <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=NULL,
+                         samp=samp, burn=burn, ntrials=ntrials, verbose=100,
+                         method="PG",
+                         m.0=b.m0, C.0=b.C0,
+                         W.a0=W.a0, W.b0=W.b0,
+                         mu.true=0.0, phi.true=1.0)
+
+  ## source("Benchmark-DynNB.R")
+  fs <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=NULL,
+                         samp=samp, burn=burn, ntrials=ntrials, verbose=100,
+                         method="FS",
+                         m.0=b.m0, C.0=b.C0,
+                         W.a0=W.a0, W.b0=W.b0,
+                         mu.true=0.0, phi.true=1.0)
+
+  if (print.it) { print("PG beta: "); print(pg$info.beta); print("FS beta:"); print(fs$info.beta); }
+  if (plot.it)  { plot.bench(pg, fs); plot.check.NB(y, X.dyn, bmark1=pg, bmark2=fs); }
+  if (write.it) save(pg, fs, file=file.path(write.dir, "bmark-synth1.RData"))
+  
+}
 
 ##------------------------------------------------------------------------------
