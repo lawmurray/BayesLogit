@@ -56,13 +56,13 @@ normal.mixture$mar.mean = 0
 normal.mixture$mar.var  = pi^2 / 3;
 
 ## Make a copy.
-NM = normal.mixture
+nmix.logis = normal.mixture
 
 ################################################################################
 
 ################################################################################
 
-draw.beta <- function(z, X, r, b.0=NULL, B.0=NULL, P.0=NULL)
+draw.beta <- function(z, X, r, nmix, b.0=NULL, B.0=NULL, P.0=NULL)
 {
   ## y: N x 1 outcomes.
   ## X: N x P design matrix.
@@ -81,7 +81,7 @@ draw.beta <- function(z, X, r, b.0=NULL, B.0=NULL, P.0=NULL)
   if (is.null(P.0)) P.0 = matrix(0.0, P, P);
   if (!is.null(B.0)) P.0 = solve(B.0);
 
-  Xdv = X / NM$v[r];
+  Xdv = X / nmix$v[r];
   
   P.L = t(X) %*% Xdv;
   a.L = t(Xdv) %*% z;
@@ -127,7 +127,7 @@ logit.mix.gibbs <- function(y, X, samp=1000, burn=100, b.0=NULL, B.0=NULL, P.0=N
   ## unlikely value (given the data).  It doesn't matter here because we can
   ## sample y.u without respect to r to start.  Nonetheless, seed randomly out
   ## of principle.
-  r = sample.int(NM$N, N, prob=NM$w, replace=TRUE);
+  r = sample.int(nmix.logis$N, N, prob=nmix.logis$w, replace=TRUE);
 
   ## In case we are doing testing.  May remove later.
   if (!is.null(beta.true)) beta = beta.true;
@@ -144,11 +144,11 @@ logit.mix.gibbs <- function(y, X, samp=1000, burn=100, b.0=NULL, B.0=NULL, P.0=N
     ## WARNING: (z | r, beta, y) != (z | beta, y).
     ## JOINT DRAW: (z, r | beta, y) = (z | beta, y) (r | z, beta, y)
     z    = draw.z(lambda, y);
-    r    = draw.indicators.logis.C(z, lambda, nmix)
+    r    = draw.indicators.logis.C(z, lambda, nmix.logis)
     ## I tried inserting the code directly.  It did not speed things up.
     
     ## (beta | r, z, y)
-    beta = draw.beta(z, X, r, b.0, "P.0"=P.0);
+    beta = draw.beta(z, X, r, nmix.logis, b.0, "P.0"=P.0);
     
     if (i > burn) {
       out$beta[i-burn,] = beta;
@@ -220,8 +220,8 @@ if (FALSE) {
   beta = c(1.0, 0.4);
   X = cbind(1, rnorm(N));
 
-  r    = sample.int(NM$N, N, prob=NM$w, replace=TRUE);
-  ep   = rnorm(N, rep(0, N), NM$s[r]);
+  r    = sample.int(nmix.logis$N, N, prob=nmix.logis$w, replace=TRUE);
+  ep   = rnorm(N, rep(0, N), nmix.logis$s[r]);
   z    = X %*% beta + ep
   lambda = exp(X %*% beta);
   y    = as.numeric(z > 0);
