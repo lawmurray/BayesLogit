@@ -157,7 +157,7 @@ if (FALSE) {
                          method="PG", m.0=NULL, C.0=NULL, dset.name="")
 
   out.fs <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
-                         method="FS", m.0=NULL, C.0=NULL, dset.name="", df=6)
+                         method="FS", m.0=NULL, C.0=NULL, dset.name="")
 
   out = list();
   for (i in 1:2) {
