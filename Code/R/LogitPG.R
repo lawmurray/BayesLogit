@@ -56,24 +56,19 @@ logit.R <- function(y, X, n=rep(1, length(y)),
 
   ## c_k = (1:200-1/2)^2 * pi^2 * 4;
 
+  ## Timing
+  start.time = proc.time()
+  
   ## Sample
   for ( j in 1:(samp+burn) )
   {
-
+    if (j==burn+1) start.ess = proc.time();
+    
     ## draw w
     psi = drop(X%*%beta)
     ## Sum of gamma: poor approximation when psi is large!  Causes crash.
     ## Devroye is faster anyway.
     w = rpg.devroye(N, n, psi);
-
-    ## # draw beta - Gibbs sampling
-    ## ups <- t(X) %*% (X*w)
-    ## for ( i in 1:p )
-    ## {
-    ##   mi = Z[i]/ups[i,i] - crossprod(ups[i,-i],beta[-i])/ups[i,i]
-    ##   vi = 1/ups[i,i]
-    ##   beta[i] = rnorm(1,mean=mi,sd=sqrt(vi))
-    ## }
 
     # draw beta - Joint Sample.
     PC = t(X) %*% (X * w) + P0;
@@ -88,8 +83,12 @@ logit.R <- function(y, X, n=rep(1, length(y)),
         output$beta[j-burn,] <- beta
     }
 
-    if (j %% verbose == 0) { print(paste("Iteration", j)); }
+    if (j %% verbose == 0) { print(paste("LogitPG: Iteration", j)); }
   }
+
+  end.time = proc.time()
+  output$total.time = end.time - start.time
+  output$ess.time   = end.time - start.ess
 
   ## Add new data to output.
   output$"y" = y;
