@@ -18,25 +18,27 @@ source("Benchmark-Utilities.R")
 run <- list("synth1"=FALSE,
             "german"=FALSE,
             "diabetes"=FALSE,
-            "australia"=TRUE,
-            "heart"=FALSE,
+            "australia"=FALSE,
+            "heart"=TRUE,
             "nodal"=FALSE)
 
 write.dir = ""
 
-write.it = FALSE
+write.it = TRUE
 plot.it  = FALSE
 print.it = TRUE
 
 samp = 10000
-burn  = 1000
+burn  = 2000
 verbose = 2000
-ntrials = 1
+ntrials = 10
 
 logit.meth <- c("PG", "FS", "IndMH", "RAM",
                 "dRUMIndMH", "dRUMHAM", "dRUMAuxMix", "IndivdRUMIndMH", "GP")
 
-run.meth <- logit.meth[c(1,3,4)]
+run.meth <- logit.meth
+
+start.run = proc.time()
 
 ################################################################################
                            ## Dyn Logit Benchmark ##
@@ -379,7 +381,7 @@ if (run$nodal) {
   y = nodal[, 2]
   X = as.matrix(nodal[,-2])
 
-  glm.heart = glm(y ~ X + 0, family=binomial(link=logit))
+  glm.nodal = glm(y ~ X + 0, family=binomial(link=logit))
   
   out = list();
   for (nm in run.meth) {
@@ -387,11 +389,16 @@ if (run$nodal) {
                                  method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
-  bench.heart = out
+  bench.nodal = out
 
-  if (write.it) save(bench.heart, file="bench-heart.RData");
+  if (write.it) save(bench.nodal, file="bench-nodal.RData");
   
 }
+
+################################################################################
+
+end.run = proc.time()
+run.time = proc.time()
 
 ################################################################################
                                  ## APPENDIX ##
