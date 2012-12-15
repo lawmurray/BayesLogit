@@ -1,5 +1,8 @@
-
 ## Independent Metropolis-Hastings and Symmetric Random Walk Metropolis-Hastings.
+
+################################################################################
+      ## These aren't normalized because Ind MH doesn't change the Var ##
+################################################################################
 
 norm.llh <- function(beta, m, V)
 {
@@ -76,6 +79,10 @@ t.llh.2 <- function(beta, m, evalues, P, nu)
   llh
 }
 
+################################################################################
+                                  ## MLOGIT ##
+################################################################################
+
 mlogit.llh <- function(beta, y, X, n,
                        m.0=array(0, dim=c(ncol(X), ncol(y))),
                        P.0=array(0, dim=c(ncol(X), ncol(X), ncol(y))))
@@ -132,7 +139,59 @@ hessian.mlogit.llh <- function(beta, y, X, n, P.0=array(0, dim=c(ncol(X), ncol(X
   hess.vec = array(hess, dim=c(P*(J-1), P*(J-1)));
 }
 
-ind.metroplis <- function(y, X, n, m0, P0, m, V, samp=1000, burn=100, tune = 0.25, verbose=1000, df=6)
+mlogit.map <- function(y, X, n, m.0, P.0, beta.0=NULL, calc.V=TRUE)
+{
+  y = as.matrix(y)
+  X = as.matrix(X)
+  
+  N = nrow(X);
+  P = ncol(X);
+  J = ncol(y) + 1;
+
+  if (is.null(beta.0)) beta.0 = matrix(0, P, J-1);
+  
+  optim.out = optim(beta.0, mlogit.llh, gr=grad.mlogit.llh, method="BFGS", hessian=TRUE,
+    y=y, X=X, n=n, m.0=m.0, P.0=P.0, control=list(fnscale=-1));
+  
+  beta.pm = matrix(optim.out$par, P, J-1);
+
+  ## num - numerically
+  ## pen - analytically (pen and paper)
+  
+  ## hess.num = optim.out$hessian
+  hess.pen = hessian.mlogit.llh(beta.pm, y, X, n, P.0)
+
+  ## V.num = solve(-1*optim.out$hessian); ## I encountered some numerical instability in the German dataset.
+  ## V.pen = solve(-1 * hess.pen);
+  ## Chol.ml = chol(V.pen);
+  ## V = V.pen;
+  
+  ## m = as.numeric(beta.pm);
+
+  V = NA;
+  if (calc.V) V = solve(-1 * hess.pen);
+
+  out = list("m"=beta.pm, "H"=hess.pen, "V"=V)
+}
+
+approx.mlogit <- function(beta, y, X, n, m.0, P.0)
+{
+  ## Approximate mlogit.post at beta using: - 0.5 h' P h + kapp' h
+  grad = grad.mlogit.llh(beta, y, X, n, m.0, P.0)
+  Prec = -1 * hessian.mlogit.llh(beta, y, X, n, P.0)
+  U = chol(Prec);
+  kapp = Prec %*% beta + grad
+  m = backsolve(U, kapp, transpose=TRUE)
+  m = backsolve(U, m);
+  out = list("m"=m, "P"=P, "U"=U, "kapp"=kapp);
+  out
+}
+
+################################################################################
+                                   ## MH 1 ##
+################################################################################
+
+ind.metropolis <- function(y, X, n, m0, P0, m, V, samp=1000, burn=100, tune = 0.25, verbose=1000, df=6)
 {
   ## y: response
   ## X: design
@@ -148,6 +207,9 @@ ind.metroplis <- function(y, X, n, m0, P0, m, V, samp=1000, burn=100, tune = 0.2
   df = abs(df)
   use.t = df!=Inf
 
+  y = as.matrix(y)
+  X = as.matrix(X)
+  
   N = nrow(X)
   P = ncol(X)
   J = ncol(y) + 1
@@ -220,7 +282,7 @@ ind.metroplis <- function(y, X, n, m0, P0, m, V, samp=1000, burn=100, tune = 0.2
   out
 }
 
-sym.rw.metroplis <- function(y, X, n, m0, P0, beta.0, V, samp=1000, burn=100, tune = 0.25, verbose=1000, df=6)
+sym.rw.metropolis <- function(y, X, n, m0, P0, beta.0, V, samp=1000, burn=100, tune = 0.25, verbose=1000, df=6)
 {
   ## y: response
   ## X: design
@@ -291,38 +353,6 @@ sym.rw.metroplis <- function(y, X, n, m0, P0, beta.0, V, samp=1000, burn=100, tu
   out
 }
 
-mlogit.laplace <- function(y, X, n, m.0, P.0, beta.0=NULL)
-{
-  y = as.matrix(y)
-  X = as.matrix(X)
-  
-  N = nrow(X);
-  P = ncol(X);
-  J = ncol(y) + 1;
-
-  if (is.null(beta.0)) beta.0 = matrix(0, P, J-1);
-  
-  optim.out = optim(beta.0, mlogit.llh, gr=grad.mlogit.llh, method="BFGS", hessian=TRUE,
-    y=y, X=X, n=n, m.0=m.0, P.0=P.0, control=list(fnscale=-1));
-  
-  beta.pm = matrix(optim.out$par, P, J-1);
-
-  ## num - numerically
-  ## pen - analytically (pen and paper)
-  
-  ## hess.num = optim.out$hessian
-  hess.pen = hessian.mlogit.llh(beta.pm, y, X, n, P.0)
-  
-  ## V.num = solve(-1*optim.out$hessian); ## I encountered some numerical instability in the German dataset.
-  V.pen = solve(-1*hess.pen);
-  ## Chol.ml = chol(V.pen);
-  
-  m = as.numeric(beta.pm);
-  V = V.pen;
-
-  out = list("m"=m, "V"=V)
-}
-
 mlogit.MH.R <- function(y, X, n, m.0=NULL, P.0=NULL, beta.0=NULL, samp=1000, burn=1000,
                         method=c("Ind", "RW"), tune=1.0, df=Inf, verbose=1000)
 {
@@ -372,9 +402,9 @@ mlogit.MH.R <- function(y, X, n, m.0=NULL, P.0=NULL, beta.0=NULL, samp=1000, bur
   V = V.pen;
   
   if (method[1]=="Ind")
-    mh = ind.metroplis(y, X, n, m.0, P.0, m, V, samp=samp, burn=burn, tune=tune, verbose=verbose, df=df)
+    mh = ind.metropolis(y, X, n, m.0, P.0, m, V, samp=samp, burn=burn, tune=tune, verbose=verbose, df=df)
   if (method[1]=="RW" )
-    mh = sym.rw.metroplis(y, X, n, m.0, P.0, beta.pm, V, samp=samp, burn=burn, tune=tune, verbose=verbose, df=df);
+    mh = sym.rw.metropolis(y, X, n, m.0, P.0, beta.pm, V, samp=samp, burn=burn, tune=tune, verbose=verbose, df=df);
 
   mh$map  = beta.pm;
   mh$var  = V.pen;
@@ -382,6 +412,356 @@ mlogit.MH.R <- function(y, X, n, m.0=NULL, P.0=NULL, beta.0=NULL, samp=1000, bur
   
   mh
   
+}
+
+################################################################################
+                                 ## MH 2 ##
+################################################################################
+
+llh.norm <- function(x, kappa, UorP, is.prec=TRUE, is.mean=TRUE)
+{
+  ## x: point at which llh is evaluated.
+  ## kappa: Prec * mean or kappa = mean.
+  ## UorP: chol(Prec) or Prec
+  ## is.prec: specifies that UorP is Prec.
+  ## is.mean: kappa is mean
+  
+  if (is.prec) U = chol(UorP)
+  else U = UorP;
+
+  if (is.mean) m = kappa
+  else {
+    m = backsolve(U, kappa, transpose=TRUE);
+    m = backsolve(U, m);
+  }
+  e = x - m;
+  e = U %*% e;
+
+  -1 * sum( log(diag(U)) ) - 0.5 * t(e) %*% e;
+}
+
+llh.norm.utest <- function(x1=c(1,2), x2=c(-1.32,1), m=c(0.5,0.5), V=diag(1, 2))
+{  
+  m = as.matrix(m)
+  V = as.matrix(V)
+  
+  require("mvtnorm")
+  k = V %*% m;
+  P = solve(V);
+
+  d1 = llh.norm(x1, k, P) - llh.norm(x2, k, P);
+  d2 = dmvnorm(x1, m, V, log=TRUE) - dmvnorm(x2, m, V, log=TRUE)
+
+  c(d1,d2)
+}
+
+llh.t <- function(x, kappa, UorP, df, is.prec=TRUE, is.mean=TRUE)
+{
+  ## Assume the df are FIXED between comparisons.
+  ## x: point at which llh is evaluated.
+  ## kappa: Prec * mean or kappa = mean.
+  ## UorP: chol(Prec) or Prec
+  ## df: degrees of freedom
+  ## is.prec: specifies that UorP is Prec.
+  
+  if (is.prec) U = chol(UorP)
+  else U = UorP;
+
+  p = length(x);
+
+  if (is.mean) m = kappa
+  else {
+    m = backsolve(U, kappa, transpose=TRUE);
+    m = backsolve(U, m);
+  }
+  e = x - m;
+  e = U %*% e;
+
+  -1 * sum( log(diag(U)) ) - 0.5 * (df + p) * log(1 + t(e) %*% e / df);
+}
+
+llh.t.utest <- function(x1=c(1,2), x2=c(-1.32,1), m=c(0.5,0.5), V=diag(1, 2), df=6)
+{  
+  m = as.matrix(m)
+  V = as.matrix(V)
+  
+  require("mvtnorm")
+  k = V %*% m;
+  P = solve(V);
+
+  d1 = llh.t(x1, k, P, df) - llh.t(x2, k, P, df);
+  d2 = dmvt(x1, m, V, df=df, log=TRUE) - dmvt(x2, m, V, df=df, log=TRUE)
+
+  c(d1,d2)
+}
+
+log.tget.to.ppsl <- function(beta, y, X, n, m.0, P.0, m, UorP, df=Inf, is.prec=TRUE)
+{
+  ## Calculate log f - log q
+  if (df==Inf)
+    log.fdivq = llh.norm(beta, m, UorP, is.prec)
+  else
+    log.fdivq = llh.t(beta, m, UorP, df, is.prec)
+  
+  log.fdivq = mlogit.llh(beta, y, X, n, m.0, P.0) - log.fdivq
+
+  log.fdivq
+}
+
+draw.beta.ind.MH <- function(beta, y, X, n, m0, P0, map=NULL, U.map=NULL, df=Inf, log.fdivq=NULL)
+{
+  ## Ind MH sample when m0, P0 might be changing.
+  ## beta: previous beta
+  ## y, X, n: data
+  ## m0, P0: priors for beta
+  ## map: posterior mode
+  ## U.map: chol(-H) where H is Hessian at mode
+  ## df: degrees of freedom for proposal
+  ## log.fdiq.q : previous
+  
+  P = length(beta)
+  zero = rep(0, P);
+
+  ## Calculate Laplace Approx if necessary.
+  if (recalc <- (is.null(map) || is.null(U.map))) {
+    lap = mlogit.map(y, X, n, m.0, P.0, beta.0=NULL, calc.V=FALSE)
+    map   = lap$m
+    P.map = -1 * lap$H
+    U.map = chol(P.map)
+  }
+  
+  ## Calculate old log f - log q
+  if (is.null(log.fdivq) || recalc) {
+    if (df==Inf)
+      log.fdivq = llh.norm(beta, map, U.map, is.prec=FALSE)
+    else
+      log.fdivq = llh.t(beta, map, U.map, df, is.prec=FALSE)
+
+    log.fdivq = mlogit.llh(beta, y, X, n, m.0, P.0) - log.fdivq
+  }
+
+  ## log.fdivq = log.tget.to.ppsl(beta, y, X, n, m.0, P.0, map, U.map, df=df, is.prec=FALSE)
+
+  ## Propose
+  if (df==Inf) ep.ppsl = rnorm(P) else ep.ppsl = rt(P, df=df)
+  ppsl = map + backsolve(U.map, ep.ppsl);
+
+  ## Claculate new log f - log q
+  if (df==Inf)
+    log.fdivq.ppsl = llh.norm(ppsl, map, U.map, is.prec=FALSE)
+  else
+    log.fdivq.ppsl = llh.t(ppsl, map, U.map, df, is.prec=FALSE)
+  
+  log.fdivq.ppsl = mlogit.llh(ppsl, y, X, n, m.0, P.0) - log.fdivq.ppsl
+
+  ## acceptance prob
+  alpha = min( exp(log.fdivq.ppsl - log.fdivq), 1);
+  accept = runif(1) < alpha
+  
+  if (accept) {
+    beta = ppsl;
+    log.fdivq = log.fdivq.ppsl
+  }
+
+  out = list("beta"=beta, "alpha"=alpha, "accept"=accept, "log.fdivq"=log.fdivq)
+
+  out
+}
+
+draw.beta.rw.MH <- function(beta, y, X, n, m.0, P.0, df=Inf)
+{
+  ## Make draw based upon Taylor Approximation at beta
+  
+  y = as.matrix(y)
+  X = as.matrix(X)
+  
+  N = nrow(X);
+  P = ncol(X);
+  J = ncol(y) + 1;
+
+  ## Calculate Taylor Approx at beta.
+  approx = approx.mlogit(beta, y, X, n, m.0, P.0)
+  m  = approx$m
+  U  = approx$U
+
+  ## Propose
+  if (df==Inf) ep.ppsl = rnorm(P) else ep.ppsl = rt(P, df=df)
+  ppsl = m + backsolve(U, ep.ppsl);
+
+  ## log.fdivq.ppsl
+  log.fdivq.ppsl = log.tget.to.ppsl(ppsl, y, X, n, m.0, P.0, m, U, df=df, is.prec=FALSE)
+
+  ## Calculate Taylor Approx at ppsl.
+  approx = approx.mlogit(ppsl, y, X, n, m.0, P.0)
+  m  = approx$m
+  U  = approx$U
+  
+  ## log.fdivq.beta
+  log.fdivq.beta = log.tget.to.ppsl(beta, y, X, n, m.0, P.0, m, U, df=df, is.prec=FALSE)
+
+  ## acceptance prob
+  alpha = min( exp(log.fdivq.ppsl - log.fdivq.beta), 1);
+  accept = runif(1) < alpha;
+  
+  if (accept) {
+    beta = ppsl;
+  }
+
+  out = list("beta"=beta, "alpha"=alpha, "accept"=accept)
+
+  out
+}
+
+ind.metropolis.2 <- function(y, X, n, m.0, P.0, samp=1000, burn=100, verbose=1000, df=6)
+{
+  ## An independent MH routine that can be adapted to varying P0.
+  ## Assume proper posterior
+  
+  ## y: response, number of responses in each category
+  ## X: design
+  ## n: number of trials per draw.
+  
+  y = as.matrix(y)
+  X = as.matrix(X)
+  
+  N = nrow(X);
+  P = ncol(X);
+  J = ncol(y) + 1;
+  PJ1 = P * (J - 1);
+  
+  ## n = rep(1, N)
+  
+  if (is.null(m.0)) m.0 = array(0, dim=c(P, J-1));
+  if (is.null(P.0)) {
+    p.0 = 0e-4
+    P.0 = array(diag(p.0, P), dim=c(P, P, J-1));
+  }
+
+  out <- list(beta = array(0, dim=c(samp, P*(J-1))),
+              alpha = rep(0, samp)
+              )
+
+  ## Find mode
+  out.map = mlogit.map(y, X, n, m.0, P.0, beta.0=NULL)
+  m = out.map$m
+  U = chol(-1 * out.map$H)
+  
+  ## start at ppsl mean.
+  ep   = rep(0, PJ1)
+  beta = out.map$m
+
+  ## Generate proposal
+  out.beta = draw.beta.ind.MH(beta, y, X, n, m.0, P.0, map=m, U.map=U, df=df, log.fdivq=NULL)
+  beta = out.beta$beta
+  log.fdivq = out.beta$log.fdivq
+
+  ## Timing
+  start.time = proc.time()
+  naccept = 0
+  
+  ## Do Metropolis ##
+  for (i in 1:(samp+burn)) {
+
+    if (i==burn+1) { start.ess = proc.time(); }
+
+    ## out.beta = draw.beta.ind.MH(beta, y, X, n, m.0, P.0, map=m, U.map=U, df=df, log.fdivq=log.fdivq)
+    out.beta = draw.beta.ind.MH(beta, y, X, n, m.0, P.0, map=NULL, U.map=NULL, df=df, log.fdivq=NULL)
+    beta = out.beta$beta
+    
+    if (i > burn) {
+      out$beta[i-burn,] = beta
+      out$alpha[i-burn] = out.beta$alpha
+      naccept = naccept + out.beta$accept
+    }
+
+    if (i %% verbose == 0) {
+      if (i > burn) cat("Ind MH2: Ave alpha:", mean(out$alpha[1:(i-burn)]), ", ");
+      cat("Iteration:", i, "\n");
+    }
+    
+  }
+
+  end.time = proc.time()
+  out$total.time = end.time - start.time
+  out$ess.time   = end.time - start.ess
+  out$acceptr    = naccept / samp;
+
+  out
+}
+
+rw.metropolis <- function(y, X, n, m.0=NULL, P.0=NULL, samp=1000, burn=100, verbose=1000, df=6)
+{
+  ## RW MH based upon Taylor approx. to post. at current beta.
+  ## Assume proper posterior
+  
+  ## y: response, number of responses in each category
+  ## X: design
+  ## n: number of trials per draw.
+  
+  y = as.matrix(y)
+  X = as.matrix(X)
+  
+  N = nrow(X);
+  P = ncol(X);
+  J = ncol(y) + 1;
+  PJ1 = P * (J - 1);
+  
+  ## n = rep(1, N)
+  
+  if (is.null(m.0)) m.0 = array(0, dim=c(P, J-1));
+  if (is.null(P.0)) {
+    p.0 = 0e-4
+    P.0 = array(diag(p.0, P), dim=c(P, P, J-1));
+  }
+
+  out <- list(beta = array(0, dim=c(samp, P*(J-1))),
+              alpha = rep(0, samp)
+              )
+
+  ## Find mode
+  out.map = mlogit.map(y, X, n, m.0, P.0, beta.0=NULL)
+  m = out.map$m
+  U = chol(-1 * out.map$H)
+  
+  ## start at ppsl mean.
+  ep   = rep(0, PJ1)
+  beta = out.map$m
+
+  ## Generate proposal
+  out.beta = draw.beta.rw.MH(beta, y, X, n, m.0, P.0, df=df)
+  beta = out.beta$beta
+
+  ## Timing
+  start.time = proc.time()
+  naccept = 0
+  
+  ## Do Metropolis ##
+  for (i in 1:(samp+burn)) {
+
+    if (i==burn+1) { start.ess = proc.time(); }
+
+    out.beta = draw.beta.rw.MH(beta, y, X, n, m.0, P.0, df=df)
+    beta = out.beta$beta
+    
+    if (i > burn) {
+      out$beta[i-burn,] = beta
+      out$alpha[i-burn] = out.beta$alpha
+      naccept = naccept + out.beta$accept
+    }
+
+    if (i %% verbose == 0) {
+      if (i > burn) cat("RW MH2: Ave alpha:", mean(out$alpha[1:(i-burn)]), ", ");
+      cat("Iteration:", i, "\n");
+    }
+    
+  }
+
+  end.time = proc.time()
+  out$total.time = end.time - start.time
+  out$ess.time   = end.time - start.ess
+  out$acceptr    = naccept / samp;
+
+  out
 }
 
 ################################################################################
@@ -481,8 +861,10 @@ if (FALSE) {
   burn = 1000
   df = Inf
   
-  mh.ind = ind.metroplis(y, X, n, m.0, P.0, m, V, samp=samp, burn=burn, tune=1.0, df=df)
-  mh.rw  = sym.rw.metroplis(y, X, n, m.0, P.0, beta.pm, V, samp=samp, burn=burn, tune=0.1, df=df);
+  mh.ind = ind.metropolis(y, X, n, m.0, P.0, m, V, samp=samp, burn=burn, tune=1.0, df=df)
+  mh.rw  = sym.rw.metropolis(y, X, n, m.0, P.0, beta.pm, V, samp=samp, burn=burn, tune=0.1, df=df);
+  mh.ind2 = ind.metropolis.2(y, X, n, m.0, P.0, samp=samp, burn=burn, df=df);
+  mh.rw2  = rw.metropolis(y, X, n, m.0, P.0, samp=samp, burn=burn, df=df);
   ## beta.met.ave = colMeans(mh$beta);
   ## beta.met.ave = array(beta.met.ave, dim=c(P, J-1));
   
@@ -507,3 +889,7 @@ if (FALSE) {
 
 ## With an improper prior, the Austrailia Credit dataset also not positive
 ## definite.  It is numerically singular.
+
+## It appears for the second MH sampler that things are much faster without
+## function calls.  I think this makes sense because R is always copying objects
+## when passing to a function.
