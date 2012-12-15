@@ -70,10 +70,13 @@ logit.R <- function(y, X, n=rep(1, length(y)),
     ## Devroye is faster anyway.
     w = rpg.devroye(N, n, psi);
 
-    # draw beta - Joint Sample.
-    PC = t(X) %*% (X * w) + P0;
-    ## S = solve(PC); ## chol2inv works better for larger P?
-    S = chol2inv(chol(PC));
+    ## draw beta - Joint Sample.
+    PP = t(X) %*% (X * w) + P0;
+    ## U = chol(PP);
+    ## m = backsolve(U, Z, transpose=TRUE);
+    ## m = backsolve(U, m);
+    ## beta = m + backsolve(U, rnorm(p))
+    S = chol2inv(chol(PP));
     m = S %*% as.vector(Z);
     beta = m + t(chol(S)) %*% rnorm(p);
 

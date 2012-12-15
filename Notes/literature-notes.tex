@@ -835,6 +835,23 @@ guessing, for the regression coefficient.  (Aside, what if you use Andrews and
 Mallows as suggested above with Holmes and Held to generate a link function?  Or
 with our method for that matter.)
 
+Check out Chib and Greenberg 1998 to see where they get some inspiration.
+
+We can use there method to do a direct comparison with binary logit.  We need to
+add a Metropolis step.  This is essentially in Albert and Chib 1993---use a $t$
+to approximate the logistic.
+
+If we think about a single draw from a multinomail distribution with $K$
+categories, we have
+\[
+p_{ik} = \frac{e^{\psi_{ik}}}{1 + \sum_{k=1}^{K-1} e^{\psi_{ik}}} = F(\alpha_k)
+- F(\alpha_{k-1})
+\]
+where the last term comes from O'Brien and Dunson.  The parameters $\alpha_k$
+partition $\bbR$ to determine the probability of selecting something from group
+$k$.  Thus it seems like it should be the $\alpha_k$ that are associated with
+the $\beta_k$ in the multinomial case.
+
 \section{Scott, 2011}
 
 Title: Data augmentation, frequentist estimation, and the Bayesian analysis of
@@ -911,6 +928,35 @@ Title: Analysis of multivariate probit models
 Citation: \cite{chib-greenberg-1998}
 
 BibKey: chib-greenberg-1998
+
+They model \emph{correlated binary responses}.  This is not a multinomial
+model.  In particular, given $Y_i = (Y_{i1}, \ldots, Y_{iJ})$,
+\[
+P(Y_i = y_i | \beta, \Sigma) = p(y_i | \beta, \Sigma) = 
+\int_{A_{i1}} \ldots \int_{A_{iJ}} \phi_J(t | 0, \Sigma) dt
+\]
+where $\phi_J$ is the normal density, $\Sigma$ is a correlation matrix (for
+identifiability), and
+\[
+A_{ij} = 
+\begin{cases}
+(-\infty, x_{ij} \beta_j), & y_{ij} = 1 \\
+[x_{ij} \beta_j, \infty), & y_{ij} = 0.
+\end{cases}
+\]
+Here $x_{ij}$ is a row of covariates.  I am used to working with the same
+covariates for each $\beta_j$, in which case we would drop the $j$ from
+$x_{ij}$.  Thus there setup is more general than I am used to.
+
+Equivalently, we can let $y_{ij} = \one (z_{ij} > 0)$, and $B_{ij} = (0,
+\infty)$ and then let
+\[
+P(Y_i = y_i | \beta, \Sigma) = \int_{B_{i1}} \ldots \int_{B_{iJ}} \phi_j(z_i |
+x_i \beta, \Sigma).
+\]
+
+They sample $z_i$, which is a truncated multivariate normal, by using Geweke.
+They sample $\Sigma$ using a Metropolis-Hastings step.
 
 \section{Miscellaneous}
 

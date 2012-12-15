@@ -1,5 +1,5 @@
 
-#include <Eigen/dense>
+#include <Eigen/Dense>
 #include <stdexcept>
 #include "RNG.hpp"
 #include "FFBS.h"

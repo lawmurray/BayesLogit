@@ -4,7 +4,7 @@
 #define __FFBS__
 
 #include <vector>
-#include <Eigen/dense>
+#include <Eigen/Dense>
 #include <stdio.h>
 #include "RNG.hpp"
 

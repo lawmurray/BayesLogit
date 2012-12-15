@@ -171,11 +171,11 @@ if (FALSE) {
   ## Parameters
   W = 0.1;
   phi = 0.95;
-  mu = 0.0
+  mu = 3.0
   d = 4
 
   ## Prior
-  m.0     = 1.0;
+  m.0     = mu;
   C.0     = 4.0;
   mu.m0  = 0.0;
   mu.V0  = 4.0;
