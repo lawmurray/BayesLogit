@@ -17,9 +17,10 @@ source("Benchmark-Utilities.R")
 
 run <- list("synth1"=FALSE,
             "german"=FALSE,
-            "diabetes"=FALSE,
+            "ger.num"=TRUE,
+            "diabetes"=TRUE,
             "australia"=FALSE,
-            "heart"=TRUE,
+            "heart"=FALSE,
             "nodal"=FALSE)
 
 write.dir = ""
@@ -298,7 +299,31 @@ if (run$german) {
 
   bench.ger = out
 
-  if (write.it) save(bench.ger, file="bench-ger.RData");
+  if (write.it) save(y.ger, X.ger, glm.ger, bench.ger, file="bench-ger.RData");
+
+}
+
+##------------------------------------------------------------------------------
+## GERMAN - NUMERIC
+if (run$ger.num) {
+  
+  load("DataSets/german-numeric.RData");
+  dset.name="German.Numeric"
+  
+  y = y.ger.num
+  X = X.ger.num
+
+  glm.ger.num = glm(y ~ X + 0, family=binomial(link=logit))
+  
+  out = list();
+  for (nm in run.meth) {
+    out[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+                           method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
+  }
+
+  bench.ger.num = out
+
+  if (write.it) save(y.ger.num, X.ger.num, glm.ger.num, bench.ger.num, file="bench-ger.num.RData");
 
 }
 
@@ -320,7 +345,7 @@ if (run$diabetes) {
 
   bench.diabetes = out
 
-  if (write.it) save(bench.diabetes, file="bench-diabetes.RData");
+  if (write.it) save(y.diabetes, X.diabetes, glm.diabetes, bench.diabetes, file="bench-diabetes.RData");
   
 }
 
@@ -344,7 +369,7 @@ if (run$australia) {
 
   bench.aus = out
 
-  if (write.it) save(bench.aus, file="bench-aus.RData");
+  if (write.it) save(y.aus, X.aus, glm.aus, bench.aus, file="bench-aus.RData");
 }
 
 ##------------------------------------------------------------------------------
@@ -367,7 +392,7 @@ if (run$heart) {
 
   bench.heart = out
 
-  if (write.it) save(bench.heart, file="bench-heart.RData");
+  if (write.it) save(y.heart, X.heart, glm.heart, bench.heart, file="bench-heart.RData");
   
 }
 
@@ -381,6 +406,9 @@ if (run$nodal) {
   y = nodal[, 2]
   X = as.matrix(nodal[,-2])
 
+  y.nodal = y
+  X.nodal = X
+
   glm.nodal = glm(y ~ X + 0, family=binomial(link=logit))
   
   out = list();
@@ -391,7 +419,7 @@ if (run$nodal) {
 
   bench.nodal = out
 
-  if (write.it) save(bench.nodal, file="bench-nodal.RData");
+  if (write.it) save(y.nodal, X.nodal, glm.nodal, bench.nodal, file="bench-nodal.RData");
   
 }
 
