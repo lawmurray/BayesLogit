@@ -17,8 +17,8 @@ source("Benchmark-Utilities.R")
 
 run <- list("synth1"=FALSE,
             "german"=FALSE,
-            "ger.num"=TRUE,
-            "diabetes"=TRUE,
+            "ger.num"=FALSE,
+            "diabetes"=FALSE,
             "australia"=FALSE,
             "heart"=FALSE,
             "nodal"=FALSE)
@@ -32,7 +32,7 @@ print.it = TRUE
 samp = 10000
 burn  = 2000
 verbose = 2000
-ntrials = 10
+ntrials = 1
 
 logit.meth <- c("PG", "FS", "IndMH", "RAM",
                 "dRUMIndMH", "dRUMHAM", "dRUMAuxMix", "IndivdRUMIndMH", "GP")
@@ -56,7 +56,7 @@ benchmark.logit <- function(y, X,
   ## Initialize
   ## sstat.beta.list = list()
   var.names = c("beta");
-  if (method[1]=="IndMH" || method[1]=="RAM") var.names = c(var.names, "alpha");
+  ## if (method[1]=="IndMH" || method[1]=="RAM") var.names = c(var.names, "alpha");
   cat("Will benchmark", method[1], "using", dset.name, "dataset for variable(s)", var.names, "\n");
 
   sstat = list(); for (nm in var.names) sstat[[nm]] = list();
@@ -158,8 +158,7 @@ benchmark.logit <- function(y, X,
     ## sstat.beta.list[[i]] = sstat.beta;
 
     sstat.temp = list();
-    for (nm in var.names) 
-      sstat[[nm]][[i]] = sum.stat(gb[[nm]], gb$ess.time[3], thin=1);
+    for (nm in var.names) { sstat[[nm]][[i]] = sum.stat(gb[[nm]], gb$ess.time[3], thin=1); }
 
     esstime[i]  = gb$ess.time[3];
     calltime[i] = gb$call.time[3];
@@ -255,14 +254,14 @@ if (FALSE) {
   mh = mlogit.MH.R(y, X, n, m.0, P.0, beta.0=beta.pm, method="Ind", tune=1.0, df=Inf)
 
   out = list();
-  for (i in c(1,3,4)) {
+  for (i in 1:4) {
     nm = logit.meth[i]
     out[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                            method=nm, m.0=NULL, C.0=NULL, dset.name="", df=Inf)
   }
   glm.1 = glm(y ~ X + 0, family=binomial(link=logit))
 
-  setup.table(out)
+  out.tbl = setup.table(out)
   
   lapply(out, function(x) x$beta)
 

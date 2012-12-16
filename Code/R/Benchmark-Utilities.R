@@ -195,7 +195,7 @@ setup.table <- function(b.out) {
 
   out <- list("ave.sstat"=ave.sstat, "eval.V"=eval,
               "cn.P"=cn.P, "cn.X"=b.out[["IndMH"]]$info$cn.X,
-              "table"=the.table);
+              "table"=t(the.table));
 
   out
 }

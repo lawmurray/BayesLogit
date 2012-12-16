@@ -664,8 +664,8 @@ ind.metropolis.2 <- function(y, X, n, m.0, P.0, samp=1000, burn=100, verbose=100
 
     if (i==burn+1) { start.ess = proc.time(); }
 
-    ## out.beta = draw.beta.ind.MH(beta, y, X, n, m.0, P.0, map=m, U.map=U, df=df, log.fdivq=log.fdivq)
-    out.beta = draw.beta.ind.MH(beta, y, X, n, m.0, P.0, map=NULL, U.map=NULL, df=df, log.fdivq=NULL)
+    out.beta = draw.beta.ind.MH(beta, y, X, n, m.0, P.0, map=m, U.map=U, df=df, log.fdivq=log.fdivq)
+    ## out.beta = draw.beta.ind.MH(beta, y, X, n, m.0, P.0, map=NULL, U.map=NULL, df=df, log.fdivq=NULL)
     beta = out.beta$beta
     
     if (i > burn) {
@@ -806,12 +806,12 @@ emp.mlogit.kl <- function(beta, y, X, n, m.0, P.0)
 
 if (FALSE) {
 
-  N = 300;
+  N = 100;
   P = 2;
 
   ##------------------------------------------------------------------------------
   ## Correlated predictors
-  rho = 0.0
+  rho = 0.99
   Sig = matrix(rho, nrow=P, ncol=P); diag(Sig) = 1.0;
   U   = chol(Sig);
   X   = matrix(rnorm(N*P), nrow=N, ncol=P) %*% U;
