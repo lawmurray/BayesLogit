@@ -1,5 +1,6 @@
 library("BayesLogit")
 library("coda")
+library("bayesm")
 
 source("NBPG-logmean.R")
 source("NBFS-logmean.R")
@@ -10,7 +11,7 @@ source("Benchmark-Utilities.R")
                                   ## SETUP ##
 ################################################################################
 
-run <- list("synth1"=TRUE)
+run <- list("synth1"=FALSE)
 
 write.dir = ""
 
@@ -22,7 +23,7 @@ samp = 10000
 burn  = 1000
 ntrials = 1
 
-logit.meth <- c("PG", "FS", "IndMH");
+logit.meth <- c("PG", "FS", "RAM");
 
 ################################################################################
                              ## Dyn NB Benchmark ##
@@ -32,14 +33,16 @@ benchmark.NB <- function(y, X,
                             samp=1000, burn=100, ntrials=1, verbose=100,
                             method = c("PG", "FS", "IndMH"),
                             m.0=NULL, C.0=NULL,
-                            dset.name="", df=Inf)   
+                            dset.name="")   
 {
   
   ## Initialize
-  sstat.beta.list = list();
-  esstime  = rep(0, ntrials);
-  calltime = rep(0, ntrials);
-
+  var.names="beta"
+  sstat = list(); for (nm in var.names) sstat[[nm]] = list();
+  ess.time  = rep(0, ntrials);
+  call.time = rep(0, ntrials);
+  arate     = rep(0, ntrials);
+  
   y = as.matrix(y);
   X = as.matrix(X);
   n = rep(1, length(y));
@@ -63,14 +66,20 @@ benchmark.NB <- function(y, X,
     if (method=="PG") { ## NB
 
       gb <- NB.PG.gibbs(y, X, b.0=m.0, P.0=P.0, samp=samp, burn=burn, verbose=verbose)
+      gb$arate = 1
 
     } else if (method=="FS") { ## NB
 
       gb <- NB.FS.gibbs(y, X, b.0=m.0, P.0=P.0, samp=samp, burn=burn, verbose=verbose)
+      gb$arate = 1
       
-    } else if (method=="IndMH") { ## multinomial, fraction
-      m.0 = array(m.0, dim=c(P, 1));
-      P.0 = array(P.0, dim=c(P, P, 1))
+    } else if (method=="RAM") {
+
+      gb <- rnegbinRw(Data=list(y=y,X=X), Prior=list(betabar=m.0, A=P.0, a=0.001, b=0.001), Mcmc=list(R=sim, keep=1, burn=burn));
+      gb$beta = gb$betadraw[(burn+1):sim,]
+      gb$total.time = proc.time() - start.time;
+      gb$arate = gb$acceptrbeta
+      
     } else {
       print("Unknown method.")
       return(NA);
@@ -78,16 +87,18 @@ benchmark.NB <- function(y, X,
     
     end.time = proc.time();
     gb$call.time = end.time - start.time;
-    
-    sstat.beta = sum.stat(gb$beta, gb$ess.time[1], thin=1);
 
-    sstat.beta.list[[i]] = sstat.beta;
-    esstime[i]  = gb$ess.time[1];
-    calltime[i] = gb$call.time[1];
+    sstat.temp = list();
+    for (nm in var.names) { sstat[[nm]][[i]] = sum.stat(gb[[nm]], gb$ess.time[3], thin=1); }
+
+    ess.time[i]  = gb$ess.time[3];
+    call.time[i] = gb$call.time[3];
+    arate[i]     = gb$arate
   }
 
-  sstat.beta = simplify2array(sstat.beta.list);
-
+  for (nm in var.names)
+    sstat[[nm]] = simplify2array(sstat[[nm]]);
+  
   info <- list("samp" = samp,
                "burn" = burn,
                "ntrials" = ntrials,
@@ -96,9 +107,10 @@ benchmark.NB <- function(y, X,
                "N" = nrow(X),
                "P" = ncol(X),
                "m.0" = m.0,
-               "P.0" = P.0)
+               "P.0" = P.0,
+               "ave.arate"=mean(arate))
 
-  out <- list("gb"=gb, "beta"=sstat.beta, "esstime"=esstime, "calltime"=calltime, "info"=info);
+  out <- list("gb"=gb, "sstat"=sstat, "ess.time"=ess.time, "call.time"=call.time, "info"=info);
 
   out
 
@@ -110,11 +122,11 @@ benchmark.NB <- function(y, X,
 
 if (FALSE) {
 
-  N = 1000;
-  P = 10;
+  N = 200;
+  P = 2;
 
   ##------------------------------------------------------------------------------
-  ## Highly correlated predictors
+  ## Correlated predictors
   rho = 0.2
   Sig = matrix(rho, nrow=P, ncol=P); diag(Sig) = 1.0;
   U   = chol(Sig);
@@ -122,8 +134,8 @@ if (FALSE) {
 
   ##------------------------------------------------------------------------------
   ## Sparse predictors
-  X   = matrix(rnorm(N*P, sd=0.0001), nrow=N, ncol=P);
-  diag(X) = c(sign(rnorm(P)));
+  ## X   = matrix(rnorm(N*P, sd=0.0001), nrow=N, ncol=P);
+  ## diag(X) = c(sign(rnorm(P)));
 
   ## Use an intercpet
   X[,1] = 1.0
@@ -160,11 +172,14 @@ if (FALSE) {
                          method="FS", m.0=NULL, C.0=NULL, dset.name="")
 
   out = list();
-  for (i in 1:2) {
-    out[[i]] <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
-                           method=logit.meth[i], m.0=NULL, C.0=NULL, dset.name="")
+  for (i in 1:3) {
+    nm = logit.meth[i]
+    out[[nm]] <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
+                           method=nm, m.0=NULL, C.0=NULL, dset.name="")
   }
 
+  setup.table(out)
+  
   lapply(out, function(x) x$beta)
   
 }
