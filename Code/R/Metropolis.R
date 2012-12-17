@@ -667,6 +667,7 @@ ind.metropolis.2 <- function(y, X, n, m.0, P.0, samp=1000, burn=100, verbose=100
     out.beta = draw.beta.ind.MH(beta, y, X, n, m.0, P.0, map=m, U.map=U, df=df, log.fdivq=log.fdivq)
     ## out.beta = draw.beta.ind.MH(beta, y, X, n, m.0, P.0, map=NULL, U.map=NULL, df=df, log.fdivq=NULL)
     beta = out.beta$beta
+    log.fdivq = out.beta$log.fdivq
     
     if (i > burn) {
       out$beta[i-burn,] = beta
