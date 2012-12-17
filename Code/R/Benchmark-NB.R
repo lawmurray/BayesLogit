@@ -8,10 +8,15 @@ source("NBFS-logmean.R")
 source("Benchmark-Utilities.R")
 
 ################################################################################
+
+################################################################################
+
+################################################################################
                                   ## SETUP ##
 ################################################################################
 
-run <- list("synth1"=FALSE)
+run <- list("small"=FALSE,
+            "med"=FALSE)
 
 write.dir = ""
 
@@ -20,8 +25,9 @@ plot.it  = FALSE
 print.it = TRUE
 
 samp = 10000
-burn  = 1000
-ntrials = 1
+burn  = 2000
+ntrials = 10
+verbose = 1000
 
 logit.meth <- c("PG", "FS", "RAM");
 
@@ -122,8 +128,8 @@ benchmark.NB <- function(y, X,
 
 if (FALSE) {
 
-  N = 200;
-  P = 2;
+  N = 400;
+  P = 4;
 
   ##------------------------------------------------------------------------------
   ## Correlated predictors
@@ -139,7 +145,7 @@ if (FALSE) {
 
   ## Use an intercpet
   X[,1] = 1.0
-  icept = 2.0
+  icept = 3.0
   beta = rnorm(P, mean=0, sd=icept / 10);
   beta[1] = icept
   
@@ -152,6 +158,8 @@ if (FALSE) {
   lambda = (mu / d) * rgamma(N, d, 1);
   y = rpois(N, lambda);
 
+  ## save(N, P, rho, Sig, X, mu, d, lambda, y, beta, file="NBSynth_N400_P4_I3.RData")
+
 }
 
 ################################################################################
@@ -161,9 +169,9 @@ if (FALSE) {
 if (FALSE) {
 
   samp = 10000;
-  verbose = 1000;
+  verbose = 2000;
   burn = 1000;
-  ntrials = 1;
+  ntrials = 10;
 
   out.pg <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                          method="PG", m.0=NULL, C.0=NULL, dset.name="")
@@ -180,6 +188,54 @@ if (FALSE) {
 
   setup.table(out)
   
-  lapply(out, function(x) x$beta)
+}
+
+################################################################################
+
+################################################################################
+
+##------------------------------------------------------------------------------
+## SMALL COUNTS
+if (run$small)
+{
+  load("DataSets/NBSynth_N400_P4_I2.RData")
+
+  out = list();
+  for (i in 1:3) {
+    nm = logit.meth[i]
+    out[[nm]] <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
+                           method=nm, m.0=NULL, C.0=NULL, dset.name="")
+  }
+
+  bench.nb.small.counts = out
+
+  if (write.it) save(bench.nb.small.counts, file="NB-bench-I2.RData")
+}
+
+##------------------------------------------------------------------------------
+## MEDIUM COUNTS
+if (run$med)
+{
+  load("DataSets/NBSynth_N400_P4_I3.RData")
+
+  out = list();
+  for (i in 1:3) {
+    nm = logit.meth[i]
+    out[[nm]] <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
+                           method=nm, m.0=NULL, C.0=NULL, dset.name="")
+  }
+
+  bench.nb.med.counts = out
+
+  if (write.it) save(bench.nb.small.counts, file="NB-bench-I3.RData")
+}
+
+################################################################################
+
+################################################################################
+
+if (FALSE) {
+
+  setup.table(out)
   
 }
