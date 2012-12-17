@@ -85,28 +85,39 @@ benchmark.logit <- function(y, X,
     start.time = proc.time();
     
     if (method=="PG") { ## binomial, fraction
+      
       gb <- logit.R(y, X, n, m0=m.0, P0=P.0, samp=samp, burn=burn, verbose=verbose)
       gb$arate = 1
+      
     } else if (method=="FS") { ## binary
+      
       gb <- logit.mix.gibbs(y, X, samp=samp, burn=burn, b.0=m.0, P.0=P.0, verbose=verbose)
       gb$arate = 1
+      
     } else if (method=="GP") { ## binomial
+      
       gb <- reglogit(T=samp, y=y, X=X, N=n, flatten=TRUE, sigma=sqrt(diag(C.0)), nu=1,
                      kappa = 1, icept=FALSE, normalize=FALSE, zzero=TRUE,
                      powerprior=FALSE, kmax=442, bstart=NULL, lt=NULL,
                      nup=NULL, method="MH", verb=verbose);
       gb$ess.time = proc.time() - start.time;
       gb$arate = 1
+      
     } else if (method=="IndMH") { ## multinomial, fraction
+      
       ## This is essentially independent-metropolis in the binary case
       m.0 = array(m.0, dim=c(P, 1));
       P.0 = array(P.0, dim=c(P, P, 1))
       gb <- mlogit.MH.R(y, X, n, m.0, P.0, beta.0=rep(0, P), samp=samp, burn=burn,
                         method="Ind", tune=1.0, df=df, verbose=verbose)
       gb$arate = gb$acceptr
+      
     } else if (method=="OD") { ## binary
+      
       return(NA)
+      
     } else if (method=="RAM") { ## multinomial
+      
       alts = 2
       X.new = createX(alts, na=0, nd=P, Xd=X, Xa=NULL, base=1, INT=FALSE)
       gb <- rmnlIndepMetrop(Data=list(p=alts, y=(y+1), X=X.new),
@@ -116,36 +127,45 @@ benchmark.logit <- function(y, X,
       gb$alpha = gb$alphadraw;
       gb$ess.time = gb$total.time;
       gb$arate = gb$acceptr
+      
     } else if (method=="HH") { ## binary
 
     } else if (method=="dRUMIndMH") { ## binomial
+      
       y = as.numeric(y);
       gb <- dRUMIndMH(y, n, X, sim=sim, burn=burn, b0=m.0, B0=C.0, verbose=verbose);
       gb$beta = t(gb$beta)[(burn+1):sim,];
       gb$ess.time = rep(gb$duration_wBI, 3)
       gb$total.time= gb$duration
       gb$arate = gb$rate / 100;
+      
     } else if (method=="dRUMHAM") { ## binomial
+      
       y = as.numeric(y)
       gb <- dRUMHAM(y, n, X, sim=sim, burn=burn, b0=m.0, B0=C.0, verbose=verbose);
       gb$beta = t(gb$beta)[(burn+1):sim,];
       gb$ess.time = rep(gb$duration_wBI, 3)
       gb$total.time= gb$duration
       gb$arate = 1
+      
     } else if (method=="dRUMAuxMix") { ## binomial - precompute all mixtures
+      
       y = as.numeric(y)
       gb <- dRUMAuxMix(y, n, X, sim=sim, burn=burn, b0=m.0, B0=C.0, verbose=verbose);
       gb$beta = t(gb$beta)[(burn+1):sim,];
       gb$ess.time = rep(gb$duration_wBI, 3)
       gb$total.time= gb$duration
       gb$arate = 1
+      
     } else if (method=="IndivdRUMIndMH") { ## binary
+      
       y = as.numeric(y)
       gb <- IndivdRUMIndMH(y, X, sim=sim, burn=burn, b0=m.0, B0=C.0, verbose=verbose);
       gb$beta = t(gb$beta)[(burn+1):sim,];
       gb$ess.time = rep(gb$duration_wBI, 3)
       gb$total.time= gb$duration
       gb$arate = gb$rate / 100;
+      
     } else {
       print("Unknown method.")
       return(NA);
@@ -157,7 +177,7 @@ benchmark.logit <- function(y, X,
     ## sstat.beta = sum.stat(gb$beta, gb$ess.time[1], thin=1);
     ## sstat.beta.list[[i]] = sstat.beta;
 
-    sstat.temp = list();
+    ## sstat.temp = list();
     for (nm in var.names) { sstat[[nm]][[i]] = sum.stat(gb[[nm]], gb$ess.time[3], thin=1); }
 
     esstime[i]  = gb$ess.time[3];
