@@ -1,3 +1,5 @@
+library("coda")
+
 ## Functions needed for benchmarking.
 
 ################################################################################
@@ -170,9 +172,9 @@ plot.check.NB <- function(y, X.dyn, X.stc=NULL, bmark1, bmark2=NULL)
 
 ##------------------------------------------------------------------------------
 
-setup.table <- function(b.out) {
+setup.table <- function(b.out, var.name="beta") {
 
-  ave.sstat = lapply(b.out, function(x) apply(x$sstat$beta, c(1,2), mean));
+  ave.sstat = lapply(b.out, function(x) apply(x$sstat[[var.name]], c(1,2), mean));
   ave.sstat = simplify2array(ave.sstat);
 
   ave.time  = lapply(b.out, function(x) mean(x$ess.time));
@@ -190,11 +192,12 @@ setup.table <- function(b.out) {
   ## ave.alpha.indmh = mean(b.out[["IndMH"]]$sstat$alpha[1,1,])
   ## ave.alpha.ram = mean(b.out[["RAM"]]$sstat$alpha[1,1,])
 
-  eval = eigen(-1*b.out[["IndMH"]]$gb$hess)$values;
-  cn.P = eval[1] / eval[length(eval)];
+  ## I don't always have IndMH defined.
+  ## eval = eigen(-1*b.out[["IndMH"]]$gb$hess)$values;
+  ## cn.P = eval[1] / eval[length(eval)];
 
-  out <- list("ave.sstat"=ave.sstat, "eval.V"=eval,
-              "cn.P"=cn.P, "cn.X"=b.out[["IndMH"]]$info$cn.X,
+  out <- list("ave.sstat"=ave.sstat,
+              ## "eval.V"=eval, "cn.P"=cn.P, "cn.X"=b.out[["IndMH"]]$info$cn.X,
               "table"=t(the.table));
 
   out
