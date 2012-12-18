@@ -37,6 +37,7 @@ logit.R <- function(y, X, n=rep(1, length(y)),
   ## n.prior = 0.0;
 
   X = as.matrix(X);
+  y = as.numeric(y)
 
   p = ncol(X)
   N = nrow(X)
