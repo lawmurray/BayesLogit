@@ -198,6 +198,10 @@ proposal.
 \texttt{bayesm}.  Calculate the posterior mode and the Hessian at the mode to
 pick the mean and scale matrix of the proposal.
 
+\1 OD: The method of \cite{obrien-dunson-2004}.  Strictly speaking, this is not
+logistic regression; it is binary regression using a student's T cumulative
+distribution function as the inverse link function.
+
 \1 dRUMAuxMiX: Fr\"{u}wirth-Schnatter's discrete mixture of normals method from
 the R package \texttt{binomlogit}.
 
@@ -220,7 +224,7 @@ all other cases above.
 
 \end{outline}
 
-\input{master_table}
+\input{blogit_table_02}
 
 Independence Metropolis works well for binomial regression; however, a major
 advantage of data augmentation, and hence the \Polya-Gamma technique, is that it
