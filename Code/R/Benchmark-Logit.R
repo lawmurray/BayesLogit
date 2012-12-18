@@ -98,11 +98,11 @@ benchmark.logit <- function(y, X,
       
     } else if (method=="GP") { ## binomial
       
-      gb <- reglogit(T=samp, y=y, X=X, N=n, flatten=TRUE, sigma=sqrt(diag(C.0)), nu=1,
+      gb <- reglogit(T=sim, y=y, X=X, N=n, flatten=TRUE, sigma=sqrt(diag(C.0)), nu=1,
                      kappa = 1, icept=FALSE, normalize=FALSE, zzero=TRUE,
                      powerprior=FALSE, kmax=442, bstart=NULL, lt=NULL,
-                     nup=NULL, method="MH", verb=verbose);
-      gb$ess.time = proc.time() - start.time;
+                     nup=NULL, method="MH", verb=verbose, burn.point=burn);
+      gb$beta = gb$beta[(burn+1):sim,]
       gb$arate = 1
       
     } else if (method=="IndMH") { ## multinomial, fraction
@@ -277,7 +277,7 @@ if (FALSE) {
   mh = mlogit.MH.R(y, X, n, m.0, P.0, beta.0=beta.pm, method="Ind", tune=1.0, df=Inf)
 
   out = list();
-  for (i in c(1,3,4,5)) {
+  for (i in c(1,5,10)) {
     nm = logit.meth[i]
     out[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                            method=nm, m.0=NULL, C.0=NULL, dset.name="", df=Inf)
