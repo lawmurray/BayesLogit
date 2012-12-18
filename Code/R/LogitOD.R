@@ -1,9 +1,13 @@
 library("BayesBridge")
+## library("msm")
 library("coda")
 
 logit.OD.R <- function(y, X, m0=NULL, P0=NULL, samp=1000, burn=100, verbose=100,
                        beta.true=NULL, phi.true=NULL, z.true=NULL)
 {
+  ## y: binary response
+  ## X: design matrix
+  
   X = as.matrix(X)
 
   N = nrow(X)
@@ -45,11 +49,11 @@ logit.OD.R <- function(y, X, m0=NULL, P0=NULL, samp=1000, burn=100, verbose=100,
     psi = X %*% beta;
 
     ## z
-    z = rtnorm(N, psi, sqrt(tilsig2 / phi), left, right)
+    z = BayesBridge::rtnorm(N, psi, sqrt(tilsig2 / phi), left, right)
 
     ## phi
     res   = z - psi;
-    shape = 0.5 * (nu + P);
+    shape = 0.5 * (nu + 1);
     rate  = 0.5 * (nu + res^2 / tilsig2);
     phi = rgamma(N, shape, rate=rate);
 
@@ -79,15 +83,45 @@ logit.OD.R <- function(y, X, m0=NULL, P0=NULL, samp=1000, burn=100, verbose=100,
 
 ################################################################################
 
+llh.od <- function(beta, y, X, nu, sig2=1)
+{
+  sig = sqrt(sig2)
+  psi = X %*% beta
+  p = pt(psi/sig, nu)
+  llh = sum(y * log(p) + (1-y) * log(1-p))
+  llh
+}
+
+od.map <- function(y, X, nu=7, sig2=1, beta.0=NULL)
+{
+  X = as.matrix(X)
+  N = nrow(X)
+  P = ncol(X)
+  if (is.null(beta.0)) beta.0 = rep(0, P)
+  
+  optim.out = optim(beta.0, llh.od, method="BFGS", hessian=TRUE,
+    y=y, X=X, nu=nu, sig2=sig2, control=list(fnscale=-1));
+
+  m = optim.out$par
+  H = optim.out$hessian
+  V = solve(-H)
+
+  out = list(H=H, V=V, m=m);
+
+  out
+}
+
+################################################################################
+
 if (FALSE) {
   
-  N = 1000
+  N = 5000
   nu = 7.3
   tilsig2 = pi^2 * (nu - 2) / (3 * nu)
 
   X = cbind(1, rnorm(N));
 
-  beta = c(1.0, 0.4);
+  beta = c(1.0, 1.5);
   psi = X %*% beta;
   phi = rgamma(N, nu/2, rate=nu/2)
   z   = rnorm(N, psi, sqrt(tilsig2 / phi))
@@ -96,9 +130,11 @@ if (FALSE) {
   ## p = exp(psi) / (1 + exp(psi));
   ## y = rbinom(N, 1, prob=p);
 
-  samp=10000
-  burn=2000
-  verbose=1000
+  map.out = od.map(y, X, nu, tilsig2)
+  
+  samp=1000
+  burn=200
+  verbose=100
 
   ## source("LogitOD.R")
   out.od <- logit.OD.R(y, X, m0=NULL, P0=NULL, samp=samp, burn=burn, verbose=verbose,
