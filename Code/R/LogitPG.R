@@ -30,13 +30,13 @@ logit.R <- function(y, X, n=rep(1, length(y)),
   ## n: n by 1 vector, # of obs at distinct x
 
   ## Combine data.
-  new.data = logit.combine(y, X, n);
-  y = new.data$y;
-  X = new.data$X;
-  n = new.data$n;
-  n.prior = 0.0;
+  ## new.data = logit.combine(y, X, n);
+  ## y = new.data$y;
+  ## X = new.data$X;
+  ## n = new.data$n;
+  ## n.prior = 0.0;
 
-  ## X = as.matrix(X);
+  X = as.matrix(X);
 
   p = ncol(X)
   N = nrow(X)
