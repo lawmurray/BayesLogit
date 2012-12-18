@@ -117,7 +117,7 @@ NB.FS.gibbs <- function(y, X,
   out$ess.time   = end.time - start.ess
 
   out
-} ## logit.PG.gibbs
+} ## logit.FS.gibbs
 
 ################################################################################
 
