@@ -25,6 +25,7 @@ run <- list("synth1"=FALSE,
             "nodal"=FALSE)
 
 write.dir = ""
+load.old = FALSE
 
 write.it = FALSE
 plot.it  = FALSE
@@ -276,7 +277,7 @@ if (FALSE) {
   mh = mlogit.MH.R(y, X, n, m.0, P.0, beta.0=beta.pm, method="Ind", tune=1.0, df=Inf)
 
   out = list();
-  for (i in 4:5) {
+  for (i in c(1,3,4,5)) {
     nm = logit.meth[i]
     out[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                            method=nm, m.0=NULL, C.0=NULL, dset.name="", df=Inf)
@@ -306,21 +307,23 @@ if (run$german) {
   
   load("DataSets/germany.RData");
   dset.name="German"
+  file.name="bench-ger.RData"
   
   y = y.ger
   X = X.ger
 
   glm.ger = glm(y ~ X + 0, family=binomial(link=logit))
+
+  bench.ger = list()
+  if (load.old) load(file.name);
   
   out = list();
   for (nm in run.meth) {
-    out[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
-                           method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
+    bench.ger[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+                                       method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
-  bench.ger = out
-
-  if (write.it) save(y.ger, X.ger, glm.ger, bench.ger, file="bench-ger.RData");
+  if (write.it) save(y.ger, X.ger, glm.ger, bench.ger, file=file.name);
 
 }
 
@@ -330,21 +333,22 @@ if (run$ger.num) {
   
   load("DataSets/german-numeric.RData");
   dset.name="German.Numeric"
+  file.name="bench-ger.num.RData"
   
   y = y.ger.num
   X = X.ger.num
 
   glm.ger.num = glm(y ~ X + 0, family=binomial(link=logit))
+
+  bench.ger.num = list()
+  if (load.old) load(file.name);
   
-  out = list();
   for (nm in run.meth) {
-    out[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
-                           method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
+    bench.ger.num[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+                                           method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
-  bench.ger.num = out
-
-  if (write.it) save(y.ger.num, X.ger.num, glm.ger.num, bench.ger.num, file="bench-ger.num.RData");
+  if (write.it) save(y.ger.num, X.ger.num, glm.ger.num, bench.ger.num, file=file.name);
 
 }
 
@@ -353,20 +357,22 @@ if (run$ger.num) {
 if (run$diabetes) {
   load("DataSets/diabetes.RData");
   dset.name="Diabetes"
+  file.name="bench-diabetes.RData"
+  
   y = y.diabetes
   X = X.diabetes
 
   glm.diabetes = glm(y ~ X + 0, family=binomial(link=logit))
+
+  bench.diabetes = list()
+  if (load.old) load(file.name);
   
-  out = list();
   for (nm in run.meth) {
-    out[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
-                           method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
+    bench.diabetes[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+                                            method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
-  bench.diabetes = out
-
-  if (write.it) save(y.diabetes, X.diabetes, glm.diabetes, bench.diabetes, file="bench-diabetes.RData");
+  if (write.it) save(y.diabetes, X.diabetes, glm.diabetes, bench.diabetes, file=file.name);
   
 }
 
@@ -376,21 +382,23 @@ if (run$australia) {
   
   load("DataSets/australia.RData");
   dset.name="Australia"
+  file.name="bench-aus.RData"
 
   y = y.aus
   X = X.aus
 
   glm.aus = glm(y ~ X + 0, family=binomial(link=logit))
 
+  bench.aus = list()
+  if (load.old) load(file.name);
+  
   out = list();
   for (nm in run.meth) {
-    out[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+    bench.aus[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                            method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
-  bench.aus = out
-
-  if (write.it) save(y.aus, X.aus, glm.aus, bench.aus, file="bench-aus.RData");
+  if (write.it) save(y.aus, X.aus, glm.aus, bench.aus, file=file.name);
 }
 
 ##------------------------------------------------------------------------------
@@ -399,21 +407,22 @@ if (run$heart) {
   
   load("DataSets/heart.RData");
   dset.name = "Heart"
+  file.name = "bench-heart.RData"
 
   y = y.heart
   X = X.heart
 
   glm.heart = glm(y ~ X + 0, family=binomial(link=logit))
+
+  bench.heart = list()
+  if (load.old) load(file.name);
   
-  out = list();
   for (nm in run.meth) {
-    out[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+    bench.heart[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                                  method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
-  bench.heart = out
-
-  if (write.it) save(y.heart, X.heart, glm.heart, bench.heart, file="bench-heart.RData");
+  if (write.it) save(y.heart, X.heart, glm.heart, bench.heart, file=file.name);
   
 }
 
@@ -423,6 +432,7 @@ if (run$nodal) {
 
   data("nodal")
   dset.name = "Nodal"
+  file.name = "bench-nodal.RData"
 
   y = nodal[, 2]
   X = as.matrix(nodal[,-2])
@@ -431,16 +441,16 @@ if (run$nodal) {
   X.nodal = X
 
   glm.nodal = glm(y ~ X + 0, family=binomial(link=logit))
+
+  bench.nodal = list()
+  if (load.old) load(file.name);
   
-  out = list();
   for (nm in run.meth) {
-    out[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
-                                 method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
+    bench.nodal[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+                                         method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
-  bench.nodal = out
-
-  if (write.it) save(y.nodal, X.nodal, glm.nodal, bench.nodal, file="bench-nodal.RData");
+  if (write.it) save(y.nodal, X.nodal, glm.nodal, bench.nodal, file=file.name);
   
 }
 
