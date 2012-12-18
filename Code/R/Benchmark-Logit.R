@@ -8,6 +8,7 @@ blogit = BayesLogit::logit;
 
 source("LogitPG.R")
 source("LogitFS-2010.R")
+source("LogitOD.R")
 source("Metropolis.R")
 source("Benchmark-Utilities.R")
 
@@ -34,7 +35,7 @@ burn  = 2000
 verbose = 2000
 ntrials = 1
 
-logit.meth <- c("PG", "FS", "IndMH", "RAM",
+logit.meth <- c("PG", "FS", "IndMH", "RAM", "OD",
                 "dRUMIndMH", "dRUMHAM", "dRUMAuxMix", "IndivdRUMIndMH", "GP")
 
 run.meth <- logit.meth
@@ -114,7 +115,8 @@ benchmark.logit <- function(y, X,
       
     } else if (method=="OD") { ## binary
       
-      return(NA)
+      gb <- logit.OD.R(y, X, m0=m.0, P0=P.0, samp=samp, burn=burn, verbose=verbose)
+      gb$arate = 1
       
     } else if (method=="RAM") { ## multinomial
       
@@ -274,7 +276,7 @@ if (FALSE) {
   mh = mlogit.MH.R(y, X, n, m.0, P.0, beta.0=beta.pm, method="Ind", tune=1.0, df=Inf)
 
   out = list();
-  for (i in 1:4) {
+  for (i in 4:5) {
     nm = logit.meth[i]
     out[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                            method=nm, m.0=NULL, C.0=NULL, dset.name="", df=Inf)
