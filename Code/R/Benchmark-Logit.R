@@ -26,9 +26,9 @@ run <- list("synth1"=FALSE,
 
 write.dir = ""
 
-write.it = TRUE
+write.it = FALSE
 plot.it  = FALSE
-print.it = TRUE
+## print.it = TRUE
 
 samp = 10000
 burn  = 2000
