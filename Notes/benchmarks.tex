@@ -45,19 +45,21 @@ these benchmarks using R, though some of the routines make calls to external C
 code.  The specifics of each method are discussed in further detail below.  In
 general, we found that the \Polya-Gamma technique compared favorably to other
 data augmentation methods; specifically, the \Polya-Gamma technique performed
-better than the methods of Gramacy and Polson (2011) and Fr\"{u}wirth-Schnatter,
-et al. (2010).  The latter paper itself provides a detailed comparison of
-several methods itself.  For instance, the authors found that method of Holmes
-and Held (2006) did not beat their discrete mixture of normals, something that
-we found as well and hence omitted from the comparisons below.  For the simple
-case of binary logistic regression we found that often an independence
-Metropolis sampler performed well.  We draw the following conclusions from these
-numerical experiments:
+better than the methods of \cite{obrien-dunson-2004},
+\cite{gramacy-polson-2012}, and \cite{fruhwirth-schnatter-fruhwirth-2010}.  The
+latter paper itself provides a detailed comparison of several methods itself.
+For instance, the authors found that method of Holmes and Held (2006) did not
+beat their discrete mixture of normals, something that we found as well and
+hence omitted from the comparisons below.  For the simple case of binary
+logistic regression we found that often an independence Metropolis sampler
+performed well.  We draw the following conclusions from these numerical
+experiments:
 
 \begin{itemize}
 
-\item In binary logistic regression, the \Polya-Gamma method performs better than
-other data augmentation techniques.
+\item In binary logistic regression, the \Polya-Gamma method performs better
+  than other data augmentation techniques in terms of median effective sampling
+  rate as seen in Appendix \ref{sec:blogit-benchmarks}.
 
 \item In negative binomial regression, the \Polya-Gamma method performs well
   when the count sizes are not too high or when the regression coefficient has a
@@ -76,7 +78,7 @@ other data augmentation techniques.
   complicated models, whereas independence Metropolis only works well in the
   simplest case.  For instance, the \Polya-Gamma method easily accommodates more
   sophisticated models that produce a Gaussian ``prior'' distribution for
-  $\beta$.  
+  $\beta$, such as mixed models and factor models.
 
 \end{itemize}
 
@@ -93,14 +95,20 @@ batches as well.  The time refers to the time taken to produce the 10,000
 samples, not the total run time.  Thus any preprocessing and burn-in are not
 included in the total time reported.  When discussing the various methods the
 primary metric we refer to is the median effective sampling rate, following the
-example of \cite{fruhwirth-schnatter-fruhwirth-2010}.
+example of \cite{fruhwirth-schnatter-fruhwirth-2010}.  
+
+All of these experiments were run using R 2.15.1 on an Ubuntu machine with 8GB
+or RAM and an Intel Core i5 quad core processor.  The number of cores is a
+potentially important factor as some libraries, including those that perform the
+matrix operations in R, may take advantage of multiple cores.  The C code that
+we have written does not take advantage of this parallelism.
 
 \subsection{Binary Logistic Regression}
 
 \subsubsection{The Data Sets}
 
 We benchmark against the data sets used by \cite{holmes-held-2006} and
-\cite{fruhwirth-schnatter-fruhwirth-2010}.
+\cite{fruhwirth-schnatter-fruhwirth-2010} for binary logistic regression.
 
 \begin{outline}
 
@@ -114,10 +122,10 @@ lymph nodes.  There are 53 observations and 5 binary predictors.
 \url{http://archive.ics.uci.edu/ml/datasets/Pima+Indians+Diabetes}
 
 There are 768 observations and 8 continuous predictors.  It is noted on the UCI
-website that there are many predictor values coded as 0, which correspond to a
-physical measurement that should be non-zero.  We have removed all of those
-entries to generate a data set with 392 observations.  The marginal mean
-incidence of diabetes is roughly 0.33 before and after removing the data.
+website that there are many predictor values coded as 0, though the physical
+measurement should be non-zero.  We have removed all of those entries to
+generate a data set with 392 observations.  The marginal mean incidence of
+diabetes is roughly 0.33 before and after removing the data.
 
 \1 Heart:
 
@@ -138,7 +146,7 @@ categorical or binary.  There were 37 observations with missing attribute
 values.  These missing values have been replaced by the mode of the attribute in
 the case of categorical data and the mean of the attribute for continuous data.
 This dataset is linearly separable and results in some divergent regression
-coefficients.
+coefficients, though these are kept in check by the prior.
 
 \1 German Credit: 
 
@@ -148,8 +156,8 @@ The response represents either a good or bad credit risk.  There are 1000
 observations and 20 attributes including both continuous and categorical data.
 We benchmark two scenarios.  In the first, the ordinal covariates have been
 given integer values and have not been stratified by dummy variable, yielding a
-total of 24 numeric predictors.  In the second, the ordinal data by dummy
-variables, yielding a total of 48 predictors.
+total of 24 numeric predictors.  In the second, the ordinal data has been
+stratified by dummy variables, yielding a total of 48 predictors.
 
 \end{outline}
 
@@ -161,8 +169,8 @@ non-standard calls to C, though their implementation's have very little R
 overhead in terms of function calls; the \Polya-Gamma method calls a C routine
 to sample the \Polya-Gamma random variates, but otherwise only uses R.  We think
 this is fair since other basic random variate generators in R call compiled
-code.  As a check upon our independence Metropolis sampler we also used Rossi,
-Allenby, and McCulloch's independence Metropolis sampler, which may be found in
+code.  As a check upon our independence Metropolis sampler we also used the
+independence Metropolis sampler of \cite{rossi-etal-2005}, which may be found in
 the \texttt{bayesm} package, though their sampler uses a $t_6$ proposal while
 ours uses a normal proposal.  The suite of routines in the \texttt{binomlogit}
 package implement the techniques discussed in
@@ -176,7 +184,7 @@ data set we used at diffuse $N(0, 0.01 I)$ prior.
 
 \begin{outline}
 
-\1 PG: The \Polya-Gamma method described above.
+\1 PG: The \Polya-Gamma method described previously.
 
 \1 FS: \cite{fruhwirth-schnatter-fruhwirth-2010} follow Holmes and Held (2006)
 and use the \cite{albert-chib-1993} like representation,
@@ -202,29 +210,31 @@ pick the mean and scale matrix of the proposal.
 logistic regression; it is binary regression using a student's T cumulative
 distribution function as the inverse link function.
 
-\1 dRUMAuxMiX: Fr\"{u}wirth-Schnatter's discrete mixture of normals method from
-the R package \texttt{binomlogit}.
+\1 dRUMAuxMiX: The same as FS, but from the R package \texttt{binomlogit}.
 
 \1 dRUMIndMH: Exploit the representation (\ref{eqn:hh-rep}), but use a single
 normal to approximate the logistic distribution and then correct using a
 Metropolis-Hastings step.  From the R package \texttt{binomlogit}.
 
 \1 IndivdRUMIndMH: This is the same as dRUMIndMH, but specific to binary
-logistic regression.  From the R package \texttt{binomlogit}.
+logistic regression for improved efficientcy.  From the R package
+\texttt{binomlogit}.
 
 \1 dRUMHAM: Again, use the representation (\ref{eqn:hh-rep}), but now
 approximate the logistic distribution using a discrete mixture of normals, the
 number of components to mix over being determined by $y_i / n_i$.  From the R
 package \texttt{binomlogit}.
 
-\1 GP: Gramacy and Polson (2011).  Another data augmentation scheme with only a
+\1 GP: \cite{gramacy-polson-2012}: Another data augmentation scheme with only a
 single layer of latents.  This routine uses a double exponential prior.  We set
 the scale of this prior to agree with the scale of the normal prior we used in
-all other cases above.
+all other cases above.  Below you will notice that the \Polya-Gamma method often
+has a better sample size than Gramacy and Polson, but just barely.  We used the
+\texttt{reglogit} package for these experiment, which is currently rather
+slow.  If the runtime of this routine were to drop signficantly than it could
+perform almost as well as the \Polya-Gamma method.
 
 \end{outline}
-
-\input{blogit_table_02}
 
 Independence Metropolis works well for binomial regression; however, a major
 advantage of data augmentation, and hence the \Polya-Gamma technique, is that it
@@ -271,9 +281,9 @@ IndMHMM  &     3.53 &     0.42 &  1256.11 &  1501.59 &  1694.51 &   356.27 &   4
  \caption{
    The effective sample sizes found for a synthetic data set with 
    5 groups, corresponding to 5 different intercepts drawn from the same
-   distribution $N(0, 1)$, 100 observations within each group (for a total of
+   distribution $N(0, 1/\phi), \phi=1$, 100 observations within each group (for a total of
    500 observations), and 1 shared covariate.  The covariate was drawn from
-   $N(0,1/\phi), \phi=1$.  PGMM is the \Polya-Gamma Gibbs sampler for the mixed model.  IndMHMM
+   $N(0,1)$.  PGMM is the \Polya-Gamma Gibbs sampler for the mixed model.  IndMHMM
    is the independence Metropolis sampler for the mixed model using a normal
    proposal based upon the Laplace approximation.  We tried using a $t_6$ proposal
    as well, but that did not improve the results.  The last two rows correspond to
@@ -394,6 +404,12 @@ Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR
    \Polya-Gamma random variables.}
 \end{table}
 
+\appendix
+
+\section{Binary Logistic Regression Benchmarks}
+\label{sec:blogit-benchmarks}
+
+\input{blogit_table_02}
 
 % If you have a bibliography.
 % The file withe bibliography is name.bib.
