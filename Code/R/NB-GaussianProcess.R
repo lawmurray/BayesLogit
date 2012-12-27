@@ -196,6 +196,8 @@ NB.FS.GP.gibbs <- function(y, X, F=NULL, K=NULL,
   CDF  = cumsum(hist(y, breaks=0:(ymax+1)-0.5, plot=FALSE)$counts)
   G    = N - CDF;
   
+  cat("Finished Preprocessing.\n");
+  
   out <- list(ups = matrix(nrow=samp, ncol=N.X),
               d = rep(0, samp),
               lambda = matrix(nrow=samp, ncol=N.X),
@@ -257,9 +259,12 @@ NB.FS.GP.gibbs <- function(y, X, F=NULL, K=NULL,
 if (FALSE)
 {
 
-  ## N = 10;
+  ## N = 1000;
   P = 2;
 
+  ## Random
+  X = matrix(runif(N*P), nrow=N, ncol=P);
+  
   ## On a grid.  1/19 with len.scale 0.1 yields an invertible KXX.
   X1 = as.matrix(seq(0, 1, 1/15))
   L  = length(X1)
@@ -268,8 +273,12 @@ if (FALSE)
   N = nrow(X)
   
   len.scale = 0.1
+  nug = 0.0001
   ## Squared error covariance function.
-  K <- function(x,y) { ep = (x - y) / len.scale ; 2.0 * exp( -0.5 * (t(ep) %*% ep) ) }
+  K <- function(x,y) {
+    ep = (x - y) / len.scale ;
+    nug * all(x==y) + exp( -0.5 * (t(ep) %*% ep) )
+  }
 
   KXX = matrix(0, N, N);
   for (i in 1:N) for (j in 1:N) KXX[i,j] = K(X[i,], X[j,]);
@@ -293,15 +302,16 @@ if (FALSE)
   ## points3d(X[,1], X[,2], y/8)
 
   wireframe(ups ~ X[,1] * X[,2])
+  cloud(ups ~ X[,1] * X[,2])
 }
 
 if (FALSE) {
   
-  source("NB-GaussianProcess.R")
+  ## source("NB-GaussianProcess.R")
 
   samp = 1000
   burn = 1000
-  verbose = 1000
+  verbose = 10
   ntrials = 1
   bench = list();
   
@@ -310,6 +320,7 @@ if (FALSE) {
   sstat = list(ups=list());
   ess.time = rep(0, ntrials);
 
+  ## USING PG
   for(i in 1:ntrials) {
   
     out.pg <- NB.PG.GP.gibbs(y, X, F=NULL, K=K,
@@ -326,7 +337,8 @@ if (FALSE) {
   
   sstat = list(ups=list());
   ess.time = rep(0, ntrials);
-  
+
+  ## USING FS
   for(i in 1:ntrials) {
   
     out.fs <- NB.FS.GP.gibbs(y, X, F=NULL, K=K,
