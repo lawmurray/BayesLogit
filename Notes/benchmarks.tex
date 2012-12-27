@@ -48,7 +48,7 @@ data augmentation methods; specifically, the \Polya-Gamma technique performed
 better than the methods of \cite{obrien-dunson-2004},
 \cite{gramacy-polson-2012}, and \cite{fruhwirth-schnatter-fruhwirth-2010}.  The
 latter paper itself provides a detailed comparison of several methods itself.
-For instance, the authors found that method of Holmes and Held (2006) did not
+For instance, the authors found that method of \cite{holmes-held-2006} did not
 beat their discrete mixture of normals, something that we found as well and
 hence omitted from the comparisons below.  For the simple case of binary
 logistic regression we found that often an independence Metropolis sampler
@@ -180,13 +180,15 @@ the discrete mixture of normals used in
 Specifically, the methods FS and dRUMAuxMix are different implementations of the
 same method; we see that they have similar effective sample sizes.  Gramacy and
 Polson's R package, \texttt{reglogit}, also calls external C code.  For every
-data set we used at diffuse $N(0, 0.01 I)$ prior.
+data set we used at diffuse $N(0, 0.01 I)$ prior, except when using Gramacy and
+Polson's method, in which case we used $\exp(\sum_{i} |\beta_i / 100|)$ prior
+per the specifications of the \texttt{reglogit} package.
 
 \begin{outline}
 
 \1 PG: The \Polya-Gamma method described previously.
 
-\1 FS: \cite{fruhwirth-schnatter-fruhwirth-2010} follow Holmes and Held (2006)
+\1 FS: \cite{fruhwirth-schnatter-fruhwirth-2010} follow \cite{holmes-held-2006}
 and use the \cite{albert-chib-1993} like representation,
 \begin{equation}
 \label{eqn:hh-rep}
@@ -409,7 +411,8 @@ Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR
 \section{Binary Logistic Regression Benchmarks}
 \label{sec:blogit-benchmarks}
 
-\input{blogit_table_02}
+% \input{blogit_table_02}
+\input{blogit_table_03}
 
 % If you have a bibliography.
 % The file withe bibliography is name.bib.
