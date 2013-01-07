@@ -305,14 +305,15 @@ if (FALSE)
   cloud(ups ~ X[,1] * X[,2])
 }
 
-if (FALSE) {
-  
+if (TRUE) {
+
+  ## Do not uncomment.
   ## source("NB-GaussianProcess.R")
 
-  samp = 1000
-  burn = 1000
-  verbose = 10
-  ntrials = 1
+  samp = 10000
+  burn = 2000
+  verbose = 100
+  ntrials = 10
   bench = list();
   
   F = X
@@ -353,18 +354,16 @@ if (FALSE) {
   sstat$ups = simplify2array(sstat$ups)
   bench[["FS"]] = list("ess.time"=ess.time, "sstat"=sstat, "info"=list("ave.arate"=1));
 
-  setup.table(bench, "ups")
+  out.table = setup.table(bench, "ups")
   
-  plot3d(X[,1], X[,2], ups)
-  plot3d(X[,1], X[,2], ups.pg.m, add=TRUE, col=2)
-  plot3d(X[,1], X[,2], log(y+1e-2), add=TRUE, col=3)
+  ## plot3d(X[,1], X[,2], ups)
+  ## plot3d(X[,1], X[,2], ups.pg.m, add=TRUE, col=2)
+  ## plot3d(X[,1], X[,2], log(y+1e-2), add=TRUE, col=3)
   
-  plot3d(X[,1], X[,2], ups)
-  plot3d(X[,1], X[,2], ups.fs.m, add=TRUE, col=2)
-  plot3d(X[,1], X[,2], log(y+1e-2), add=TRUE, col=3)
+  ## plot3d(X[,1], X[,2], ups)
+  ## plot3d(X[,1], X[,2], ups.fs.m, add=TRUE, col=2)
+  ## plot3d(X[,1], X[,2], log(y+1e-2), add=TRUE, col=3)
 
-  cbind(ups, ups.pg.m, ups.fs.m, log(y))
-
-
+  ## cbind(ups, ups.pg.m, ups.fs.m, log(y))
   
 }
