@@ -317,7 +317,6 @@ if (run$german) {
   bench.ger = list()
   if (load.old) load(file.name);
   
-  out = list();
   for (nm in run.meth) {
     bench.ger[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                                        method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)

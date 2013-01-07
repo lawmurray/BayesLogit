@@ -1,3 +1,4 @@
+library("BayesLogit")
 source("NB-Shape.R");
 source("ComputeMixture.R")
 source("Benchmark-Utilities.R")
@@ -309,10 +310,10 @@ if (FALSE) {
   
   ## source("NB-GaussianProcess.R")
 
-  samp = 1000
-  burn = 1000
-  verbose = 10
-  ntrials = 1
+  samp = 10000
+  burn = 2000
+  verbose = 100
+  ntrials = 10
   bench = list();
   
   F = X
