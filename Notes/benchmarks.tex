@@ -392,6 +392,7 @@ Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR
 \begin{table}
 \label{tab:nb-gp}
 \begin{tabular}{l r r r r r r r r } 
+\hline
 \multicolumn{9}{c}{Gaussian Process: $\bar y = 35.7$, $\sum y_i = 9137$} \\
 \hline
 Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
@@ -404,6 +405,19 @@ Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR
    drawing the posterior mean at the observed data points is much greater in
    this case, which reduces the penalty associated with sampling many
    \Polya-Gamma random variables.}
+\end{table}
+
+\begin{table}
+\label{tab:nb-gp-ex02}
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Gaussian Process: $\bar y = 22.7$, $\sum y_i = 22732$} \\
+\hline
+Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+    PG  &  2021.78 &     1.00 &  1966.77 &  6386.43 &  9862.54 &     0.97 &     3.16 &     4.88 \\ 
+    FS  &  1867.05 &     1.00 &   270.13 &  1156.52 &  1761.70 &     0.14 &     0.62 &     0.94
+ \end{tabular}
+\caption{$N = 1000$.  $\ell=0.1$.  $nug=0.0001$.}
 \end{table}
 
 \appendix
