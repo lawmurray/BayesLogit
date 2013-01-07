@@ -828,6 +828,260 @@ z_t = \iota + \beta_t + \ep_t \\
 then $\beta_t$ should not have a mean.  When $\beta_t$ is a random walk then
 there should be no mean level $\iota$.
 
+\section{CUBS with MH}
+
+\subsection{CUBS}
+
+CUBS: conjugate update backward sample.  \cite{west-etal-1985} used conjugate
+updating to generate a statistical model for forward filtering and backwards
+sampling for generalized linear models.  The basic idea is to use linear Bayes.
+They take an approximate backwards sample using the normal DLM recursions.
+\cite{ravines-etal-2006} suggested using a Metropolis step to make this exact.
+This works for exponential families, but I focus on the dynamic binary logistic
+model since that is what we will work with.  There is a relatively small change
+to go between models, related to the conjugte updating step and the densities
+for the MH step.
+
+The basic model is
+\[
+\begin{cases}
+y_t \sim f(\psi_t) \\
+\psi_t = x_t \beta_t \\
+\beta_t = \mu + \Phi( \beta_{t-1} - \mu ) + \omega_t, & \omega_t \sim [0, W].
+\end{cases}
+\]
+To remind myself.  Things are not completely specified here since we haven't
+defined the distribution of $\omega_t$.  In general, we can think of this as the
+likelihood $y_t \sim f(\psi_t), \psi_t = x_t \beta_t$ and a ``prior'' on $\beta$
+which controls how the $\beta_t$ are correlated in $t$, which will be defined by
+the above recursion and $\omega_t \sim N(0, W)$.
+
+We can filter forward using linear Bayes without specifying the distribution of
+$\omega_t$.  This will give us a bunch of approximate moments.  We can then use
+those moments to backwards sample.  This is then the proposal we use for a
+Ind.\ Metrpolis step.
+
+We forward filter using a conjugate updating step as follows.  Assume everything
+is conditioned upon $D_{t-1}$.
+
+\begin{itemize}
+
+\item \textbf{Prior}: $\beta_{t-1} \sim [m_{t-1}, C_{t-1}]$.
+
+\item \textbf{Predictive}: $\beta_{t-1} \sim [a_t, R_t]$ where
+\[
+\begin{cases}
+a_t = \Phi m_{t-1} + (1 - \Phi) \mu \\
+R_t = \Phi C_{t-1} \Phi + W. \\
+\end{cases}
+\]
+
+\item \textbf{Predictive}: $\psi_t \sim [f_t, q_t]$ where
+\[
+\begin{cases}
+f_t = x_t a_t \\
+q_t = x_t R_t x_t'.
+\end{cases}
+\]
+
+\item \textbf{Conjugate Updating}: Knowing the moments of $\psi_t$, we assume
+  $\psi_t$ is distributed with something conjugate to the likelihood, whose
+  parameters are matched to the moments of $\psi_t$.  We then update and go
+  backwards, calculating the moments of the posterior.  That is given $\psi_i
+  \sim [f_t, q_t]$, we can take the moments and map them to parameters $r_t,
+  s_t$ so that $\psi_t \sim p(r_t, s_t)$.  Then update so that $(\psi_t | y_t)
+  \sim p(r_t^*, s_t^*)$.  Now map back to means and variances so that $(\psi_t |
+  y_t) \sim [f_t^*, q_t^*]$.
+
+\item \textbf{Posterior}: Perhaps not being completely scrupulous, (since $p(\psi_t | \theta_t)$ 
+  is not a density), we have (from \cite{west-etal-1985})
+  \begin{align*}
+    p(\beta_t, \psi_t, y_t | D_{t-1}) 
+    & \propto p(y_t | \psi_t, D_{t-1}) p(\psi_t, \beta_t | D_{t-1}) \\
+    & \propto p(y_t | \psi_t, D_{t-1}) p(\psi_t | D_{t-1}) p(\beta_t | \psi_t,
+    D_{t-1}) \\
+    & \propto p(\psi_t | y_t, D_{t-1}) p(\beta_t | \psi_t, D_{t-1}).
+  \end{align*}
+  So we can marginalize over $(\psi_t | D_t)$ to get $p(\beta_t | D_{t-1})$.
+  Now we can use what we know about moments to update.  We know that $(\beta_t |
+  \psi_t, D_{t-1})$ has a distribution with mean
+  \[
+  a_t + A_t (\psi_t - f_t)
+  \]
+  and variance, take $\rho_t = R_t x_t'$
+  \[
+  R_t - \rho_t \rho_t' / q_t.
+  \]
+  Thus the mean is
+  \[
+  m_t = \bbE[\beta_t | D_{t-1}] = \bbE[ a_t + A_t (\psi_t - f_t) | D_{t-1}] = a_t + A_t (f_t^* - f_t)
+  \]
+  and the variance is
+  \[
+  \Var[\beta_t | D_{t-1}] = \bbE[ \Var(\beta_t | \psi_t, D_{t-1}) | D_{t-1}) ] +
+  \Var( \bbE[\beta_t | \psi_t, D_{t-1}] | D_{t-1})
+  \]
+  which is
+  \[
+  C_t = A_t q_t^* A_t' + (R_t - \rho_t \rho_t' / q_t) = R_t - \rho_t \rho_t' (1/q_t -
+  q_t^* / q_t^2).
+  \]
+
+\end{itemize}
+
+To backwards sample we proceed assuming that all of the moments we calculated
+correspond to normal distributions.  See above.
+
+At each step we need to transform to a conjugate prior and update.  At the end
+of the Ravines paper they have a list of common conjugate priors and how to
+update.
+
+\begin{itemize}
+
+\item Binary Logit: the likelihood determined by $p(y_t = 1) = p_t$ has a beta
+  conjugate prior.  The distribution $p \sim beta(\alpha, \beta)$ and $\psi =
+  \log (p / (1-p))$ determine the distribution of $\psi$.  From Ravines, when
+  $\psi_t \sim [f_t, q_t]$ we have
+  \[
+  p_t \sim Beta(r_t, s_t) 
+  \]
+  where
+  \[
+  \begin{cases}
+    f_t = \gamma(r_t) - \gamma(s_t) \\
+    q_t = \gamma'(r_t) + \gamma'(s_t),
+  \end{cases}
+  \]
+  $\gamma$ is the digamma function and $\gamma'$ is the trigamma function.  We
+  need to solve for $r_t$ and $s_t$ numerically when we know $f_t, q_t$ and want
+  to find $r_t, s_t$.  They list approximations in the Ravines paper, which are
+  $f_t \sim \log(r_t) - \log(s_t)$ and $q_t = 1/r_t + 1/s_t$ respectively.  When
+  updating you go from
+  \[
+  \begin{cases}
+    r_t \ra r_t^* = y_t + r_t \\
+    s_t \ra s_t^* = n_t - y_t + s_t.
+  \end{cases}
+  \]
+  Then we go back to $f_t^*$ and $q_t^*$ by above.
+
+\item Binary Logit: the beta distribution is conjugate to the binomial
+  distribution.  Consider the beta distribution $beta(r, s)$, which is
+  \[
+  f(p) = p^{r-1} (1-p)^{s-1} / \beta(r, s).
+  \]
+  Now do a change of variables from the probability scale to the log-odds
+  scale.  In particular $p = (1 + e^{-\psi})^{-1}$ so that
+  \[
+  dp = (-1) (1 + e^{-\psi})^{-2} (-1) e^{-\psi} d \psi = e^{\psi} /
+  (1+e^{\psi})^2 d \psi
+  \]
+  Thus
+  \begin{align*}
+  \frac{(e^{\psi})^{r-1}}{(1+e^\psi)^{r-1}}  \frac{1}{(1+e^\psi)^{s-1}} d p
+  & = 
+  \frac{(e^{\psi})^{r-1}}{(1+e^{\psi})^{s+r-2}} \frac{e^{\psi}}{(1+e^{\psi})^2} d
+  \psi \\
+  & = \frac{(e^{\psi})^{r}}{(1+e^{\psi})^{s+r}} d \psi.
+  \end{align*}
+  Thus we know that
+  \[
+  \int_\bbR  \frac{(e^{\psi})^{r}}{(1+e^{\psi})^{s+r}} d \psi = \beta(r, s).
+  \]
+  Thus the moment generating function of $\psi$ is
+  \[
+  \beta(r,s)^{-1} \int_{\bbR} \frac{(e^{\psi})^{r}e^{\psi
+      t}}{(1+e^{\psi})^{s+r}} d \psi 
+  = \beta(r+t, s-t) / \beta(r,s).
+  \]
+  The $\beta$ function is
+  \[
+  \beta(r,s) = \frac{\Gamma(r) \Gamma(s)}{\Gamma(r+s)}.
+  \]
+  It will be easier to write it in the following way:
+  \[
+  \beta(r+t, s) = \exp \Big( \ln \Gamma(r+t) + \ln \Gamma(s-t) - \ln \Gamma(r+s) \Big).
+  \]
+  Letting $'$ denote differentiation with respect to $t$ we have
+  \[
+  \beta'(r+t, s-t) = \beta(r+t, s-t) \Big[ \gamma(r+t) - \gamma(s-t) \Big]
+  \]
+  and
+  \[
+  \beta''(r+t, s-t) = \beta(r+t, s-t) \Big[ \gamma(r+t) - \gamma(s-t) \Big]^2
+  + \beta(r+t, s-t) \Big[ \gamma_1(r+t) + \gamma_1(s-t) \Big]
+  \]
+  where $\gamma$ is the digamma function and $\gamma_1$ is the trigamma
+  function.  Evaluating these at zero and dividing by $\beta(r,s)$ we find that
+  the first and second moments are
+  \[
+  \bbE[\psi] = \gamma(r) - \gamma(s)
+  \]
+  and
+  \[
+  \bbE[\psi^2] = \Big[ \gamma(r) - \gamma(s) \Big]^2
+  + \Big[ \gamma_1(r) + \gamma_1(s) \Big].
+  \]
+  Thus
+  \[
+  \Var(\psi) = \gamma_1(r) + \gamma_1(s).
+  \]
+
+
+
+  
+
+\end{itemize}
+
+\subsection{Correction (MH)}
+
+We need to consider the posterior distribution, or a proportional quantity,
+which amounts to the conditional density multiplied by the prior.  In the case
+of the target density we have
+\[
+\Big[ \prod_{i=1}^T p(y_i | \beta_i) p(\beta_i | \beta_{i-1}) \Big] p(\beta_0 |
+m_0, C_0),
+\]
+which is a product of observation, conditional (AR(1)) densities, and the prior.
+In the case of the proposal density, we sampled according to
+\[
+p(\beta_t | D_T) \Big[ \prod_{i=T}^1 p(\beta_{t-1} | \beta_t, D_{t-1}) \Big]
+\]
+where $(\beta_t | D_T) \sim N(m_T, C_T)$ and $(\beta_{t-1} | \beta_t, D_{t-1})$
+is normal with conditional mean and variance
+\[
+\begin{cases}
+\bbE[\beta_{t-1} | \beta_t, D_{t-1}] = m_{t-1} + A_{bs,t} (\beta_t - a_t) \\
+\Var[\beta_{t-1} | \beta_t, D_{t-1}] = C_{t-1} + C_{t-1} \Phi R_t^{-1} \Phi C_{t-1}
+\end{cases}
+\]
+where
+\[
+A_{bs,t} = C_{t-1} \Phi R_t^{-1}.
+\]
+
+Recall that for MH the acceptance probability is determined by the quantity
+\[
+\frac
+{f(x^*) / q(x^* | x)}
+{f(x  ) / q(x | x^*)}
+\]
+where $x^*$ is the proposal, $f$ is the target density, and $q$ is the proposal
+density.  In the case of independence Metropolis, the proposal does not depend
+on the prevous state so we can calculate $f(x) / q(x)$ and then record that for
+the next iteration.
+
+\begin{itemize}
+
+\item \textbf{binomial logistic}: In the binomial case, the target observation
+  density is
+  \[
+  p(y_i | \beta_i) = {n_i \choose y_i} \frac{(e^{\psi_i})^{y_i}}{(1+e^{\psi_i})^{n_i}}.
+  \]
+  where $\psi_i = x_i \beta_i$.
+
+\end{itemize}
+
 \section{Dynamic Binary Logistic Regression}
 
 
@@ -838,3 +1092,42 @@ there should be no mean level $\iota$.
 \bibliographystyle{abbrvnat}
 
 \end{document}
+
+% Inefficient derivation.
+%   so we have
+%   \[
+%   \beta(r+t, s) = \frac{\Gamma(r + t) \Gamma(s)}{\Gamma(r+t+s)},
+%   \]
+%   in which case
+%   \[
+%   \del_t \beta(r+t, s) = \Gamma'(r+t) \frac{\Gamma(s)}{\Gamma(r+t+s)}
+%   + (-1) \frac{\Gamma(r+t) \Gamma(s)}{\Gamma(r+t+s)^2} \Gamma'(r+t+s).
+%   \]
+%   Further
+%   \[
+%   \del_t^2 \beta(r+t,s) = \Gamma''(r+t) \frac{\Gamma(s)}{\Gamma(r+t+s)}
+%   + (-2) \frac{\Gamma'(r+t) \Gamma(s)}{\Gamma(r+t+s)^2} \Gamma'(r+t+s)
+%   + 2 \frac{\Gamma(r+t) \Gamma(s)}{\Gamma(r+t+s)^3} \Gamma'(r+t+s)^2.
+%   \]
+%   Evaluating these quantites at zero we have
+%   \[
+%   \Gamma'(r) \frac{\Gamma(s)}{\Gamma(r+s)}
+%   - \frac{\Gamma(r) \Gamma(s)}{\Gamma(r+s)^2} \Gamma'(r+s)
+%   \]
+%   and
+%   \[
+%   \Gamma''(r) \frac{\Gamma(s)}{\Gamma(r+s)}
+%   - 2 \frac{\Gamma'(r) \Gamma(s)}{\Gamma(r+s)^2} \Gamma'(r+s)
+%   + 2 \frac{\Gamma(r) \Gamma(s)}{\Gamma(r+s)^3} \Gamma'(r+s)^2.
+%   \]
+%   These become
+%   \[
+%   \frac{\Gamma'(r)}{\Gamma(r)} \frac{\Gamma(r) \Gamma(s)}{\Gamma(r+s)}
+%   - \frac{\Gamma(r) \Gamma(s)}{\Gamma(r+s)} \frac{\Gamma'(r+s)}{\Gamma(r+s)}
+%   \]
+%   and
+%   \[
+%   \frac{\Gamma''(r)}{\Gamma(r)} \frac{\Gamma(r) \Gamma(s)}{\Gamma(r+s)}
+%   - 2 \frac{\Gamma(r) \Gamma(s)}{\Gamma(r+s)} \frac{\Gamma'(r)}{\Gamma(r)} \frac{\Gamma'(r+s)}{\Gamma(r+s)}
+%   + 2 \frac{\Gamma(r) \Gamma(s)}{\Gamma(r+s)} \frac{\Gamma'(r+s)^2}{\Gamma(r+s)^2}.
+%   \]
