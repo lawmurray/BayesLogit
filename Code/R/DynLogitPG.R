@@ -123,7 +123,7 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
     ## AR(1) - phi, W assumed to be diagonal !!!
     ## mu  = draw.mu.R(beta, phi, W, mu.m0, mu.V0) 
     ## phi = draw.phi.R(beta, mu, W, phi.m0, phi.V0, phi)
-    W   = draw.W.R  (beta, mu, phi, W.a0, W.b0)
+    ## W   = draw.W.R  (beta, mu, phi, W.a0, W.b0)
 
     # Record if we are past burn-in.
     if (j > burn) {

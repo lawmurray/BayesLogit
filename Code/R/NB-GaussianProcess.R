@@ -1,3 +1,4 @@
+library("BayesLogit")
 source("NB-Shape.R");
 source("ComputeMixture.R")
 source("Benchmark-Utilities.R")
