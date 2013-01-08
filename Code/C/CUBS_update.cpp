@@ -166,7 +166,7 @@ void CUBSSolver::solve(const double* fq, double* rs, double epsabs, double epsre
 
   // Set up initial vector.
   gsl_vector* x = gsl_vector_alloc(2);
-  gsl_vector_set_all(x, 1.0);
+  gsl_vector_set_all(x, 0.1);
 
   gsl_multiroot_fsolver_set(s, &F, x);
   // printf("x: %g, %g \t f: %g, %g\n", s->x->data[0], s->x->data[1], s->f->data[0], s->f->data[0]);
