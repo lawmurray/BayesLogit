@@ -70,29 +70,37 @@ ar1.dens <- function(beta, mu, phi, W, m0, C0, log.sc=FALSE, alpha=NULL)
   out
 }
 
-target.dens <- function(y, X, n, beta, mu, phi, W, m0, C0, log.sc=FALSE, alpha=NULL)
+target.dens <- function(y, X, n, beta, mu, phi, W, m0, C0, log.sc=FALSE, alpha=NULL, obs="binom")
 {
-  ## The first rows of X correspond to beta.
+  ## The first rows of X = X.stc, X.dyn
  
-  T = length(y)
+  T   = length(y)
   N.b = nrow(as.matrix(W))
-  N = ncol(X)
+  N   = length(m0)
   N.a = N - N.b
-  b.idc = 1:N.b
-  a.idc = N.b + 1:N.a
+  b.idc = 1:N.b + N.a
+  a.idc = 1:N.a
   
   X.dyn = matrix(X[,b.idc], ncol=N.b);
-  if (N.a > 0) matrix(X.stc[,a.idc], ncol=N.a);
+  if (N.a > 0) X.stc = matrix(X[,a.idc], ncol=N.a);
   
   psi = apply(X.dyn * t(beta)[-1,], 1, sum);
   if (N.a > 0) psi = psi + X.stc %*% alpha;
 
-  ## ar1.llh.1 = ar1.dens(beta, mu, phi, W, m0, C0, log.sc=TRUE, alpha);
-  ar1.llh = ar1.llh.C(beta, mu, phi, W, m0, C0, alpha);
-  obs.llh = sum(binom.obs.dens(y, n, psi, log.sc=TRUE))
+  ## ar1.llh = ar1.dens(beta, mu, phi, W, m0, C0, log.sc=TRUE, alpha);
+  ## obs.llh = sum(binom.obs.dens(y, n, psi, log.sc=TRUE))
   ## obs.llh = sum(gauss.obs.dens(y, n, psi, log.sc=TRUE))
   ## obs.llh = sum(poisson.obs.dens(y, psi, log.sc=TRUE))
   ## obs.llh = sum(neg.binom.obs.dens(y, n, psi, log.sc=TRUE))
+  
+  ar1.llh <- ar1.llh.C(beta, mu, phi, W, m0, C0, alpha);
+  ## Using a switch statement slowed things down by 3.5%.
+  obs.llh <- switch(obs,
+                    binom  = sum(binom.obs.dens(y, n, psi, log.sc=TRUE)),
+                    nbinom = sum(nbinom.obs.dens(y, n, psi, log.sc=TRUE)),
+                    norm   = sum(gauss.obs.dens(y, n, psi, log.sc=TRUE)))
+
+  ## obs.llh = do.call("binom.obs.dens", list(y, n, psi, log.sc=TRUE))
 
   llh = ar1.llh + obs.llh;
   out = ifelse(log.sc, llh, exp(llh))
@@ -101,20 +109,21 @@ target.dens <- function(y, X, n, beta, mu, phi, W, m0, C0, log.sc=FALSE, alpha=N
 
 ##------------------------------------------------------------------------------
 
-dyn.logit.cubs <- function(y, X.dyn, n, m0, C0,
-                           samp=1000, burn=100, verbose=100,
-                           mu.m0=NULL, mu.V0=NULL,
-                           phi.m0=NULL, phi.V0=NULL,
-                           W.a0=NULL, W.b0=NULL, X.stc=NULL,
-                           mu.true = NULL, phi.true=NULL, W.true=NULL)
+cubs.mh <- function(y, X.dyn, n, m0, C0,
+                    samp=1000, burn=100, verbose=100,
+                    mu.m0=NULL, mu.V0=NULL,
+                    phi.m0=NULL, phi.V0=NULL,
+                    W.a0=NULL, W.b0=NULL, X.stc=NULL,
+                    mu.true = NULL, phi.true=NULL, W.true=NULL,
+                    obs=c("binom", "nbinom", "norm"))
 {
-
   X = cbind(X.stc, X.dyn)
   T = length(y)
   N.b = ncol(X.dyn)
   N = ncol(X)
   N.a = N - N.b
   M = samp
+  obs = obs[1];
 
   ## Output
   out <- list("beta"=array(0, dim=c(M, N.b, T+1)),
@@ -148,10 +157,10 @@ dyn.logit.cubs <- function(y, X.dyn, n, m0, C0,
     ## Draw beta
     W.mat = diag(W, N.b)
     ## draw = CUBS.R(y, X, n, mu, phi, W.mat, m0, C0);
-    draw = CUBS.C(y, X, n, mu, phi, W.mat, m0, C0, method="binom");
+    draw = CUBS.C(y, X, n, mu, phi, W.mat, m0, C0, obs=obs);
     ppsl.b  = draw$beta
     if (N.a > 0) ppsl.a = draw$alpha
-    lf.ppsl = target.dens(y, X, n, ppsl.b, mu=mu, phi=phi, W=W.mat, m0=m0, C0=C0, log.sc=TRUE, alpha=ppsl.a)
+    lf.ppsl = target.dens(y, X, n, ppsl.b, mu, phi, W.mat, m0, C0, log.sc=TRUE, alpha=ppsl.a, obs=obs)
     lq.ppsl = draw$log.dens;
     l.fdivq.ppsl = lf.ppsl - lq.ppsl
     l.ratio = l.fdivq.ppsl - l.fdivq
@@ -203,7 +212,7 @@ if (FALSE) {
   dyn.load("BayesLogit.so")
   source("LogitWrapper.R")
   
-  ## source("DynLogitCUBS.R")
+  ## source("CUBS-MH.R")
   source("FFBS.R")
   source("DynLogitPG.R")
   
@@ -248,18 +257,19 @@ if (FALSE) {
 
   m0 = mu
   C0 = b.C0
-  samp = 8000
+  samp = 2000
   burn = 200
   verbose = 100
 
-  ## source("DynLogitCUBS.R")
+  ## source("CUBS-MH.R")
   one.R <- CUBS.R(y, X, n, mu, phi, diag(W, P), m0, C0);
   one.C <- CUBS.C(y, X, n, mu, phi, diag(W, P), m0, C0);
 
-  ## source("DynLogitCUBS.R")
-  out.cubs <- dyn.logit.cubs(y, X.dyn=X, n, m0, C0,
-                             samp=samp, burn=burn, verbose=verbose,
-                             mu.true=mu, phi.true=phi, W.true=W)
+  ## source("CUBS-MH.R")
+  out.cubs <- cubs.mh(y, X.dyn=X, n, m0, C0,
+                      samp=samp, burn=burn, verbose=verbose,
+                      mu.true=mu, phi.true=phi, W.true=W,
+                      obs="binom")
 
   out = list("cubs"=list("sstat"=list("beta"=list())));
   out$pg = out$CUBS;
@@ -356,14 +366,15 @@ if (FALSE) {
   burn = 100
   verbose = 100
   
-  ## source("DynLogitCUBS.R")
+  ## source("CUBS-MH.R")
   one.R <- CUBS.R(y, X, sig2, mu, phi, W, m0, C0);
-  one.C <- CUBS.C(y, X, sig2, mu, phi, diag(W, P), m0, C0, method="norm");
+  one.C <- CUBS.C(y, X, sig2, mu, phi, diag(W, P), m0, C0, obs="norm");
 
-  ## source("DynLogitCUBS.R")
-  out.cubs <- dyn.logit.cubs(y, X.dyn=X, sig2, m0, C0,
-                             samp=M, burn=burn, verbose=verbose,
-                             mu.true=mu, phi.true=phi, W.true=W)
+  ## source("CUBS-MH.R")
+  out.cubs <- cubs.mh(y, X.dyn=X, sig2, m0, C0,
+                      samp=M, burn=burn, verbose=verbose,
+                      mu.true=mu, phi.true=phi, W.true=W,
+                      obs="norm")
   
 }
 
@@ -431,10 +442,10 @@ if (FALSE) {
   M = 1000
   verbose = 100
   
-  ## source("DynLogitCUBS.R")
+  ## source("CUBS-MH.R")
   one.draw <- CUBS.R(y, X, rep(0, length(y)), mu, phi, W, m0, C0);
 
-  ## source("DynLogitCUBS.R")
+  ## source("CUBS-MH.R")
   out.cubs <- dyn.logit.cubs(y, X.dyn=X, sig2, m0, C0,
                              samp=M, verbose=verbose,
                              mu.true=mu, phi.true=phi, W.true=W)
@@ -510,13 +521,14 @@ if (FALSE) {
   M = 1000
   verbose = 100
 
-  ## source("DynLogitCUBS.R")
+  ## source("CUBS-MH.R")
   one.draw <- CUBS.R(y, X, n, mu, phi, W, m0, C0);
 
-  ## source("DynLogitCUBS.R")
-  out.cubs <- dyn.logit.cubs(y, X.dyn=X, n, m0, C0,
-                             samp=M, verbose=verbose,
-                             mu.true=mu, phi.true=phi, W.true=W)
+  ## source("CUBS-MH.R")
+  out.cubs <- cubs.mh(y, X.dyn=X, n, m0, C0,
+                      samp=M, verbose=verbose,
+                      mu.true=mu, phi.true=phi, W.true=W,
+                      obs="nbinom")
   
 }
 
