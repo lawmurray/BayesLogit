@@ -1,6 +1,7 @@
 #include <Eigen/Dense>
 #include <stdexcept>
 #include "RNG.hpp"
+#include "CUBS_update.h"
 #include "CUBS.h"
 
 using Eigen::Map;
@@ -41,7 +42,8 @@ void cubs_norm(double *alpha_, double *beta_,
   Map<VectorXd> m0   (m0_   , N       );
   Map<MatrixXd> C0   (C0_   , N  , N  );
 
-  cubs(alpha, beta, z, X, V, mu, phi, W, m0, C0, log_dens, &norm_post, *eps_rel_, *max_iter_, r);
+  NormUpdate norm;
+  cubs(alpha, beta, z, X, V, mu, phi, W, m0, C0, log_dens, norm, *eps_rel_, *max_iter_, r);
 }
 
 void cubs_binom(double *alpha_, double *beta_,
@@ -74,7 +76,8 @@ void cubs_binom(double *alpha_, double *beta_,
   Map<VectorXd> m0   (m0_   , N       );
   Map<MatrixXd> C0   (C0_   , N  , N  );
 
-  cubs(alpha, beta, z, X, n, mu, phi, W, m0, C0, log_dens, &binom_post, *eps_rel_, *max_iter_, r);
+  BinomUpdate binom;
+  cubs(alpha, beta, z, X, n, mu, phi, W, m0, C0, log_dens, binom, *eps_rel_, *max_iter_, r);
 }
 
 void cubs_nbinom(double *alpha_, double *beta_,
@@ -107,5 +110,6 @@ void cubs_nbinom(double *alpha_, double *beta_,
   Map<VectorXd> m0   (m0_   , N       );
   Map<MatrixXd> C0   (C0_   , N  , N  );
 
-  cubs(alpha, beta, z, X, n, mu, phi, W, m0, C0, log_dens, &nbinom_post, *eps_rel_, *max_iter_, r);
+  NBinomUpdate nbinom;
+  cubs(alpha, beta, z, X, n, mu, phi, W, m0, C0, log_dens, nbinom, *eps_rel_, *max_iter_, r);
 }
