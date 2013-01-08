@@ -139,7 +139,7 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
 
     ## draw beta
     z = log(lambda) + log(d) + nmix$m[r]; ## So that we model the log mean.
-    ffbs = FFBS.C(z, X, mu, phi, diag(W,P.b), nmix$v[r], m.0, C.0)
+    ffbs = FFBS.C(z, X, nmix$v[r], mu, phi, diag(W,P.b), m.0, C.0)
     iota = ffbs$alpha
     beta = ffbs$beta
 

@@ -1,7 +1,7 @@
 ## Binomial Logistic Regression using PolyaGamma augmentation.
 
 ## Depends:
-## - FFBS.R
+## - FFBS.R or CUBS.R
 ## - Stationary.R
 
 ## if (exists("TESTING")) {
@@ -90,7 +90,7 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
   if (!is.null(beta.true)) { beta = beta.true; know.beta = TRUE; }
   if (!is.null(w.true))    { om   = w.true;    know.w    = TRUE; }
   if (!is.null(phi.true))  { phi  = phi.true;  know.phi  = TRUE;
-                             if (phi==1) {mu.true = rep(0, P.b);}}
+                             if (phi[1]==1) {mu.true = rep(0, P.b);}}
   if (!is.null(mu.true))   { mu   = mu.true;   know.mu   = TRUE; }
   if (!is.null(W.true))    { W    = W.true;    know.W    = TRUE; }
   if (!is.null(iota.true)) { iota = iota.true; know.iota = TRUE; }
@@ -116,7 +116,7 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
 
     ## Draw beta;
     z = kappa / om;
-    ffbs = FFBS.C(z, X, mu, phi, diag(W, P.b), 1/om,  m.0, C.0);
+    ffbs = CUBS.C(z, X, 1/om, mu, phi, diag(W, P.b), m.0, C.0, method="norm");
     iota = ffbs$alpha;
     beta = ffbs$beta;
     

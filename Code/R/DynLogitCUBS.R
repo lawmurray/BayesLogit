@@ -1,152 +1,5 @@
-library("rootSolve")
-
-## CUBS: conjugate updating backward sampling
-## Use a MH step to to correct.
-
-binom.solve <- function(rs, fq)
-{
-  r = rs[1]
-  s = rs[2]
-  E = digamma(r) - digamma(s)
-  V = trigamma(r) + trigamma(s)
-  F1 = E - fq[1]
-  F2 = V - fq[2]
-  out = c("F1"=F1, "F2"=F2)
-  out
-}
-
-poisson.solve <- function(rs, fq)
-{
-  F1 = digamma(rs[1]) - log(abs(rs[2])) - fq[1]
-  F2 = trigamma(rs[1]) - fq[2]
-  out = c("F1"=F1, "F2"=F2)
-  out
-}
-
-cubs.draw <- function(y, X, n, mu, phi, W, m0, C0)
-{
-  ## When tracking (beta_t, alpha).  It may be the case that there is no alpha.
-  ## z_t = x_t (beta_t, alpha_t) + ep_t, ep_t \sim N(0, V_t).
-  ## beta_t = mu + phi * (beta_t - mu) + omega_t, omega_t \sim N(0,W).
-  ## alpha_t = alpha_{t-1}
-  
-  ## y : vector of observations (T)
-  ## X : design matrix (T x N)
-  ## mu : mu (K)
-  ## phi : vector (K)
-  ## W : covariance MATRIX of innovations of beta (K x K)
-  ## m0 : prior mean on (beta_0, alpha_0) (N)
-  ## C0 : prior var on (beta_0, alpha_0) (N x N).
-
-  W = as.matrix(W)
-  
-  T = length(y);
-  N.b = ncol(W);
-  N   = ncol(X);
-  N.a = N - N.b;
-  b.idc = 1:N.b;
-  a.idc = 1:N.a+N.b
-
-  with.alpha = N.a > 0;
-  
-  m = array(m0, dim=c(N, T+1));
-  C = array(C0, dim=c(N, N, T+1));
-  R = array(0., dim=c(N, N, T+1));
-  a = array(0., dim=c(N, T+1));
-  rs = array(0., dim=c(2, T));
-
-  beta = array(0, dim=c(N.b, T+1));
-  
-  d = c( phi, rep(1, N.a) );
-  D = diag(d, N);
-  mu = c( mu, rep(0, N.a) );
-  big.W = matrix(0, N, N); big.W[b.idc, b.idc] = W;
-  if (length(n)==1) n = array(n, dim=T);
-  
-  ## Filter Forward
-  for (i in 2:(T+1)) {
-    i.l = i-1;
-
-    a[,i]  = d * m[,i-1] + (1-d) * mu;
-    R[,,i] = D %*% C[,,i-1] %*% D  + big.W;
-
-    x.i = t(X[i.l,])
-    f.i = x.i %*% a[,i];
-    q.i = ( x.i %*% R[,,i] %*% X[i.l,] )[1];
-    
-    rho.i = R[,,i] %*% X[i.l,];
-    A.i = rho.i / q.i;
-
-    ## Conjugate update
-    ## ## Binomial
-    rs.i = multiroot(binom.solve, start=c(1,1), fq=c(f.i, q.i));
-    rs[,i.l] = rs.i$root
-    rstar.i = rs.i$root[1] + y[i.l];
-    sstar.i = n[i.l] - y[i.l] + rs.i$root[2];
-    fqstar.i = binom.solve(c(rstar.i, sstar.i), c(0, 0));
-    ## ## cat("f,q:", f.i, q.i, "root:", rs.i$root, "f.root:", rs.i$f.root, "\n");
-    ## ## Gaussian
-    ## qstar.i = (1 / (1 / q.i + 1 / n[i.l]))
-    ## fstar.i = (f.i / q.i + y[i.l] / n[i.l]) * qstar.i
-    ## fqstar.i = c(fstar.i, qstar.i)
-    ## ## cat(c(f.i, q.i), fqstar.i, "\n")
-    ## ## Poisson
-    ## r.i = multiroot(function(r,q){trigamma(r)-q}, start=1, q=q.i);
-    ## s.i = exp(digamma(r.i$root[1]) - f.i)
-    ## rs.i = list(root=c(r.i$root[1], s.i));
-    ## rs[,i.l] = rs.i$root
-    ## fstar.i = digamma(rs.i$root[1] + y[i.l]) - log(rs.i$root[2] + 1)
-    ## qstar.i = trigamma(rs.i$root[1] + y[i.l])
-    ## fqstar.i = c(fstar.i, qstar.i)
-    ## Neg. Binomial
-    ## fhat.i = f.i - log(n[i.l])
-    ## rs.i = multiroot(binom.solve, start=c(1,1), fq=c(fhat.i, q.i));
-    ## rs[,i.l] = rs.i$root
-    ## rstar.i = rs.i$root[1] + y[i.l];
-    ## sstar.i = n[i.l] + rs.i$root[2];
-    ## fqstar.i = binom.solve(c(rstar.i, sstar.i), c(0, 0));
-    ## fqstar.i[1] = fqstar.i[1] + log(n[i.l])
-    
-    m[,i]  = a[,i] + A.i * (fqstar.i[1] - f.i);
-    C[,,i] = R[,,i] + rho.i %*% t(rho.i) * ( (fqstar.i[2] / q.i - 1) / q.i );
-
-  }
-
-  ## Keep track of log density.
-  log.dens = 0
-  
-  ## Backwards sample
-  L = t( chol(C[,,T+1]) );
-  ## evd = eigen(C[,,T+1]);
-  ## Rt = evd$vectors %*% diag(sqrt(evd$values), N) %*% t(evd$vectors);
-  ep    = rnorm(N);
-  theta = m[,T+1] + L %*% ep;
-  ## alpha = ifelse(with.alpha, theta[a.idc], 0);
-  if (with.alpha) alpha = theta[a.idc] else alpha = 0
-  beta[,T+1] = theta[b.idc];
-
-  log.dens = log.dens - 0.5 * (t(ep) %*% ep) - sum(log(diag(L)));
-
-  for (i in (T+1):2) {
-
-    A.bs = C[b.idc, b.idc, i-1] %*% (solve(R[b.idc, b.idc, i]) * phi);
-    V.bs = C[b.idc, b.idc, i-1] - A.bs %*% R[b.idc, b.idc, i] %*% t(A.bs);
-    m.bs = m[b.idc, i-1] + A.bs %*% (beta[,i] - a[b.idc,i]);
-
-    L  = t(chol(V.bs));
-    ep = rnorm(N.b)
-    beta[,i-1] = m.bs + L %*% ep;
-
-    log.dens = log.dens - 0.5 * (t(ep) %*% ep) - sum(log(diag(L)));
-    
-  }
-
-  ## Need to return log density as well or r,s to calculate log-density.
-  out = list("alpha"=alpha, "beta"=beta, "log.dens"=log.dens, "m"=m, "C"=C, "rs"=rs);
-  out
-}
-
-##------------------------------------------------------------------------------
+source("CUBS.R")
+source("AR1.R")
 
 gaussian.dens <- function(x, m, LorV, log.sc=FALSE, is.V=FALSE)
 {
@@ -194,23 +47,24 @@ ar1.dens <- function(beta, mu, phi, W, m0, C0, log.sc=FALSE, alpha=NULL)
   T = ncol(beta) - 1;
   L = t(chol(W))
   log.dens = 0;
+  C1 = 
 
   ## llh
   for (i in 2:(T+1)) {
     mean.i = mu + phi * (beta[,i-1] - mu);
-    log.dens = log.dens + gaussian.dens(beta[,i], mean.i, L, log.sc=TRUE, is.V=FALSE);
-    ## e = (beta[,i] - mu) - phi * (beta[,i-1] - mu);
-    ## e = backsolve(L, e, upper.tri=FALSE)
-    ## log.dens = log.dens - 0.5 * (t(e) %*% e);
+    ## log.dens = log.dens + gaussian.dens(beta[,i], mean.i, L, log.sc=TRUE, is.V=FALSE);
+    e = beta[,i] - mean.i
+    e = backsolve(L, e, upper.tri=FALSE)
+    log.dens = log.dens - 0.5 * (t(e) %*% e) - sum(log(diag(L)));
   }
-  ## log.dens = log.dens - T * sum(log(diag(L)));
-  
+  ## ## log.dens = log.dens - T * sum(log(diag(L)));
+
   ## prior
   L = t(chol(C0))
-  ## e = c(beta[,1], alpha) - m0;
-  ## e = backsolve(L, e, upper.tri=FALSE)
-  ## log.dens = log.dens - 0.5 * (t(e) %*% e) - sum(log(diag(L)));
-  log.dens = log.dens + gaussian.dens(c(beta[,1], alpha), m0, L, log.sc=TRUE, is.V=FALSE);
+  ## log.dens = log.dens + gaussian.dens(c(beta[,1], alpha), m0, L, log.sc=TRUE, is.V=FALSE);
+  e = c(beta[,1], alpha) - m0;
+  e = backsolve(L, e, upper.tri=FALSE)
+  log.dens = log.dens - 0.5 * (t(e) %*% e) - sum(log(diag(L)));
   
   out = ifelse(log.sc, log.dens, exp(log.dens));
   out
@@ -232,8 +86,9 @@ target.dens <- function(y, X, n, beta, mu, phi, W, m0, C0, log.sc=FALSE, alpha=N
   
   psi = apply(X.dyn * t(beta)[-1,], 1, sum);
   if (N.a > 0) psi = psi + X.stc %*% alpha;
-  
-  ar1.llh = ar1.dens(beta, mu, phi, W, m0, C0, log.sc=TRUE, alpha);
+
+  ## ar1.llh.1 = ar1.dens(beta, mu, phi, W, m0, C0, log.sc=TRUE, alpha);
+  ar1.llh = ar1.llh.C(beta, mu, phi, W, m0, C0, alpha);
   obs.llh = sum(binom.obs.dens(y, n, psi, log.sc=TRUE))
   ## obs.llh = sum(gauss.obs.dens(y, n, psi, log.sc=TRUE))
   ## obs.llh = sum(poisson.obs.dens(y, psi, log.sc=TRUE))
@@ -247,14 +102,14 @@ target.dens <- function(y, X, n, beta, mu, phi, W, m0, C0, log.sc=FALSE, alpha=N
 ##------------------------------------------------------------------------------
 
 dyn.logit.cubs <- function(y, X.dyn, n, m0, C0,
-                           samp=1000, verbose=100,
+                           samp=1000, burn=100, verbose=100,
                            mu.m0=NULL, mu.V0=NULL,
                            phi.m0=NULL, phi.V0=NULL,
                            W.a0=NULL, W.b0=NULL, X.stc=NULL,
                            mu.true = NULL, phi.true=NULL, W.true=NULL)
 {
 
-  X = cbind(X.dyn, X.stc)
+  X = cbind(X.stc, X.dyn)
   T = length(y)
   N.b = ncol(X.dyn)
   N = ncol(X)
@@ -263,7 +118,7 @@ dyn.logit.cubs <- function(y, X.dyn, n, m0, C0,
 
   ## Output
   out <- list("beta"=array(0, dim=c(M, N.b, T+1)),
-              "ppsl.b"=array(0, dim=c(M, N.b, T+1)),
+              ## "ppsl.b"=array(0, dim=c(M, N.b, T+1)),
               "l.fdivq"=rep(0, M),
               "l.ratio"=rep(0, M),
               "lf.ppsl"=rep(0, M),
@@ -279,22 +134,28 @@ dyn.logit.cubs <- function(y, X.dyn, n, m0, C0,
   
   ## Check if known.
   if (!is.null(phi.true))  { phi  = phi.true;  know.phi  = TRUE;
-                             if (phi==1) {mu.true = rep(0, N.b);}}
+                             if (phi[1]==1) {mu.true = rep(0, N.b);}}
   if (!is.null(mu.true))   { mu   = mu.true;   know.mu   = TRUE; }
   if (!is.null(W.true))    { W    = W.true;    know.W    = TRUE; }
   ## if (!is.null(iota.true)) { iota = iota.true; know.iota = TRUE; }
 
+  start.time = proc.time()
+  
   ## MCMC
-  for(i in 1:M) {
-
+  for(i in 1:(samp+burn)) {
+    if (i==burn+1) start.ess = proc.time();
+    
     ## Draw beta
-    draw = cubs.draw(y, X, n, mu, phi, W, m0, C0);
+    W.mat = diag(W, N.b)
+    ## draw = CUBS.R(y, X, n, mu, phi, W.mat, m0, C0);
+    draw = CUBS.C(y, X, n, mu, phi, W.mat, m0, C0, method="binom");
     ppsl.b  = draw$beta
     if (N.a > 0) ppsl.a = draw$alpha
-    lf.ppsl = target.dens(y, X, n, ppsl.b, mu=mu, phi=phi, W=W, m0=m0, C0=C0, log.sc=TRUE, alpha=ppsl.a)
+    lf.ppsl = target.dens(y, X, n, ppsl.b, mu=mu, phi=phi, W=W.mat, m0=m0, C0=C0, log.sc=TRUE, alpha=ppsl.a)
     lq.ppsl = draw$log.dens;
     l.fdivq.ppsl = lf.ppsl - lq.ppsl
     l.ratio = l.fdivq.ppsl - l.fdivq
+    ## l.fdivq.ppsl = 0; l.ratio = 0; lf.ppsl = 0; lq.ppsl = 0
     
     a.prob = min(1, exp(l.ratio))
 
@@ -306,20 +167,26 @@ dyn.logit.cubs <- function(y, X.dyn, n, m0, C0,
     }
     ## End draw beta
 
-    out$ppsl.b[i,,] = ppsl.b
-    out$beta[i,,] = beta
-    if (N.a > 0) out$alpha[i,] = alpha
-    out$l.fdivq[i] = l.fdivq
-    out$l.ratio[i] = l.ratio
-    out$lf.ppsl[i] = lf.ppsl
-    out$lq.ppsl[i] = lq.ppsl
-    out$a.rate[i]  = naccept / i
-    out$last       = draw
+    if (i > burn) {
+      ## out$ppsl.b[i-burn,,] = ppsl.b
+      out$beta[i-burn,,] = beta
+      if (N.a > 0) out$alpha[i-burn,] = alpha
+      out$l.fdivq[i-burn] = l.fdivq
+      out$l.ratio[i-burn] = l.ratio
+      out$lf.ppsl[i-burn] = lf.ppsl
+      out$lq.ppsl[i-burn] = lq.ppsl
+      out$a.rate[i-burn]  = naccept / i
+    }
 
     if (i %% verbose == 0) cat("CUBS: iteration", i, "a.rate:", naccept / i, "\n");
     
   }
 
+  end.time = proc.time()
+  out$total.time = end.time - start.time
+  out$ess.time   = end.time - start.ess
+  out$last          = draw
+  
   out
   
 }
@@ -332,26 +199,39 @@ dyn.logit.cubs <- function(y, X.dyn, n, m0, C0,
 
 if (FALSE) {
 
-  T = 100;
+  dyn.unload("BayesLogit.so")
+  dyn.load("BayesLogit.so")
+  source("LogitWrapper.R")
+  
+  ## source("DynLogitCUBS.R")
+  source("FFBS.R")
+  source("DynLogitPG.R")
+  
+}
+
+if (FALSE) {
+
+  T = 300;
   P = 1;
 
   beta = array(0, dim=c(P, T+1));
   X = matrix(1, nrow=T, ncol=P);
-
+  if (P != 1) X = matrix(rnorm(T*P), nrow=T);
+  
   N = nrow(X);
 
   ## Parameters
-  iota = 0;
-  W   = 0.1;
-  mu  = 0;
-  phi = 0.95
+  iota = rep(0, P);
+  W   = rep(0.1, P);
+  mu  = rep(0, P);
+  phi = rep(0.95, P)
 
   ## Prior
-  b.m0 = 0.0;
-  b.C0 = 2.0;
-  phi.m0 = 0.9
-  phi.V0 = 0.1;
-  W.a0   = 10;
+  b.m0 = rep(0.0, P);
+  b.C0 = diag(2.0, P);
+  phi.m0 = rep(0.9, P)
+  phi.V0 = rep(0.1, P)
+  W.a0   = rep(10, P);
   W.b0   = W.a0 * W;
 
   ## Synthetic
@@ -360,50 +240,63 @@ if (FALSE) {
     beta[,i] = mu + phi * (beta[,i-1]-mu) + sqrt(W) * rnorm(P);
   }
 
-  n = rep(50, T)
+  n = rep(1, T)
   psi = iota + apply(X * t(beta)[-1,], 1, sum); ## log-odds
   p   = exp(psi) / (1 + exp(psi));
   y = rbinom(T, n, p);
   w = rpg.devroye(T, n, psi);
 
   m0 = mu
-  C0 = diag(b.C0, P);
-  M = 1000
+  C0 = b.C0
+  samp = 8000
+  burn = 200
   verbose = 100
 
   ## source("DynLogitCUBS.R")
-  one.draw <- cubs.draw(y, X, n, mu, phi, W, m0, C0);
+  one.R <- CUBS.R(y, X, n, mu, phi, diag(W, P), m0, C0);
+  one.C <- CUBS.C(y, X, n, mu, phi, diag(W, P), m0, C0);
 
   ## source("DynLogitCUBS.R")
   out.cubs <- dyn.logit.cubs(y, X.dyn=X, n, m0, C0,
-                             samp=M, verbose=verbose,
+                             samp=samp, burn=burn, verbose=verbose,
                              mu.true=mu, phi.true=phi, W.true=W)
+
+  out = list("cubs"=list("sstat"=list("beta"=list())));
+  out$pg = out$CUBS;
+
+  out$cubs$ess.time = out.cubs$ess.time[3];
+  out$cubs$sstat$beta[[1]] = sum.stat.dyn(out.cubs$beta, out$cubs$ess.time);
+  out$cubs$sstat$beta = simplify2array(out$cubs$sstat$beta);
   
 }
 
 if (FALSE) {
 
   source("DynLogitPG.R")
-  samp = 1000
-  burn = 0
-  out.pg <- dyn.logit.PG(y, X, n, samp=samp, burn=burn, verbose=100,
+  ## samp = 10000; burn=2000; verbose = 1000;
+  out.pg <- dyn.logit.PG(y, X, n, samp=samp, burn=burn, verbose=verbose,
                          m.0=m0, C.0=C0,
                          mu.m0=NULL, mu.V0=NULL,
                          phi.m0=NULL, phi.V0=NULL,
                          W.a0=NULL, W.b0=NULL,
                          beta.true=NULL, iota.true=NULL, w.true=NULL,
                          mu.true=mu, phi.true=phi, W.true=W)
+
+  out$pg$ess.time = out.pg$ess.time[3];
+  out$pg$sstat$beta[[1]] = sum.stat.dyn(out.pg$beta, out$pg$ess.time)
+  out$pg$sstat$beta = simplify2array(out$pg$sstat$beta);
   
+  out.table = setup.table.dyn(out, "beta")
 }
 
 if (FALSE) {
+  
+  beta.mean = apply(plot.out$beta, c(2,3), mean);
+  beta.95   = apply(plot.out$beta, c(2,3), function(x){quantile(x, 0.95)});
+  beta.05   = apply(plot.out$beta, c(2,3), function(x){quantile(x, 0.05)});
 
-  beta.mean = apply(out$beta, c(2,3), mean);
-  beta.95   = apply(out$beta, c(2,3), function(x){quantile(x, 0.95)});
-  beta.05   = apply(out$beta, c(2,3), function(x){quantile(x, 0.05)});
-
-  ymin = min(beta.mean, out$beta);
-  ymax = max(beta.mean, out$beta);
+  ymin = min(beta.mean, plot.out$beta);
+  ymax = max(beta.mean, plot.out$beta);
 
   plot(0:T, beta.mean[1,], col=2, type="l", ylim=c(ymin,ymax));
   lines(0:T, beta.95[1,], col="pink")
@@ -415,7 +308,7 @@ if (FALSE) {
   if (n[1] > 3) { points(1:T, log(y / (n-y)), cex=0.1) } else
   { points(1:T, (y-min(y)) / (max(y)-min(y)) * (ymax-ymin) + ymin, cex=0.1) }
   
-  lines(0:T, out$beta[100,1,], col=3);
+  lines(0:T, plot.out$beta[100,1,], col=3);
   
 }
 
@@ -459,14 +352,17 @@ if (FALSE) {
 
   m0 = mu
   C0 = diag(b.C0, P);
-  M = 100
+  M = 1000
+  burn = 100
   verbose = 100
   
   ## source("DynLogitCUBS.R")
-  one.draw <- cubs.draw(y, X, sig2, mu, phi, W, m0, C0);
-  
+  one.R <- CUBS.R(y, X, sig2, mu, phi, W, m0, C0);
+  one.C <- CUBS.C(y, X, sig2, mu, phi, diag(W, P), m0, C0, method="norm");
+
+  ## source("DynLogitCUBS.R")
   out.cubs <- dyn.logit.cubs(y, X.dyn=X, sig2, m0, C0,
-                             samp=M, verbose=verbose,
+                             samp=M, burn=burn, verbose=verbose,
                              mu.true=mu, phi.true=phi, W.true=W)
   
 }
@@ -536,7 +432,7 @@ if (FALSE) {
   verbose = 100
   
   ## source("DynLogitCUBS.R")
-  one.draw <- cubs.draw(y, X, rep(0, length(y)), mu, phi, W, m0, C0);
+  one.draw <- CUBS.R(y, X, rep(0, length(y)), mu, phi, W, m0, C0);
 
   ## source("DynLogitCUBS.R")
   out.cubs <- dyn.logit.cubs(y, X.dyn=X, sig2, m0, C0,
@@ -615,7 +511,7 @@ if (FALSE) {
   verbose = 100
 
   ## source("DynLogitCUBS.R")
-  one.draw <- cubs.draw(y, X, n, mu, phi, W, m0, C0);
+  one.draw <- CUBS.R(y, X, n, mu, phi, W, m0, C0);
 
   ## source("DynLogitCUBS.R")
   out.cubs <- dyn.logit.cubs(y, X.dyn=X, n, m0, C0,

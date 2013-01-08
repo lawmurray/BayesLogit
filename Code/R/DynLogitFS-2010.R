@@ -203,7 +203,7 @@ dyn.logit.FS <- function(y, X.dyn, n=1, X.stc=NULL,
     ## V.hat = nmix$v[r] ## when n = 1.
     
     ## (iota, beta | r, z, y)
-    ffbs = FFBS.C(z.hat, X, mu, phi, diag(W,P), V.hat, m.0, C.0)
+    ffbs = FFBS.C(z.hat, X, V.hat, mu, phi, diag(W,P), m.0, C.0)
     iota = ffbs$alpha
     beta = ffbs$beta
 

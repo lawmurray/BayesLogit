@@ -129,7 +129,7 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
     ## draw beta
     kappa = 0.5 * (y-d)
     z = kappa / w + log(d);
-    ffbs = FFBS.C(z, X, mu, phi, diag(W, P.b), 1/w, m.0, C.0)
+    ffbs = FFBS.C(z, X, 1/w, mu, phi, diag(W, P.b), m.0, C.0)
     iota = ffbs$alpha
     beta = ffbs$beta
     
