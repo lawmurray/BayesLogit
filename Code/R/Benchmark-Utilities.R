@@ -202,3 +202,29 @@ setup.table <- function(b.out, var.name="beta") {
 
   out
 }
+
+##------------------------------------------------------------------------------
+
+setup.table.dyn <- function(b.out, var.name="beta") {
+
+  ave.sstat = lapply(b.out, function(x) apply(x$sstat[[var.name]], c(1,2,3), mean));
+  ave.sstat = simplify2array(ave.sstat);
+
+  ave.time  = lapply(b.out, function(x) mean(x$ess.time));
+  ave.time  = simplify2array(ave.time)
+
+  ## min, median, max
+  mmm.ess = drop(apply(ave.sstat[,,3,,drop=FALSE], c(3,4), function(x) quantile(x, c(0.0, 0.5, 1.0)) ))
+  mmm.esr = drop(apply(ave.sstat[,,4,,drop=FALSE], c(3,4), function(x) quantile(x, c(0.0, 0.5, 1.0)) ))
+
+  ## ave.arate = simplify2array(lapply(b.out, function(x) x$info$ave.arate));
+  ave.arate = 1
+  
+  the.table = rbind(ave.time, ave.arate, mmm.ess, mmm.esr);
+  rownames(the.table) = c("time", "ARate", "ESS.min", "ESS.med", "ESS.max", "ESR.min", "ESR.med", "ESR.max");
+
+  out <- list("ave.sstat"=ave.sstat,
+              "table"=t(the.table));
+
+  out
+}
