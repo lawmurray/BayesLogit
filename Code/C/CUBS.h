@@ -137,9 +137,13 @@ void cubs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
     #endif
   }
 
+  // std::cout << "m[10]: " << m[10] << "\n";
+  // std::cout << "C[10]: " << C[10] << "\n";
+
   // Backwards sample.
   double ldens = 0;
   VectorXd draw(N); r.norm(draw, 1.0);
+  // draw = VectorXd::Zero(N);
 
   MatrixXd L = C[T].llt().matrixL();
   VectorXd theta = m[T] + L * draw;
@@ -163,6 +167,7 @@ void cubs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
     MatrixXd V_bs = Csub - tA.transpose() * Rsub * tA;
 
     r.norm(draw, 1.0);
+    // draw = VectorXd::Zero(N_b);
     L = V_bs.llt().matrixL();
     beta.col(i-1) = m_bs + L * draw;
 

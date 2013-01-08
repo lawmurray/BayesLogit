@@ -156,7 +156,7 @@ CUBS.R <- function(y, X, n, mu, phi, W, m0, C0)
 ##------------------------------------------------------------------------------
 
 CUBS.C <- function(z, X, n, mu, phi, W, m0, C0,
-                   method=c("binom", "nbinom", "norm"),
+                   obs=c("binom", "nbinom", "norm"),
                    eps.rel=1e-8, max.iter=100)
 {
   T = length(z)
@@ -195,7 +195,7 @@ CUBS.C <- function(z, X, n, mu, phi, W, m0, C0,
   alpha = rep(0, max(N.a, 1));
   beta  = array(0, dim=c(N.b, T+1));
 
-  call.name = paste("cubs", method[1], sep="_");
+  call.name = paste("cubs", obs[1], sep="_");
   log.dens  = 0
   
   OUT <- .C(call.name, alpha, beta,
