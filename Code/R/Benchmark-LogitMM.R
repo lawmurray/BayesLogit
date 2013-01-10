@@ -12,16 +12,17 @@ source("Benchmark-Utilities.R")
 
 run <- list("ex01"= FALSE,
             "polls" = FALSE,
-            "xerop" = TRUE)
+            "xerop" = FALSE)
 
 samp = 1000
 burn = 200
 verbose = 100
+kappa = Inf
 df = Inf
 ntrials = 1
 
-mm.method = c("PGMM", "IndMM1", "IndMM2", "PG", "IndMH");
-run.methods = 1:5;
+mm.method = c("PGMM", "IndMM1", "IndMM2", "PGMM2", "IndMM3", "IndMM4", "PG", "IndMH");
+run.methods = 1:7;
 
 write.it = FALSE
 load.old = FALSE
@@ -29,6 +30,8 @@ load.old = FALSE
 var.names <- list("PGMM"=c("ab", "phi"),
                   "IndMM1"=c("ab", "phi"),
                   "IndMM2"=c("ab", "phi"),
+                  "IndMM3"=c("ab", "theta"),
+                  "IndMM4"=c("ab", "phi"),
                   "PG"="ab",
                   "IndMH"="ab")
 
@@ -39,7 +42,7 @@ var.names <- list("PGMM"=c("ab", "phi"),
 benchmark.blogit.mm <- function(y, X.re, X.fe, n, shape=1, rate=1, m.0=NULL, C.0=NULL,
                                 samp=1000, burn=100, ntrials=1, verbose=100,
                                 method = c("PGMM", "IndMM1"),
-                                dset.name="", df=Inf, var.names="beta")   
+                                dset.name="", df=Inf, var.names="beta", kappa=0)   
 {
   source("Logit-MixedModel.R")
   
@@ -85,6 +88,11 @@ benchmark.blogit.mm <- function(y, X.re, X.fe, n, shape=1, rate=1, m.0=NULL, C.0
       gb <- logit.PG.mm(y, X.re, X.fe, n, shape, rate, m.0, P.0, samp=samp, burn=burn, verbose=verbose);
       gb$arate = 1
       
+    } else if (method=="PGMM2") { ## Polya Gamma Mixed Model
+
+      gb <- logit.PG.mm.2(y, X.re, X.fe, n, shape, rate, kappa=kappa, m.0, P.0, samp=samp, burn=burn, verbose=verbose);
+      gb$arate = 1
+      
     } else if (method=="IndMM1") { ## Independence Metrop. Mixed Model.
 
       gb <- ind.metropolis.blogit(y, X.re, X.fe, n, shape, rate, m.0, P.0, samp=samp, burn=burn, verbose=verbose, df=df)
@@ -93,6 +101,18 @@ benchmark.blogit.mm <- function(y, X.re, X.fe, n, shape=1, rate=1, m.0=NULL, C.0
     } else if (method=="IndMM2") {
 
       gb <- ind.metropolis.blogit.2(y, X.re, X.fe, n, shape, rate, m.0, P.0, samp=samp, burn=burn, verbose=verbose, df=df)
+      gb$arate = gb$acceptr
+      
+    } else if (method=="IndMM3") {
+
+      gb <- ind.metropolis.blogit.3(y, X.re, X.fe, n, shape, rate, kappa=kappa, m.0, P.0,
+                                    samp=samp, burn=burn, verbose=verbose, df=df)
+      gb$arate = gb$acceptr
+      
+    } else if (method=="IndMM4") {
+
+      gb <- ind.metropolis.blogit.4(y, X.re, X.fe, n, shape, rate, kappa=kappa, m.0, P.0,
+                                    samp=samp, burn=burn, verbose=verbose, df=df)
       gb$arate = gb$acceptr
       
     } else if (method=="PG") { ## binomial, fraction
@@ -170,8 +190,8 @@ if (run$ex01) {
   P.a = ncol(X.re);
   P.b = ncol(X.fe);
 
-  shape = 1.0
-  rate  = 1.0
+  shape = 2
+  rate  = 2
   
   prec.b = rep(0.01, P.b)
   
@@ -192,7 +212,7 @@ if (run$ex01) {
     bench.ex01[[nm]] <- benchmark.blogit.mm(y, X.re, X.fe, n, shape, rate, m.0=m.0, C.0=solve(P.0),
                                             samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                             method=nm,
-                                            dset.name=dset.name, df=df, var.names=var.names[[nm]])
+                                            dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=kappa)
   }
   
   ex01.tbl = setup.table(bench.ex01, "ab")
@@ -201,21 +221,42 @@ if (run$ex01) {
 
   ## .........................................................
   ## Check sensitivity to hyperparameters and model structure.
-  
+
+  kappa = 1.0; maxit=1000
   ## Without mean of random effects.
   check <- blogit.mm.map(y, X.re, X.fe, n, shape=shape, rate=rate, 
-                         m.0=m.0, P.0=P.0, abphi.0=NULL, calc.V=TRUE, trace=FALSE)
-  c(check$m[1:5], check$m[7])
+                         m.0=m.0, P.0=P.0, abphi.0=NULL, calc.V=TRUE, trace=FALSE, maxit=maxit)
+  c(check$m[1:5], check$m[6], check$m[7])
   
-  ## With mean of random effects.
-  check <- blogit.mm.map.alt(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=0.1,
-                             m.0=m.0, P.0=P.0, abphim.0=NULL, calc.V=TRUE, trace=FALSE)
-  c(check$m[1:5], check$m[6], check$m[8])
+  ## With mean of random effects. log gamma prior
+  check <- blogit.mm.map.3(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                           m.0=m.0, P.0=P.0, abtm.0=NULL, calc.V=TRUE, trace=FALSE, maxit=maxit)
+  c(check$m[1:5], check$m[6], exp(check$m[7]), check$m[8])
+  blogit.llh.mm.3(check$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
 
+  abtm.0 = NULL
+  ## abtm.0 = check$m; abtm.0[7] = exp(abtm.0[7])
+  ## With mean of random effects.  gamma prior.
+  ## shape = 2, rate=2, kappa=100 produces result almost like hglm1 when using Nelder-Mead
+  ## This is not the case when using CG.
+  check <- blogit.mm.map.4(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                           m.0=m.0, P.0=P.0, abphim.0=NULL, calc.V=TRUE, trace=FALSE, maxit=maxit)
+  c(check$m[1:5], check$m[6], check$m[7], check$m[8])
+  blogit.llh.mm.4(check$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+
+  abtm.0 = NULL
+  ## abtm.0 = check$m; abtm.0[7] = log(abtm.0[7])
+  check <- blogit.mm.map.5(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                           m.0=m.0, P.0=P.0, abtm.0=abtm.0, calc.V=TRUE, trace=FALSE, maxit=maxit)
+  c(check$m[1:5], check$m[6], exp(check$m[7]), check$m[8])
+  blogit.llh.mm.5(check$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+  
   ## Check results using lme4 package.  I'm still unclear on their priors.
   mm.df = data.frame("y"=y, "FE1"=X.fe[,1], "group"=factor(rowSums(t(t(X.re) * 1:5))))
   hglm1 = glmer(y ~ FE1 + (1 | group), family=binomial(link="logit"), data=mm.df)
+  hglm2 = glmer(y ~ FE1 + (1 | group), family=binomial(link="logit"), data=mm.df, REML=FALSE)
   coef(hglm1)
+  coef(hglm2)
   r = ranef(hglm1, postVar = TRUE)
   summary(hglm1)
   attr(r$group,"postVar")
@@ -241,8 +282,8 @@ if (run$polls) {
   P.a = ncol(X.re);
   P.b = ncol(X.fe);
 
-  shape = 1
-  rate  = 1
+  shape = 2
+  rate  = 2
   
   prec.b = rep(0.01, P.b)
   
@@ -263,7 +304,7 @@ if (run$polls) {
     bench.polls[[nm]] <- benchmark.blogit.mm(y, X.re, X.fe, n, shape, rate, m.0=m.0, C.0=solve(P.0),
                                              samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                              method=nm,
-                                             dset.name=dset.name, df=df, var.names=var.names[[nm]])
+                                             dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=1)
   }
 
   polls.tbl = setup.table(bench.polls, "ab")
@@ -282,6 +323,13 @@ if (run$polls) {
   ## check.alt <- blogit.mm.map.alt(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=0.1,
   ##                            m.0=m.0, P.0=P.0, abphim.0=NULL, calc.V=TRUE, trace=FALSE)
   ## c(check.alt$m[1:49], check.alt$m[50], check.alt$m[52])
+
+  kappa = 100
+  check.4 <- blogit.mm.map.4(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                             m.0=m.0, P.0=P.0, abphim.0=NULL, calc.V=TRUE, trace=FALSE, maxit=10000)
+  
+  check.5 <- blogit.mm.map.5(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                             m.0=m.0, P.0=P.0, abtm.0=NULL, calc.V=TRUE, trace=FALSE, maxit=10000)
 
   ## Check results using lme4 package.  I'm still unclear on their priors.
   hglm1 = glmer(bush ~ black + (1 | state), family=binomial(link="logit"), data=polls)
@@ -337,7 +385,7 @@ if (run$xerop) {
     bench.xerop[[nm]] <- benchmark.blogit.mm(y, X.re, X.fe, n, shape, rate, m.0=m.0, C.0=solve(P.0),
                                              samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                              method=nm,
-                                             dset.name=dset.name, df=df, var.names=var.names[[nm]])
+                                             dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=0)
   }
 
   xerop.tbl = setup.table(bench.xerop, "ab")
@@ -373,14 +421,30 @@ if (FALSE) {
                                  ## APPENDIX ##
 ################################################################################
 
-## I have encountered two difficulties that illuminate why inference for mixed
-## models may be difficult.  First, I have found that there is sensitivity to
-## the choice of prior and to subtle differences in the structure of the model.
-## In the mixed model synthetic data I created, when I use the second blogit
-## routine, I find that the choice of shape, rate, and kappa plays an important
-## role in the posterior mode.  Second, in the Xerop data set, when I try to
-## calculate the hessian at the mode numerically I run into problems.  There are
-## like 283 dimensions, so maybe that is part of the problem.  This shows why it
-## is really useful to use a sparse solver.  Most of the 283 dimensional matrix
-## will be zeros in the models we use above.  We could take advantage of this
-## structure in the PG routine as well.
+## I have encountered multiple difficulties that illuminate why inference for
+## mixed models may be difficult.  First, I have found that there is sensitivity
+## to the choice of prior and to subtle differences in the structure of the
+## model.  In the mixed model synthetic data I created, when I use the second
+## blogit routine, I find that the choice of shape, rate, and kappa plays an
+## important role in the posterior mode.  Second, in the Xerop data set, when I
+## try to calculate the hessian at the mode numerically I run into problems.
+## There are like 283 dimensions, so maybe that is part of the problem.  This
+## shows why it is really useful to use a sparse solver.  Most of the 283
+## dimensional matrix will be zeros in the models we use above.  We could take
+## advantage of this structure in the PG routine as well.  Third, it seems that
+## the solution may be sensitive to the stopping conditions one uses.  Using the
+## synthetic dataset I get noticably different answers for blogit.mm.llh.3 using
+## factr=1e7 and factr=1e12 using the L-BFGS-B algorithm when kappa = 0.001.
+## Another thing to remember is that transforming the prior changes the mode.
+## Thus if one phrases things in terms of the log-precisions (log phi) instead
+## of the precision (phi), then one arrives at different posterior modes.  (This
+## is a reminder to me of why loss functions are so important.  Ultimately the
+## loss function tells you about the coordinate system you are interested in.)
+
+## It appears that I haven't been monitoring the convergence and that sometimes
+## I have reached the max iter and stopped before convergence.  However, now
+## that I have fixed that, even when I do get convergence I sometimes do not
+## have identical answers.  One thing about transformation is that it will
+## change how fast a value changes.  If I am working with phi, then phi changes
+## more quickly when phi > 1 than if I was working with the same values on the
+## log(phi) scale.  I suppose locally that is a linear relationship.
