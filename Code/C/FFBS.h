@@ -24,7 +24,8 @@ using Eigen::Dynamic;
 extern "C" {
 
   void ffbs(double *alpha_, double *beta_,
-	    double *z_, double *X_, double *mu_, double *phi_, double *W_, double *V_,
+	    double *z_, double *X_, double *V_,
+	    double *mu_, double *phi_, double *W_, 
 	    double *m0_, double *C0_, int *N_b_, int *N_, int *T_);
   
 }
@@ -35,8 +36,8 @@ extern "C" {
 
 template <typename dM, typename dV>
 void ffbs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
-	  MatrixBase<dV> &z, MatrixBase<dM> &X, 
-	  MatrixBase<dV> &mu, MatrixBase<dV> &phi, MatrixBase<dM> &W, MatrixBase<dV> &V,
+	  MatrixBase<dV> &z, MatrixBase<dM> &X, MatrixBase<dV> &V,
+	  MatrixBase<dV> &mu, MatrixBase<dV> &phi, MatrixBase<dM> &W, 
 	  MatrixBase<dV> &m0, MatrixBase<dM> &C0, RNG& r)
 {
   // When tracking (alpha, beta_t).  It may be the case that there is no alpha.
@@ -84,14 +85,14 @@ void ffbs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
   big_mu.segment(N_a, N_b)  = mu;
   big_W.block(N_a, N_a, N_b, N_b) = W;
 
-  VectorXd _1m_big_phi = VectorXd::Ones(N) - big_phi;
+  VectorXd _1m_big_phi = VectorXd::Ones(N) - big_phi; // 1 - Phi
   MatrixXd Phi = big_phi.asDiagonal();
 
   // Filter Forward
   for (int i=1; i<(T+1); i++) {
     int i_l = i-1;
 
-    a[i] = big_phi * m[i-1] + (_1m_big_phi) * big_mu;
+    a[i] = big_phi.array() * m[i-1].array() + (_1m_big_phi).array() * big_mu.array();
     R[i] = Phi * C[i-1] * Phi + big_W;
 
     Matrix<double, 1, Dynamic> tF  = X.row(i_l);
@@ -121,14 +122,16 @@ void ffbs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
   if (with_alpha) alpha = theta.segment(0, N_a);
   beta.col(T) = theta.segment(N_a, N_b);
 
+  draw.resize(N_b);
+
   for (int i=T; i>0; i--) {
     MatrixXd Rsub = R[ i ].block(N_a, N_a, N_b, N_b); // Could use map.
     MatrixXd Csub = C[i-1].block(N_a, N_a, N_b, N_b); // Could use map.
-    MatrixXd tA   = Rsub.llt().solve(Csub.cwiseProduct(phi));
+    MatrixXd tA   = Rsub.llt().solve(Csub * phi.asDiagonal());
 
     VectorXd e    = beta.col(i) - a[i].segment(N_a, N_b);
     VectorXd m_bs = m[i-1].segment(N_a, N_b) + tA.transpose() * e;
-    VectorXd V_bs = Csub - tA.transpose() * Rsub * tA;
+    MatrixXd V_bs = Csub - tA.transpose() * Rsub * tA;
 
     r.norm(draw, 1.0);
     beta.col(i-1) = m_bs + V_bs.llt().matrixL() * draw;
