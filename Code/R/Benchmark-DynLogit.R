@@ -21,7 +21,7 @@ write.it = FALSE
 plot.it  = FALSE
 print.it = FALSE
 
-methods = c("PG", "dRUM", "CUBS");
+methods = c("PG", "dRUM", "CUBS", "FS2010");
 
 samp = 1000
 burn  = 100
@@ -80,6 +80,16 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
                     mu.true = mu.true, phi.true=phi.true, W.true=W.true,
                     obs="binom")
       gb$a.rate = gb$a.rate[samp]
+    } else if (method=="FS2010") {
+      gb <- dyn.logit.FS(y, X.dyn=X.dyn, n=n[1], X.stc=NULL, ## assume n[i] = n[1].
+                         samp=1000, burn=100, verbose=100,
+                         m.0=m.0, C.0=C.0,
+                         mu.m0=mu.m0, mu.P0=mu.P0,
+                         phi.m0=phi.m0, phi.P0=phi.P0,
+                         W.a0=W.a0, W.b0=W.b0,
+                         z.true=NULL, r.true=NULL,
+                         beta.true=beta.true, iota.true=iota.true,
+                         mu.true=mu.true, phi.true=phi.true, W.true=W.true)
     } else {
       print("Unknown method.")
       return(NA);
