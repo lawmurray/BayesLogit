@@ -1,7 +1,3 @@
-source("CUBS.R")
-source("AR1.R")
-source("Stationary.R");
-
 gaussian.dens <- function(x, m, LorV, log.sc=FALSE, is.V=FALSE)
 {
   if (is.V) LorV = t(chol(LorV));

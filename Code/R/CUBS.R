@@ -1,5 +1,3 @@
-library("rootSolve")
-
 ## CUBS: conjugate updating backward sampling
 ## Use a MH step to to correct.
 
