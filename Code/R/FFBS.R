@@ -1,6 +1,6 @@
 ## FFBS for generalized dynamic linear models.
 
-FFBS.R <- function(z, X, mu, phi, W, V, m0, C0)
+FFBS.R <- function(z, X, V, mu, phi, W, m0, C0)
 {
   ## When tracking (alpha, beta_t).  It may be the case that there is no alpha.
   ## z_t = x_t (alpha_t, beta_t) + ep_t, ep_t \sim N(0, V_t).
@@ -20,7 +20,8 @@ FFBS.R <- function(z, X, mu, phi, W, V, m0, C0)
   N.b = length(mu);
   N   = ncol(X);
   N.a = N - N.b;
-  b.idc = (N.a+1):N;
+  b.idc = 1:N.b + N.a;
+  a.idc = 1:N.a;
   with.alpha = N.a > 0;
   
   m = array(m0, dim=c(N, T+1));
@@ -69,7 +70,7 @@ FFBS.R <- function(z, X, mu, phi, W, V, m0, C0)
   ## evd = eigen(C[,,T+1]);
   ## Rt = evd$vectors %*% diag(sqrt(evd$values), N) %*% t(evd$vectors);
   theta = m[,T+1] + L %*% rnorm(N);
-  alpha = ifelse(with.alpha, theta[1:N.a], 0);
+  alpha = ifelse(with.alpha, theta[a.idc], 0);
   beta[,T+1] = theta[b.idc];
   
   for (i in (T+1):2) {
@@ -94,36 +95,46 @@ FFBS.R <- function(z, X, mu, phi, W, V, m0, C0)
 
 ##------------------------------------------------------------------------------
 
-FFBS.C <- function(z, X, mu, phi, W, V, m0, C0)
+FFBS.C <- function(z, X, V, mu, phi, W, m0, C0)
 {
-  T = length(z)
-
-  T = length(z);
+  T   = length(z);
   N.b = length(mu);
   N   = ncol(X);
   N.a = N - N.b;
 
   ## Check
-  ok = rep(6);
-  ok[1] = length(mu)==length(phi)
-  ok[2] = length(mu)==nrow(W) 
-  ok[3] = nrow(W)==ncol(W) 
-  ok[4] = T==nrow(X) 
-  ok[5] = N==length(m0) 
-  ok[6] = N==nrow(C0) && N==ncol(C0);
-
-  if (!prod(ok)) {
-    cat("FFBS.C: problem", ok, "\n");
-    return(0)
-  }    
+  not.ok = rep(6);
+  if (not.ok[1] <- length(mu)  != N.b)
+    { print("length(mu)!=N.b") ; }
+  if (not.ok[2] <- length(phi) != N.b)
+    { print("length(phi)!=N.b"); }
+  if (not.ok[3] <- (ncol(W) != N.b || nrow(W) != N.b))
+    { print("W is not N.b x N.b"); }
+  if (not.ok[4] <- (nrow(X) != T || ncol(X) != N))
+    { print("X is not T x N"); }
+  if (not.ok[5] <- length(m0) != N)
+    { print("length(m0) != N"); }
+  if (not.ok[6] <- (nrow(C0) != N || ncol(C0) != N))
+    { print("C0 is not N x N"); }
+  if (not.ok[7] <- length(V) != T)
+    { print("length(V) != T"); }
+  if (not.ok[8] <- length(z) != T)
+    { print("length(z) != T"); }
+  if (not.ok[9] <- N.b > N)
+    { print("N.b > N"); }
+    
+  if (!prod(!not.ok)) {
+    cat("FFBS.C: problem.  Returning NA.\n");
+    return(NA)
+  }     
 
   alpha = rep(0, max(N.a, 1));
   beta  = array(0, dim=c(N.b, T+1));
   
   OUT <- .C("ffbs", alpha, beta,
-            z, X,
+            z, X, V, 
             mu, phi, W,
-            V, m0, C0,
+            m0, C0,
             as.integer(N.b), as.integer(N), as.integer(T),
             PACKAGE="BayesLogit");
 
