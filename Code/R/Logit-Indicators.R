@@ -25,7 +25,7 @@ draw.indicators.logis.C <- function(z, lambda, nmix)
   
   OUT <- .C("draw_indicators_logistic",
             as.integer(r), as.double(z), as.double(lambda), as.integer(n),
-            as.double(nmix$w), as.double(nmix$s), as.integer(nmix$N))
+            as.double(nmix$w), as.double(nmix$s), as.integer(nmix$N), PACKAGE="BayesLogit")
 
   OUT[[1]]
 } ## draw.indicators.logis.C
