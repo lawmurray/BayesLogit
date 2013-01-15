@@ -2,8 +2,12 @@
 useDynLib("BayesLogit")
 
 # Define which functions people can see.
-export(logit, logit.EM, mlogit, rpg.gamma,  rpg.devroye, rks,
-       logit.combine, draw.indicators.C, draw.indicators.logis.C, FFBS.C);
+export(logit, logit.EM, mlogit, rpg.gamma, rpg.devroye, rks,
+       logit.combine)
+
+export(logit, logit.EM, mlogit, rpg.gamma, rpg.devroye, rks,
+       logit.combine, draw.indicators.C, draw.indicators.logis.C,
+       FFBS.R, FFBS.C, CUBS.R, CUBS.C);
 
 # For testing purposes.
 # logit.R, logit.EM.R, mlogit.R, rpg.gamma.R, rpg.devroye.R

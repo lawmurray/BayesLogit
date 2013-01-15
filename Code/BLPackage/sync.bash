@@ -1,17 +1,15 @@
 #!/bin/bash
 # Copy the necessary files to the BayesLogit Package directory.
 
+# Find the directory sync.bash is in, then find base directory.
 FILENAME=$0
 RELDIR=${FILENAME%sync.bash}
 BASE=${RELDIR}../..
-## echo "File name is $FILENAME"
-## echo "Relative directory is $RELDIR"
-## echo "base directory is $BASE"
+# echo "File name is $FILENAME"
+# echo "Relative directory is $RELDIR"
+# echo "base directory is $BASE"
 
-## BASE=THE DIRECTORY WHERE YOU GIT CLONED BAYESLOGIT.
-## BASE=/Users/jwindle/RPackage/BayesLogit
-
-rsyncit="rsync -Crvzut --exclude-from=$BASE/.rsync-exclude"
+rsyncit="rsync -Crzut $1 --exclude-from=$BASE/.rsync-exclude"
 
 CODE=$BASE/Code
 INCL=$CODE/C/include
@@ -28,6 +26,10 @@ $rsyncit $CODE/C/FFBS.h           $BLDIR/src/
 $rsyncit $CODE/C/FFBS.cpp         $BLDIR/src/
 $rsyncit $CODE/C/FSF_nmix.hpp     $BLDIR/src/FSF_nmix.h
 $rsyncit $CODE/C/FSF_nmix.cpp     $BLDIR/src/
+$rsyncit $CODE/C/CUBS.h           $BLDIR/src/
+$rsyncit $CODE/C/CUBS.cpp         $BLDIR/src/
+$rsyncit $CODE/C/CUBS_update.h    $BLDIR/src/
+$rsyncit $CODE/C/CUBS_update.cpp  $BLDIR/src/
 
 $rsyncit $INCL/Matrix/Matrix.h             $BLDIR/src/
 $rsyncit $INCL/Matrix/Matrix.cpp           $BLDIR/src/
@@ -41,9 +43,10 @@ $rsyncit $INCL/Normal.hpp                  $BLDIR/src/Normal.h
 
 # R files.
 $rsyncit $CODE/R/LogitWrapper.R     $BLDIR/R/
-$rsyncit $CODE/R/NB-Indicators.R    $BLDIR/R/
+$rsyncit $CODE/R/Indicators.R       $BLDIR/R/
 $rsyncit $CODE/R/Logit-Indicators.R $BLDIR/R/
 $rsyncit $CODE/R/FFBS.R             $BLDIR/R/
+$rsyncit $CODE/R/CUBS.R             $BLDIR/R/
 $rsyncit $CODE/R/KS.R               $BLDIR/R/
 ## The function calls in these files are not in the NAMESPACE.
 $rsyncit $CODE/R/LogitPG.R       $BLDIR/R/
