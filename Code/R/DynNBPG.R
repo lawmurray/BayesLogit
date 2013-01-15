@@ -75,8 +75,8 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
   d    = 1
   beta = matrix(0.00, P.b, T+1);  # even odds.
   iota = rep(0.00, P.a);
-  mu   = matrix(mu.m0, P.b);
-  phi  = matrix(phi.m0, P.b);
+  mu   = mu.m0;
+  phi  = phi.m0;
   W    = W.b0 / W.a0;
   om   = rep(0, T);
   
@@ -93,7 +93,7 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
   if (!is.null(beta.true)) { beta = beta.true; know.beta = TRUE; }
   if (!is.null(w.true))    { om   = w.true;    know.w    = TRUE; }
   if (!is.null(phi.true))  { phi  = phi.true;  know.phi  = TRUE;
-                             if (phi==1) {mu.true = rep(0, P.b);}}
+                             if (phi[1]==1) {mu.true = rep(0, P.b);}}
   if (!is.null(mu.true))   { mu   = mu.true;   know.mu   = TRUE; }
   if (!is.null(W.true))    { W    = W.true;    know.W    = TRUE; }
   if (!is.null(iota.true)) { iota = iota.true; know.iota = TRUE; }
@@ -116,13 +116,9 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
     ## draw (d, w | beta) --- WARNING: JOINT DRAW.
     log.mean = apply(X.dyn * t(beta)[-1,], 1, sum);
     if (P.a > 0) psi = log.mean + X.stc %*% iota;
-    
     mu.lambda  = exp(log.mean)
-
-    ## draw (d | beta)
+    ## draw (d | beta) (w | d, beta)
     d = draw.df(d, mu.lambda, G, ymax);
-    
-    ## draw (w | d, beta)
     psi = log.mean - log(d);
     w = rpg.devroye(T, y+d, psi);
 
@@ -160,34 +156,37 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
 
 if (FALSE) {
 
-  library("BayesLogit")
+  ## library("BayesLogit")
+  ## dyn.unload("BayesLogit.so")
+  ## dyn.load("BayesLogit.so")
+  ## dyn.load("BayesLogit.so"); source("LogitWrapper.R"); source("FFBS.R");
   
   T = 500;
-  P = 1;
+  P = 2;
 
   beta = array(0, dim=c(P, T+1));
   X = matrix(1, T, P);
 
   ## Parameters
-  W = 0.1;
-  phi = 0.95;
-  mu = 3.0
+  W = rep(0.1, P)
+  phi = rep(0.95, P)
+  mu = rep(3.0, P)
   d = 4
 
   ## Prior
-  m.0     = mu;
-  C.0     = 4.0;
-  mu.m0  = 0.0;
-  mu.V0  = 4.0;
-  phi.m0 = 0.9;
-  phi.V0 = 0.1;
-  W.a0   = 10;
-  W.b0   = 1.0;
+  m.0    = mu;
+  C.0    = diag(4.0, P);
+  mu.m0  = rep(mu , P);
+  mu.V0  = rep(4.0, P);
+  phi.m0 = rep(0.9, P);
+  phi.V0 = rep(0.1, P);
+  W.a0   = rep(10 , P);
+  W.b0   = rep(1.0, P);
 
   ## Synthetic
   beta[,1] = m.0;
   for (i in 2:(T+1)) {
-    beta[,i] = mu + phi* (beta[,i-1] - mu) + sqrt(W) * rnorm(1);
+    beta[,i] = mu + phi* (beta[,i-1] - mu) + sqrt(W) * rnorm(P);
   }
 
   log.mean  = apply(X * t(beta)[-1,], 1, sum)
@@ -198,17 +197,17 @@ if (FALSE) {
   y = rpois(T, lambda);
   
   ## Simulate ##
-  source("DynNBPG.R")
-  samp = 500; burn=0; 
+  ## source("DynNBPG.R")
+  samp = 500; burn=000; verbose=100;
   out <- dyn.NB.PG(y, X.dyn=X, X.stc=NULL,
-                   samp=samp, burn=burn, verbose=50,
+                   samp=samp, burn=burn, verbose=verbose,
                    m.0=m.0, C.0=C.0,
                    mu.m0=NULL, mu.V0=NULL,
                    phi.m0=NULL, phi.V0=NULL,
                    W.a0=W.a0, W.b0=W.b0,
                    d.true=NULL, w.true=NULL,
                    beta.true=NULL, iota.true=NULL,
-                   mu.true=mu, phi.true=1.0, W.true=NULL)
+                   mu.true=mu, phi.true=rep(1,P), W.true=NULL)
 }
 
 if (FALSE) {
