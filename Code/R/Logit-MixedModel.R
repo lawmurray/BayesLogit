@@ -1,6 +1,15 @@
 
 ## binary logit with groups with different intercepts.
 
+## psi_i = m + delta_j + x_i beta; alpha_j = m + delta_j; i in group j.
+
+## 1: alpha, beta, phi; normal proposal
+## 2: alpha, beta, phi; normal ppsl for alpha, beta, gamma ppsl for phi
+## 3: alpha, beta, m, theta; theta = log(phi); normal ppsl
+## 4: alpha, beta, m, phi; normal ppsl
+## 6: delta, beta, m, theta; theta = log(phi); normal ppsl
+## 7: delta, beta, m, phi; normal ppsl
+
 ################################################################################
                              ## For mixed models ##
 ################################################################################
@@ -342,6 +351,175 @@ hessian.blogit.mm.5 <- function(abtm, y, X.re, X.fe, n, shape=1, rate=1, kappa=1
   hess = hessian.blogit.mm.3(abtm, y, X.re, X.fe, n, shape, rate, kappa, P.0)
 }
 
+blogit.llh.mm.6 <- function(dbmt, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
+                            m.0=array(0, dim=c(ncol(X.fe))),
+                            P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))))
+{
+  ## now assume that we have m + alpha_i + x_{ij} beta
+  if (kappa == 0) return(NA);
+  
+  N    = length(y)
+  X.re = as.matrix(X.re)
+  X.fe = as.matrix(X.fe)
+  X    = cbind(X.re, X.fe, 1)
+  P.d  = ncol(X.re)
+  P.b  = ncol(X.fe)
+  P.dbm = P.d + P.b + 1
+  d.idc = 1:P.d
+  b.idc = 1:P.b + P.d
+  m.idc = P.dbm
+  t.idc = P.dbm + 1;
+  
+  delta = dbmt[d.idc]
+  beta  = dbmt[b.idc]
+  m     = dbmt[m.idc]
+  theta = dbmt[t.idc]
+  not.flat = as.numeric(kappa != Inf);
+
+  ## print(dbmt)
+  ## print(delta)
+  
+  dbm = dbmt[1:P.dbm]
+  Psi = X %*% dbm
+  ## p = exp(Psi) / (1 + exp(Psi));
+
+  ## Based on p(y|delta, beta) p(beta) p(delta|theta) p(theta)
+  llh = t(y) %*% Psi - sum(n * log(1 + exp(Psi)));
+  llh = llh - 0.5 * t(beta - m.0) %*% P.0 %*% (beta - m.0); 
+  llh = llh + 0.5 * (P.d + shape) * theta - 0.5 * (t(delta) %*% delta + rate) * exp(theta); 
+  llh = llh + (0.5 * theta) * not.flat - 0.5 * m^2 / kappa^2 * exp(theta); 
+
+  llh
+}
+
+hessian.blogit.mm.6 <- function(dbmt, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
+                                P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))) )
+
+{
+  ## Different parameterization of prior, log gamma, produces different posteriors.
+  N    = length(y)
+  X    = cbind(X.re, X.fe, 1);
+  P.d  = ncol(X.re)
+  P.b  = ncol(X.fe)
+  P.dbm = P.d + P.b + 1
+  d.idc = 1:P.d
+  b.idc = 1:P.b + P.d
+  m.idc = P.dbm
+  t.idc = P.dbm + 1;
+  P.all = P.dbm + 1
+ 
+  delta = dbmt[d.idc]
+  m     = dbmt[m.idc]
+  beta  = dbmt[b.idc]
+  theta = dbmt[t.idc]
+
+  dbm = dbmt[1:P.dbm]
+  Psi = cbind(X) %*% dbm;
+  p   = exp(Psi) / (1 + exp(Psi));
+  phi = exp(theta);
+
+  dg = (p^2 - p) * n
+  H = t(X) %*% (X * rep(dg, P.dbm));
+  
+  hess = matrix(0, P.all, P.all);
+  hess[1:P.dbm, 1:P.dbm] = H
+  hess[b.idc, b.idc] = hess[b.idc, b.idc] - P.0
+  hess[d.idc, d.idc] = hess[d.idc, d.idc] - diag(phi, P.d)
+  hess[d.idc, t.idc] = -1 * (delta) * phi
+  hess[t.idc, d.idc] = -1 * (delta) * phi
+  hess[t.idc, t.idc] = -0.5 * (t(delta) %*% (delta) + rate) * phi - 0.5 * m^2 / kappa^2 * phi
+  hess[m.idc, m.idc] = hess[m.idc, m.idc] -1 / kappa^2 * phi
+  hess[m.idc, t.idc] = -m / kappa^2 * phi
+  hess[t.idc, m.idc] = hess[m.idc, t.idc]
+
+  hess
+}
+
+blogit.llh.mm.7 <- function(dbmp, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
+                            m.0=array(0, dim=c(ncol(X.fe))),
+                            P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))))                         
+{
+  ## abphi: (P.a + P.b + 1) x J-1; coefficients, column assumed to be beta_J = 0.
+  ## y : N; number of responses
+  ## X : N x P.ab: design matrix
+  ## P.0 : P.b x P.b; array of matrices for independent prior. 
+  if (kappa == 0) return(NA);
+  
+  N = length(y)
+  X.re = as.matrix(X.re)
+  X.fe = as.matrix(X.fe)
+  X   = cbind(X.re, X.fe, 1)
+  P.d = ncol(X.re)
+  P.b = ncol(X.fe)
+  P.dbm = P.d + P.b + 1
+  d.idc = 1:P.d
+  b.idc = 1:P.b + P.d
+  m.idc = P.dbm
+  p.idc = P.dbm + 1;
+
+  delta = dbmp[d.idc]
+  m     = dbmp[m.idc]
+  beta  = dbmp[b.idc]
+  phi   = dbmp[p.idc]
+  not.flat = as.numeric(kappa != Inf);
+
+  if (phi < 0) return(-Inf)
+  
+  dbm = dbmp[1:P.dbm]
+  Psi = X %*% dbm;
+  ## p = exp(Psi) / (1 + exp(Psi));
+
+  llh = t(y) %*% Psi - sum(n * log(1 + exp(Psi)));
+  llh = llh - 0.5 * t(beta - m.0) %*% P.0 %*% (beta - m.0);
+  llh = llh + (0.5 * (P.d + shape) - 1) * log(phi) - 0.5 * phi * ( sum((delta)^2) + rate );
+  llh = llh + 0.5 * log(phi) * not.flat - 0.5 * phi * m^2/kappa^2;
+
+  llh
+}
+
+hessian.blogit.mm.7 <- function(dbmp, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
+                                P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))) )
+{
+  ## Using phi parameterization
+  N    = length(y)
+  X    = cbind(X.re, X.fe, 1);
+  P.d  = ncol(X.re)
+  P.b  = ncol(X.fe)
+  P.dbm = P.d + P.b + 1
+  d.idc = 1:P.d
+  b.idc = 1:P.b + P.d
+  m.idc = P.dbm;
+  p.idc = P.dbm + 1;
+  P.all = P.dbm + 1;
+    
+  delta = dbmp[d.idc]
+  m     = dbmp[m.idc]
+  beta  = dbmp[b.idc]
+  phi   = dbmp[p.idc]
+  
+  dbm = dbmp[1:P.dbm]
+  Psi = X %*% dbm;
+  p   = exp(Psi) / (1 + exp(Psi));
+  not.flat = as.numeric(kappa != Inf);
+
+  dg = (p^2 - p) * n
+  H = t(X) %*% (X * rep(dg, P.dbm));
+  
+  hess = matrix(0, P.all, P.all);
+  hess[1:P.dbm, 1:P.dbm] = H
+  hess[b.idc, b.idc] = hess[b.idc, b.idc] - P.0
+  hess[d.idc, d.idc] = hess[d.idc, d.idc] - diag(phi, P.d)
+  hess[d.idc, p.idc] = -1 * (delta) 
+  hess[p.idc, d.idc] = -1 * (delta) 
+  hess[p.idc, p.idc] = -1 * (0.5 * (P.d + shape) - 1 ) / phi^2 - (0.5 / phi^2) * not.flat
+  hess[m.idc, m.idc] = hess[m.idc, m.idc] + -1 / kappa^2 * phi
+  hess[m.idc, p.idc] = -m / kappa^2 
+  hess[p.idc, m.idc] = hess[m.idc, p.idc]
+
+  hess
+}
+
+
 ################################################################################
 ##------------------------------------------------------------------------------
 
@@ -355,7 +533,7 @@ blogit.mm.map <- function(y, X.re, X.fe, n, shape=1, rate=1,
   N = nrow(X);
   P = ncol(X);
 
-  if (is.null(abphi.0)) { abphi.0 = matrix(0, P+1); abphi.0[P+1] = 1; }
+  if (is.null(abphi.0)) { abphi.0 = matrix(0, nrow=P+1); abphi.0[P+1] = 1; }
 
   optim.out <- optim(abphi.0, blogit.llh.mm, gr=NULL, 
                      y=y, X.re=X.re, X.fe=X.fe, n=n, shape=shape, rate=rate,
@@ -409,7 +587,7 @@ blogit.mm.map.3 <- function(y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
   N = nrow(X);
   P = ncol(X);
 
-  if (is.null(abtm.0)) { abtm.0 = matrix(0, P+1+as.numeric(kappa!=0)); }
+  if (is.null(abtm.0)) { abtm.0 = matrix(0, nrow=P+1+as.numeric(kappa!=0)); }
 
   optim.out <- optim(abtm.0, blogit.llh.mm.3, hessian=FALSE, method="CG",
                      y=y, X.re=X.re, X.fe=X.fe, n=n, shape=shape, rate=rate, kappa=kappa,
@@ -442,10 +620,10 @@ blogit.mm.map.4 <- function(y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
   N = nrow(X);
   P = ncol(X);
 
-  if (is.null(abphim.0)) { abphim.0 = matrix(0, P+1+as.numeric(kappa!=0)); }
+  if (is.null(abphim.0)) { abphim.0 = matrix(0, nrow=P+1+as.numeric(kappa!=0)); }
   abphim.0[P+1] = 1;
 
-  optim.out <- optim(abphim.0, blogit.llh.mm.4, gr=NULL, ## gr=grad.blogit.mm.4, 
+  optim.out <- optim(abphim.0, blogit.llh.mm.4, gr=grad.blogit.mm.4, 
                      y=y, X.re=X.re, X.fe=X.fe, n=n, shape=shape, rate=rate,
                      kappa=kappa, m.0=m.0, P.0=P.0,
                      hessian=FALSE,  method="CG",
@@ -481,7 +659,7 @@ blogit.mm.map.5 <- function(y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
   N = nrow(X);
   P = ncol(X);
 
-  if (is.null(abtm.0)) { abtm.0 = matrix(0, P+1+as.numeric(kappa!=0)); }
+  if (is.null(abtm.0)) { abtm.0 = matrix(0, nrow=P+1+as.numeric(kappa!=0)); }
 
   optim.out <- optim(abtm.0, blogit.llh.mm.5, hessian=FALSE, method="Nelder-Mead",
                      y=y, X.re=X.re, X.fe=X.fe, n=n, shape=shape, rate=rate, kappa=kappa,
@@ -499,6 +677,77 @@ blogit.mm.map.5 <- function(y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
 
   out = list("optim.out"=optim.out, "V"=V, "H"=hess, "H.pen"=hess.pen, "convergence"=optim.out$convergence, "m"=abtm.pm)
 
+}
+
+blogit.mm.map.6 <- function(y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
+                            m.0=array(0, dim=c(ncol(X.fe))),
+                            P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))),
+                            dbmt.0=NULL, calc.V=TRUE, trace=FALSE, maxit=1000)
+{ 
+  X = cbind(X.re, X.fe, 1);
+  
+  N = nrow(X);
+  P = ncol(X);
+
+  if (is.null(dbmt.0)) { dbmt.0 = matrix(0, nrow=P+1); }
+
+  optim.out <- optim(dbmt.0, blogit.llh.mm.6, hessian=FALSE, method="CG",
+                     y=y, X.re=X.re, X.fe=X.fe, n=n, shape=shape, rate=rate, kappa=kappa,
+                     m.0=m.0, P.0=P.0, control=list(fnscale=-1, trace=trace, maxit=maxit));
+
+  dbtm.pm = optim.out$par;
+  ## hess = optim.out$hessian
+  hess.pen = hessian.blogit.mm.6(dbtm.pm, y, X.re, X.fe, n, shape, rate, kappa, P.0)
+  hess = hess.pen
+  
+  V = NA;
+  if (calc.V) V = solve(-1 * hess);
+
+  if (optim.out$convergence != 0) cat("Did not converge:", optim.out$conv, "\n");
+
+  out = list("optim.out"=optim.out, "V"=V, "convergence"=optim.out$convergence, "m"=dbtm.pm)
+  out$H = hess
+  ## out$H.pen = hess.pen
+
+  out
+}
+
+blogit.mm.map.7 <- function(y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
+                              m.0=array(0, dim=c(ncol(X.fe))),
+                              P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))),
+                              dbmp.0=NULL, calc.V=TRUE, trace=FALSE, maxit=1000)
+{ 
+  X = cbind(X.re, X.fe, 1);
+  
+  N = nrow(X);
+  P = ncol(X);
+
+  if (is.null(dbmp.0)) { dbmp.0 = matrix(0, nrow=P+1); }
+  dbmp.0[P+1] = 1;
+
+  optim.out <- optim(dbmp.0, blogit.llh.mm.7, gr=NULL,
+                     y=y, X.re=X.re, X.fe=X.fe, n=n, shape=shape, rate=rate,
+                     kappa=kappa, m.0=m.0, P.0=P.0,
+                     hessian=FALSE,  method="CG",
+                     control=list(fnscale=-1, trace=trace, maxit=maxit));
+
+  ## grad.blogit.mm.4(optim.out$par, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+  
+  dbmp.pm = optim.out$par;
+  ## hess = optim.out$hessian
+  hess.pen <- hessian.blogit.mm.7(dbmp.pm, y, X.re, X.fe, n, shape, rate, kappa, P.0)
+  hess = hess.pen
+
+  V = NA;
+  if (calc.V) V = solve(-1 * hess);
+
+  if (optim.out$convergence != 0) cat("Did not converge:", optim.out$conv, "\n");
+
+  out = list("optim.out"=optim.out, "V"=V, "convergence"=optim.out$convergence, "m"=dbmp.pm)
+  out$H = hess
+  ## out$H.pen = hess.pen
+
+  out
 }
 
 ################################################################################
@@ -1299,7 +1548,7 @@ logit.PG.mm <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1,
 
 ## Bayesian logistic regression
 ##------------------------------------------------------------------------------
-logit.PG.mm <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1, kappa=1,
+logit.PG.mm.2 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1, kappa=1,
                         m0=rep(0, ncol(X.fe)), P0=matrix(0, nrow=ncol(X.fe), ncol=ncol(X.fe)),
                         samp=1000, burn=500, verbose=500)
 {
