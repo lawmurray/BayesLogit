@@ -71,7 +71,6 @@ NM = normal.mixture
 ################################################################################
 
 ##------------------------------------------------------------------------------
-
 draw.z <- function(lambda, y){
   n = length(lambda)
   u = runif(n)
@@ -84,8 +83,8 @@ draw.z <- function(lambda, y){
 dyn.logit.FS <- function(y, X.dyn, n=1, X.stc=NULL,
                          samp=1000, burn=100, verbose=100,
                          m.0=NULL, C.0=NULL,
-                         mu.m0=NULL, mu.V0=NULL,
-                         phi.m0=NULL, phi.V0=NULL,
+                         mu.m0=NULL, mu.P0=NULL,
+                         phi.m0=NULL, phi.P0=NULL,
                          W.a0=NULL, W.b0=NULL,
                          z.true=NULL, r.true=NULL,
                          beta.true=NULL, iota.true=NULL,
@@ -94,7 +93,7 @@ dyn.logit.FS <- function(y, X.dyn, n=1, X.stc=NULL,
   ## m.0 = prior mean for (iota,beta_0) or (beta_0).
   ## C.0 = prior var  for (iota,beta_0) or (beta_0).
 
-  ## y: binomial repsonse in {0:n} (T)
+  ## y: binary repsonse in {0:n} (T)
   ## X: the design matrix (including covariates for non-dynamic coef.) (T x P)
   ## n: the number of trials (T)
 
@@ -131,8 +130,8 @@ dyn.logit.FS <- function(y, X.dyn, n=1, X.stc=NULL,
 
   ## Default prior parameters -- almost a random walk for beta ##
   if (is.null(m.0)    || is.null(C.0))    { m.0    = rep(0.0, P)   ; C.0    = diag(1.0, P  ); }
-  if (is.null(mu.m0)  || is.null(mu.V0))  { mu.m0  = rep(0.0 ,P.b) ; mu.V0  = rep(0.01, P.b); }
-  if (is.null(phi.m0) || is.null(phi.V0)) { phi.m0 = rep(0.99,P.b) ; phi.V0 = rep(0.01, P.b); }
+  if (is.null(mu.m0)  || is.null(mu.P0))  { mu.m0  = rep(0.0 ,P.b) ; mu.P0  = rep(100 , P.b); }
+  if (is.null(phi.m0) || is.null(phi.P0)) { phi.m0 = rep(0.99,P.b) ; phi.P0 = rep(100 , P.b); }
   if (is.null(W.a0)   || is.null(W.b0))   { W.a0   = rep(1.0, P.b) ; W.b0   = rep(1.0,  P.b);  }
 
   ## Output data structure ##
@@ -195,31 +194,34 @@ dyn.logit.FS <- function(y, X.dyn, n=1, X.stc=NULL,
     lambda.hat = lambda[expand]; ## Need for binomail.  Remove hats for pure binary.
     y.hat      = as.numeric(apply(y, 1, samp.y));
     
-    z    = draw.z(lambda.hat, y.hat);
-    r    = draw.indicators.logis.C(z, lambda.hat, nmix)
-
+    ## FS 2010 - Using Logistic Mixture.
+    z     = draw.z(lambda.hat, y.hat);
+    r     = draw.indicators.logis.C(z, lambda.hat, nmix)
     z.hat = apply(matrix(z        , nrow=n), 2, sum) / n;
     V.hat = apply(matrix(nmix$v[r], nrow=n), 2, sum) / n^2; 
     ## V.hat = nmix$v[r] ## when n = 1.
-    
+
     ## (iota, beta | r, z, y)
-    ffbs = FFBS.C(z.hat, X, V.hat, mu, phi, diag(W,P), m.0, C.0)
+    ## ffbs = FFBS.C(z.hat, X, V.hat, mu, phi, diag(W,P), m.0, C.0)
+    ffbs = CUBS.C(z.hat, X, V.hat, mu, phi, diag(W, P.b), m.0, C.0, obs="norm");
     iota = ffbs$alpha
     beta = ffbs$beta
 
     ## AR(1) - phi, W assumed to be diagonal !!!
     ## mu  = draw.mu.R(beta, phi, W, mu.m0, mu.V0) 
     ## phi = draw.phi.R(beta, mu, W, phi.m0, phi.V0, phi)
-    W   = draw.W.R  (beta, mu, phi, W.a0, W.b0)
+    if (!know.mu)  mu  = draw.mu.ar1.ind (beta, phi, W, mu.m0, mu.P0)
+    if (!know.phi) phi = draw.phi.ar1.ind(beta, phi, W, phi.m0, phi.P0, phi)
+    if (!know.W)   W   = draw.W.ar1.ind  (beta, mu, phi, W.a0, W.b0)
     
     if (j > burn) {
-      out$z [j-burn,]    = z;
+      out$z   [j-burn,]  = z;
       out$r   [j-burn,]  = r;
       out$iota[j-burn]   = iota;
       out$beta[j-burn,,] = beta;
-      out$mu[j-burn, ]   = mu;
-      out$phi[j-burn, ]  = phi;
-      out$W[j-burn, ]    = W;
+      out$mu  [j-burn, ] = mu;
+      out$phi [j-burn, ] = phi;
+      out$W   [j-burn, ] = W;
     }
 
     if (j %% verbose == 0) cat("Dyn Logit FS: Iteration", j, "\n");
@@ -286,8 +288,8 @@ if (FALSE) {
   out <- dyn.logit.FS(y, X.dyn=X, n=1, X.stc=NULL,
                       samp=samp, burn=burn, verbose=100,
                       m.0=m0, C.0=C0,
-                      mu.m0=NULL, mu.V0=NULL,
-                      phi.m0=NULL, phi.V0=NULL,
+                      mu.m0=NULL, mu.P0=NULL,
+                      phi.m0=NULL, phi.P0=NULL,
                       W.a0=W.a0, W.b0=W.b0,
                       z.true=NULL, r.true=NULL,
                       beta.true=NULL, iota.true=NULL,
@@ -375,8 +377,8 @@ if (FALSE) {
   out <- dyn.logit.FS(y, X.dyn=X, n=n, X.stc=NULL,
                       samp=samp, burn=burn, verbose=100,
                       m.0=m0, C.0=C0,
-                      mu.m0=NULL, mu.V0=NULL,
-                      phi.m0=NULL, phi.V0=NULL,
+                      mu.m0=NULL, mu.P0=NULL,
+                      phi.m0=NULL, phi.P0=NULL,
                       W.a0=W.a0, W.b0=W.b0,
                       z.true=NULL, r.true=NULL,
                       beta.true=NULL, iota.true=NULL,
@@ -439,8 +441,8 @@ if (FALSE) {
   out <- dyn.logit.FS(y, X.dyn=X, n=2, X.stc=NULL,
                       samp=samp, burn=burn, verbose=100,
                       m.0=b.m0, C.0=b.C0,
-                      mu.m0=NULL, mu.V0=NULL,
-                      phi.m0=NULL, phi.V0=NULL,
+                      mu.m0=NULL, mu.P0=NULL,
+                      phi.m0=NULL, phi.P0=NULL,
                       W.a0=W.a0, W.b0=W.b0,
                       z.true=NULL, r.true=NULL,
                       beta.true=NULL, iota.true=NULL,

@@ -14,8 +14,8 @@ source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
 dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
                          samp=1000, burn=100, verbose=100000,
                          m.0=NULL, C.0=NULL,
-                         mu.m0=NULL, mu.V0=NULL,
-                         phi.m0=NULL, phi.V0=NULL,
+                         mu.m0=NULL, mu.P0=NULL,
+                         phi.m0=NULL, phi.P0=NULL,
                          W.a0=NULL, W.b0=NULL,
                          beta.true=NULL, iota.true=NULL, w.true=NULL,
                          mu.true=NULL, phi.true=NULL, W.true=NULL)
@@ -57,8 +57,8 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
 
   ## Default prior parameters -- almost a random walk for beta ##
   if (is.null(m.0)    || is.null(C.0))    { m.0    = rep(0.0, P)   ; C.0    = diag(1.0, P  ); }
-  if (is.null(mu.m0)  || is.null(mu.V0))  { mu.m0  = rep(0.0 ,P.b) ; mu.V0  = rep(0.01, P.b); }
-  if (is.null(phi.m0) || is.null(phi.V0)) { phi.m0 = rep(0.99,P.b) ; phi.V0 = rep(0.01, P.b); }
+  if (is.null(mu.m0)  || is.null(mu.P0))  { mu.m0  = rep(0.0 ,P.b) ; mu.P0  = rep(100 , P.b); }
+  if (is.null(phi.m0) || is.null(phi.P0)) { phi.m0 = rep(0.99,P.b) ; phi.P0 = rep(100 , P.b); }
   if (is.null(W.a0)   || is.null(W.b0))   { W.a0   = rep(1.0, P.b) ; W.b0   = rep(1.0,  P.b);  }
 
   ## Output data structure ##
@@ -116,7 +116,7 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
 
     ## Draw beta;
     z = kappa / om;
-    ffbs = CUBS.C(z, X, 1/om, mu, phi, diag(W, P.b), m.0, C.0, method="norm");
+    ffbs = CUBS.C(z, X, 1/om, mu, phi, diag(W, P.b), m.0, C.0, obs="norm");
     iota = ffbs$alpha;
     beta = ffbs$beta;
     
@@ -124,6 +124,9 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
     ## mu  = draw.mu.R(beta, phi, W, mu.m0, mu.V0) 
     ## phi = draw.phi.R(beta, mu, W, phi.m0, phi.V0, phi)
     ## W   = draw.W.R  (beta, mu, phi, W.a0, W.b0)
+    if (!know.mu)  mu  = draw.mu.ar1.ind (beta, phi, W, mu.m0, mu.P0)
+    if (!know.phi) phi = draw.phi.ar1.ind(beta, phi, W, phi.m0, phi.P0, phi)
+    if (!know.W)   W   = draw.W.ar1.ind  (beta, mu, phi, W.a0, W.b0)
 
     # Record if we are past burn-in.
     if (j > burn) {
@@ -190,8 +193,8 @@ if (FALSE) {
   burn = 0
   out <- dyn.logit.PG(y, X, samp=samp, burn=burn, verbose=100,
                       m.0=b.m0, C.0=b.C0,
-                      mu.m0=NULL, mu.V0=NULL,
-                      phi.m0=NULL, phi.V0=NULL,
+                      mu.m0=NULL, mu.P0=NULL,
+                      phi.m0=NULL, phi.P0=NULL,
                       W.a0=W.a0, W.b0=W.b0,
                       beta.true=NULL, iota.true=NULL, w.true=NULL,
                       mu.true=0.0, phi.true=1.0, W.true=NULL)
@@ -267,8 +270,8 @@ if (FALSE) {
   burn = 0
   out <- dyn.logit.PG(y, X, n, samp=samp, burn=burn, verbose=100,
                       m.0=b.m0, C.0=b.C0,
-                      mu.m0=NULL, mu.V0=NULL,
-                      phi.m0=NULL, phi.V0=NULL,
+                      mu.m0=NULL, mu.P0=NULL,
+                      phi.m0=NULL, phi.P0=NULL,
                       W.a0=W.a0, W.b0=W.b0,
                       beta.true=NULL, iota.true=iota, w.true=NULL,
                       mu.true=0.0, phi.true=1.0, W.true=NULL)
@@ -327,8 +330,8 @@ if (FALSE) {
   out <- dyn.logit.PG(y, X, n,
                       samp=samp, burn=burn, verbose=100,
                       m.0=b.m0, C.0=b.C0,
-                      mu.m0=NULL, mu.V0=NULL,
-                      phi.m0=NULL, phi.V0=NULL,
+                      mu.m0=NULL, mu.P0=NULL,
+                      phi.m0=NULL, phi.P0=NULL,
                       W.a0=W.a0, W.b0=W.b0,
                       beta.true=NULL, iota.true=0, w.true=NULL,
                       mu.true=0.0, phi.true=1.0, W.true=NULL)
