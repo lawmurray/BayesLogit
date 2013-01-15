@@ -289,8 +289,8 @@ inline void Logit::draw_beta(MF beta, MF w, RNG& r)
 {
   // tXRtOm = tX sqrt(Om)
   Matrix tXRtOm(P, N); 
-  for(int j=0; j<tX.cols(); j++)
-    for(int i=0; i<tX.rows(); i++)
+  for(unsigned int j=0; j<tX.cols(); j++)
+    for(unsigned int i=0; i<tX.rows(); i++)
       tXRtOm(i,j) = tX(i,j) * sqrt(w(j));
   
   // PP = X' Om X + P0.
@@ -457,8 +457,8 @@ int Logit::EM(Matrix& beta, double tol, int max_iter)
 
     // tXRtOm = tX sqrt(Om)
     Matrix tXRtOm(P, N); 
-    for(int j=0; j<tX.cols(); j++)
-      for(int i=0; i<tX.rows(); i++)
+    for(unsigned int j=0; j<tX.cols(); j++)
+      for(unsigned int i=0; i<tX.rows(); i++)
 	tXRtOm(i,j) = tX(i,j) * sqrt(w(j));
     
     // PP = X' Om X + P0.
