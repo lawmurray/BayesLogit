@@ -1,5 +1,6 @@
 source("CUBS.R")
 source("AR1.R")
+source("Stationary.R");
 
 gaussian.dens <- function(x, m, LorV, log.sc=FALSE, is.V=FALSE)
 {
@@ -111,41 +112,53 @@ target.dens <- function(y, X, n, beta, mu, phi, W, m0, C0, log.sc=FALSE, alpha=N
 
 cubs.mh <- function(y, X.dyn, n, m0, C0,
                     samp=1000, burn=100, verbose=100,
-                    mu.m0=NULL, mu.V0=NULL,
-                    phi.m0=NULL, phi.V0=NULL,
+                    mu.m0=NULL, mu.P0=NULL,
+                    phi.m0=NULL, phi.P0=NULL,
                     W.a0=NULL, W.b0=NULL, X.stc=NULL,
                     mu.true = NULL, phi.true=NULL, W.true=NULL,
                     obs=c("binom", "nbinom", "norm"))
 {
-  X = cbind(X.stc, X.dyn)
-  T = length(y)
+  ## Dim and restructure.
+  X   = cbind(X.stc, X.dyn)
+  C0  = as.matrix(C0);
+  T   = length(y)
   N.b = ncol(X.dyn)
-  N = ncol(X)
+  N   = ncol(X)
   N.a = N - N.b
-  M = samp
+  M   = samp
   obs = obs[1];
 
+  ## Default prior parameters -- almost a random walk for beta ##
+  if (is.null(m0)     || is.null(C0))     { m0     = rep(0.0, N)   ; C0     = diag(1.0, N  ); }
+  if (is.null(mu.m0)  || is.null(mu.P0))  { mu.m0  = rep(0.0 ,N.b) ; mu.P0  = rep(100 , N.b); }
+  if (is.null(phi.m0) || is.null(phi.P0)) { phi.m0 = rep(0.99,N.b) ; phi.P0 = rep(100 , N.b); }
+  if (is.null(W.a0)   || is.null(W.b0))   { W.a0   = rep(1.0, N.b) ; W.b0   = rep(1.0,  N.b);  }
+  
   ## Output
-  out <- list("beta"=array(0, dim=c(M, N.b, T+1)),
+  out <- list("beta" = array(0, dim=c(M, N.b, T+1)),
+              "mu"   = array(0, dim=c(M, N.b)),
+              "phi"  = array(0, dim=c(M, N.b)),
+              "W"    = array(0, dim=c(M,N.b)),
               ## "ppsl.b"=array(0, dim=c(M, N.b, T+1)),
-              "l.fdivq"=rep(0, M),
-              "l.ratio"=rep(0, M),
-              "lf.ppsl"=rep(0, M),
-              "lq.ppsl"=rep(0, M),
-              "a.rate"=rep(0, M))
+              "l.fdivq" = rep(0, M),
+              "l.ratio" = rep(0, M),
+              "lf.ppsl" = rep(0, M),
+              "lq.ppsl" = rep(0, M),
+              "a.rate"  = rep(0, M))
   if (N.a > 0) out$alpha=array(0, dim=c(M, N.a))
 
   ## Initialize
-  beta = array(0, dim=c(P, T+1));
+  beta    = array(0, dim=c(N.b, T+1));
   l.fdivq = -Inf;
   naccept = 0
-  ppsl.a = NULL
-  
+  if (N.a > 0) ppsl.a = NULL else ppsl.a = rep(0, N.a);
+
   ## Check if known.
+  know.phi <- know.mu <- know.W <- FALSE
   if (!is.null(phi.true))  { phi  = phi.true;  know.phi  = TRUE;
-                             if (phi[1]==1) {mu.true = rep(0, N.b);}}
-  if (!is.null(mu.true))   { mu   = mu.true;   know.mu   = TRUE; }
-  if (!is.null(W.true))    { W    = W.true;    know.W    = TRUE; }
+                             if (phi[1]==1) {  mu.true   = rep(0, N.b); } }
+  if (!is.null(mu.true))   { mu   = mu.true ;  know.mu   = TRUE; }
+  if (!is.null(W.true))    { W    = W.true  ;  know.W    = TRUE; }
   ## if (!is.null(iota.true)) { iota = iota.true; know.iota = TRUE; }
 
   start.time = proc.time()
@@ -176,15 +189,27 @@ cubs.mh <- function(y, X.dyn, n, m0, C0,
     }
     ## End draw beta
 
+    ## AR(1) - phi, W assumed to be diagonal !!!
+    ## mu  = draw.mu.R(beta, phi, W, mu.m0, mu.V0) 
+    ## phi = draw.phi.R(beta, mu, W, phi.m0, phi.V0, phi)
+    ## W   = draw.W.R  (beta, mu, phi, W.a0, W.b0)
+    if (!know.mu)  mu  = draw.mu.ar1.ind (beta, phi, W, mu.m0, mu.P0)
+    if (!know.phi) phi = draw.phi.ar1.ind(beta, phi, W, phi.m0, phi.P0, phi)
+    if (!know.W)   W   = draw.W.ar1.ind  (beta, mu, phi, W.a0, W.b0)
+    
     if (i > burn) {
       ## out$ppsl.b[i-burn,,] = ppsl.b
-      out$beta[i-burn,,] = beta
-      if (N.a > 0) out$alpha[i-burn,] = alpha
-      out$l.fdivq[i-burn] = l.fdivq
-      out$l.ratio[i-burn] = l.ratio
-      out$lf.ppsl[i-burn] = lf.ppsl
-      out$lq.ppsl[i-burn] = lq.ppsl
-      out$a.rate[i-burn]  = naccept / i
+      out$beta[i-burn,,]   = beta
+      if (N.a > 0)
+        out$alpha[i-burn,] = alpha
+      out$mu[i-burn,]      = mu
+      out$phi[i-burn,]     = phi
+      out$W[i-burn,]       = W;
+      out$l.fdivq[i-burn]  = l.fdivq
+      out$l.ratio[i-burn]  = l.ratio
+      out$lf.ppsl[i-burn]  = lf.ppsl
+      out$lq.ppsl[i-burn]  = lq.ppsl
+      out$a.rate[i-burn]   = naccept / i
     }
 
     if (i %% verbose == 0) cat("CUBS: iteration", i, "a.rate:", naccept / i, "\n");
@@ -238,6 +263,8 @@ if (FALSE) {
   ## Prior
   b.m0 = rep(0.0, P);
   b.C0 = diag(2.0, P);
+  mu.m0 = mu
+  mu.V0 = rep(1.0, P);
   phi.m0 = rep(0.9, P)
   phi.V0 = rep(0.1, P)
   W.a0   = rep(10, P);
@@ -266,9 +293,12 @@ if (FALSE) {
   one.C <- CUBS.C(y, X, n, mu, phi, diag(W, P), m0, C0);
 
   ## source("CUBS-MH.R")
-  out.cubs <- cubs.mh(y, X.dyn=X, n, m0, C0,
+  out.cubs <- cubs.mh(y, X.dyn=X, n, m0=m0, C0=C0,
                       samp=samp, burn=burn, verbose=verbose,
-                      mu.true=mu, phi.true=phi, W.true=W,
+                      mu.m0=mu.m0, mu.P0=1/mu.V0,
+                      phi.m0=phi.m0, phi.P0=1/phi.V0,
+                      W.a0=W.a0, W.b0=W.b0,
+                      mu.true=mu, phi.true=phi, W.true=NULL,
                       obs="binom")
 
   out = list("cubs"=list("sstat"=list("beta"=list())));
@@ -286,11 +316,11 @@ if (FALSE) {
   ## samp = 10000; burn=2000; verbose = 1000;
   out.pg <- dyn.logit.PG(y, X, n, samp=samp, burn=burn, verbose=verbose,
                          m.0=m0, C.0=C0,
-                         mu.m0=NULL, mu.V0=NULL,
-                         phi.m0=NULL, phi.V0=NULL,
-                         W.a0=NULL, W.b0=NULL,
+                         mu.m0=mu.m0, mu.P0=1/mu.V0,
+                         phi.m0=phi.m0, phi.P0=1/phi.V0,
+                         W.a0=W.a0, W.b0=W.b0,
                          beta.true=NULL, iota.true=NULL, w.true=NULL,
-                         mu.true=mu, phi.true=phi, W.true=W)
+                         mu.true=mu, phi.true=phi, W.true=NULL)
 
   out$pg$ess.time = out.pg$ess.time[3];
   out$pg$sstat$beta[[1]] = sum.stat.dyn(out.pg$beta, out$pg$ess.time)
@@ -300,7 +330,8 @@ if (FALSE) {
 }
 
 if (FALSE) {
-  
+
+  ## par(mfrow=c(1,1))
   beta.mean = apply(plot.out$beta, c(2,3), mean);
   beta.95   = apply(plot.out$beta, c(2,3), function(x){quantile(x, 0.95)});
   beta.05   = apply(plot.out$beta, c(2,3), function(x){quantile(x, 0.05)});
@@ -319,6 +350,19 @@ if (FALSE) {
   { points(1:T, (y-min(y)) / (max(y)-min(y)) * (ymax-ymin) + ymin, cex=0.1) }
   
   lines(0:T, plot.out$beta[100,1,], col=3);
+  
+}
+
+if (FALSE) {
+
+  par(mfrow=c(1,3))
+  hist(plot.out$mu[,1])
+  hist(plot.out$phi[,1])
+  hist(plot.out$W[,1])
+
+  apply(plot.out$mu,  2, mean)
+  apply(plot.out$phi, 2, mean)
+  apply(plot.out$W,   2, mean)
   
 }
 

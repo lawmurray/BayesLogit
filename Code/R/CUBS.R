@@ -159,9 +159,7 @@ CUBS.C <- function(z, X, n, mu, phi, W, m0, C0,
                    obs=c("binom", "nbinom", "norm"),
                    eps.rel=1e-8, max.iter=100)
 {
-  T = length(z)
-
-  T = length(z);
+  T   = length(z);
   N.b = length(mu);
   N   = ncol(X);
   N.a = N - N.b;
