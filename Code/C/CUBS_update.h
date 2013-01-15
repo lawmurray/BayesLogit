@@ -67,7 +67,7 @@ class BinomUpdate : public CUBSUpdate
 {
   CUBSSolver cs;
 public:
-  BinomUpdate() : cs(&binom_transform_gsl) {} ;
+  BinomUpdate() : cs(&binom_transform_gsl) {};
   void update(const double* prior, double* post, double y, double n, double epsrel, int max_iter);
 };
 

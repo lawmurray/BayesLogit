@@ -4,6 +4,10 @@
 #include <cstring>
 #include "CUBS_update.h"
 
+#ifdef USE_R
+#include "R.h"
+#endif
+
 void binom_transform (const double* rs, const double* fq, double* out)
 {
   double r=rs[0]; double s=rs[1];
@@ -186,6 +190,9 @@ void CUBSSolver::solve(const double* fq, double* rs, double epsabs, double epsre
   gsl_vector_free (x);
 }
 
+//------------------------------------------------------------------------------
+
+// Update
 void BinomUpdate::update(const double* prior, double* post, double y, double n, double epsrel, int max_iter)
 {
   double rs[2];
@@ -224,7 +231,6 @@ void NormUpdate::update  (const double* prior, double* post, double y, double n,
 void test_time_fast(unsigned int N)
 {
   double prior[2] = {0.0, 3.3};
-  double post[2];
   double rs[2];
   CUBSSolver cs(&binom_transform_gsl);
   for(unsigned int i = 0; i < N; i++)
@@ -234,7 +240,6 @@ void test_time_fast(unsigned int N)
 void test_time_slow(unsigned int N)
 {
   double prior[2] = {0.0, 3.3};
-  double post[2];
   double rs[2];
   for(unsigned int i = 0; i < N; i++) {
     CUBSSolver cs(&binom_transform_gsl);
@@ -274,21 +279,21 @@ int main(int argc, char** argv)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// #define GSLTRANSFORM(NAME, CALL)				\
-//   int NAME (const gsl_vector* x, void* p, gsl_vector* f) {	\
-//     double rs[2];						\
-//     double out[2];						\
-//     double* fq = (double *)p;					\
-//     								\
-//     rs[0] = gsl_vector_get(x, 0);				\
-//     rs[1] = gsl_vector_get(x, 1);				\
-//     								\
-//     CALL (rs, fq, out);						\
-//     								\
-//     gsl_vector_set (f, 0, out[0]);				\
-//     gsl_vector_set (f, 1, out[1]);				\
-//     								\
-//     return GSL_SUCCESS;						\
-//   }								\
+// #define GSLTRANSFORM(NAME, CALL)			
+//   int NAME (const gsl_vector* x, void* p, gsl_vector* f) {	
+//     double rs[2];						
+//     double out[2];						
+//     double* fq = (double *)p;				
+//     								
+//     rs[0] = gsl_vector_get(x, 0);				
+//     rs[1] = gsl_vector_get(x, 1);				
+//     								
+//     CALL (rs, fq, out);					
+//     								
+//     gsl_vector_set (f, 0, out[0]);				
+//     gsl_vector_set (f, 1, out[1]);				
+//     								
+//     return GSL_SUCCESS;					
+//   }								
 
 // GSLTRANSFORM(binom_transform_gsl, binom_transform)
