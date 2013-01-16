@@ -82,7 +82,7 @@ X = rpg.gamma(100, a, b);
 }
 
 \references{
-  Nicolas G. Polson, James G. Scott, and Jesse Windle.  Bayesian inference for
+  Nicholas G. Polson, James G. Scott, and Jesse Windle.  Bayesian inference for
   logistic models using Polya-Gamma latent variables.
   \url{http://arxiv.org/abs/1205.0310}
 }

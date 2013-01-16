@@ -88,11 +88,11 @@ output = logit.EM(y, X);
 }
 
 \references{
-  Nicolas G. Polson, James G. Scott, and Jesse Windle.  Bayesian inference for
+  Nicholas G. Polson, James G. Scott, and Jesse Windle.  Bayesian inference for
   logistic models using Polya-Gamma latent variables.
   \url{http://arxiv.org/abs/1205.0310}
 
-  Nicolas Poslon and James G. Scott.  Default Bayesian analysis for
+  Nicholas Poslon and James G. Scott.  Default Bayesian analysis for
   multi-way tables: a data-augmentation approach.
   \url{http://arxiv.org/pdf/1109.4180}
 }

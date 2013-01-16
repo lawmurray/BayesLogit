@@ -1,5 +1,6 @@
 #!/bin/bash
 # Copy the necessary files to the BayesLogit Package directory.
+# use -v flag, e.g. bash sync.bash -v for verbose.
 
 # Find the directory sync.bash is in, then find base directory.
 FILENAME=$0

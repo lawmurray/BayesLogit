@@ -97,7 +97,7 @@ out = mlogit(y, X, samp=1000, burn=100);
 }
 
 \references{
-  Nicolas G. Polson, James G. Scott, and Jesse Windle.  Bayesian inference for
+  Nicholas G. Polson, James G. Scott, and Jesse Windle.  Bayesian inference for
   logistic models using Polya-Gamma latent variables.
   \url{http://arxiv.org/abs/1205.0310}
 }
