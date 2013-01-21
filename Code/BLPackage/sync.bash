@@ -31,6 +31,8 @@ $rsyncit $CODE/C/CUBS.h           $BLDIR/src/
 $rsyncit $CODE/C/CUBS.cpp         $BLDIR/src/
 $rsyncit $CODE/C/CUBS_update.h    $BLDIR/src/
 $rsyncit $CODE/C/CUBS_update.cpp  $BLDIR/src/
+$rsyncit $CODE/C/AR1.h            $BLDIR/src/
+$rsyncit $CODE/C/AR1.cpp          $BLDIR/src/
 
 $rsyncit $INCL/Matrix/Matrix.h             $BLDIR/src/
 $rsyncit $INCL/Matrix/Matrix.cpp           $BLDIR/src/
@@ -49,6 +51,7 @@ $rsyncit $CODE/R/Logit-Indicators.R $BLDIR/R/
 $rsyncit $CODE/R/FFBS.R             $BLDIR/R/
 $rsyncit $CODE/R/CUBS.R             $BLDIR/R/
 $rsyncit $CODE/R/KS.R               $BLDIR/R/
+$rsyncit $CODE/R/AR1.R              $BLDIR/R/
 ## The function calls in these files are not in the NAMESPACE.
 $rsyncit $CODE/R/LogitPG.R       $BLDIR/R/
 $rsyncit $CODE/R/logit-EM.R      $BLDIR/R/
