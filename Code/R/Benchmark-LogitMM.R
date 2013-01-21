@@ -17,12 +17,12 @@ run <- list("ex01"= FALSE,
 samp = 1000
 burn = 200
 verbose = 100
-kappa = Inf
+kappa = 100
 df = Inf
 ntrials = 1
 
 mm.method = c("PGMM", "IndMM1", "IndMM2", "PGMM2", "IndMM3", "IndMM4", "PG", "IndMH");
-run.methods = 1:7;
+run.methods = c(4,6);
 
 write.it = FALSE
 load.old = FALSE
@@ -30,8 +30,9 @@ load.old = FALSE
 var.names <- list("PGMM"=c("ab", "phi"),
                   "IndMM1"=c("ab", "phi"),
                   "IndMM2"=c("ab", "phi"),
-                  "IndMM3"=c("ab", "theta"),
-                  "IndMM4"=c("ab", "phi"),
+                  "PGMM2"=c("abm", "phi"),
+                  "IndMM3"=c("abm", "phi"),
+                  "IndMM4"=c("abm", "phi"),
                   "PG"="ab",
                   "IndMH"="ab")
 
@@ -42,10 +43,8 @@ var.names <- list("PGMM"=c("ab", "phi"),
 benchmark.blogit.mm <- function(y, X.re, X.fe, n, shape=1, rate=1, m.0=NULL, C.0=NULL,
                                 samp=1000, burn=100, ntrials=1, verbose=100,
                                 method = c("PGMM", "IndMM1"),
-                                dset.name="", df=Inf, var.names="beta", kappa=0)   
-{
-  source("Logit-MixedModel.R")
-  
+                                dset.name="", df=Inf, var.names="beta", kappa=0, center=NULL)   
+{ 
   ## Initialize
   cat("Will benchmark", method[1], "using", dset.name, "dataset for variable(s)", var.names, "\n");
 
@@ -112,7 +111,7 @@ benchmark.blogit.mm <- function(y, X.re, X.fe, n, shape=1, rate=1, m.0=NULL, C.0
     } else if (method=="IndMM4") {
 
       gb <- ind.metropolis.blogit.4(y, X.re, X.fe, n, shape, rate, kappa=kappa, m.0, P.0,
-                                    samp=samp, burn=burn, verbose=verbose, df=df)
+                                    samp=samp, burn=burn, verbose=verbose, df=df, center=center)
       gb$arate = gb$acceptr
       
     } else if (method=="PG") { ## binomial, fraction
@@ -219,37 +218,66 @@ if (run$ex01) {
   
   if (write.it) save(y, X.re, X.fe, n, shape, rate, prec.b, m.0, P.0, df, bench.ex01, ex01.tbl, file=file.name);
 
+}
+
+if (FALSE) {
+  
   ## .........................................................
   ## Check sensitivity to hyperparameters and model structure.
 
   kappa = 1.0; maxit=1000
   ## Without mean of random effects.
   check <- blogit.mm.map(y, X.re, X.fe, n, shape=shape, rate=rate, 
-                         m.0=m.0, P.0=P.0, abphi.0=NULL, calc.V=TRUE, trace=FALSE, maxit=maxit)
+                         m.0=m.0, P.0=P.0, abphi.0=NULL, calc.V=FALSE, trace=FALSE, maxit=maxit)
   c(check$m[1:5], check$m[6], check$m[7])
   
   ## With mean of random effects. log gamma prior
   check <- blogit.mm.map.3(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
-                           m.0=m.0, P.0=P.0, abtm.0=NULL, calc.V=TRUE, trace=FALSE, maxit=maxit)
+                           m.0=m.0, P.0=P.0, abtm.0=NULL, calc.V=FALSE, trace=FALSE, maxit=maxit)
   c(check$m[1:5], check$m[6], exp(check$m[7]), check$m[8])
   blogit.llh.mm.3(check$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
 
-  abtm.0 = NULL
+  abpm.0 = NULL
   ## abtm.0 = check$m; abtm.0[7] = exp(abtm.0[7])
   ## With mean of random effects.  gamma prior.
   ## shape = 2, rate=2, kappa=100 produces result almost like hglm1 when using Nelder-Mead
   ## This is not the case when using CG.
   check <- blogit.mm.map.4(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
-                           m.0=m.0, P.0=P.0, abphim.0=NULL, calc.V=TRUE, trace=FALSE, maxit=maxit)
+                           m.0=m.0, P.0=P.0, abphim.0=abpm.0, calc.V=FALSE, trace=FALSE, maxit=maxit)
   c(check$m[1:5], check$m[6], check$m[7], check$m[8])
+  grad.blogit.mm.4(check$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
   blogit.llh.mm.4(check$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+
+  check.newton <- newton.4(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                           m.0=m.0, P.0=P.0, abpm.0=NULL)
+
+  check.ng <- newton.4.gibbs(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                             m.0=m.0, P.0=P.0, abpm.0=NULL, trace=FALSE, reltol=1e-14)
 
   abtm.0 = NULL
   ## abtm.0 = check$m; abtm.0[7] = log(abtm.0[7])
   check <- blogit.mm.map.5(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
-                           m.0=m.0, P.0=P.0, abtm.0=abtm.0, calc.V=TRUE, trace=FALSE, maxit=maxit)
+                           m.0=m.0, P.0=P.0, abtm.0=abtm.0, calc.V=FALSE, trace=FALSE, maxit=maxit)
   c(check$m[1:5], check$m[6], exp(check$m[7]), check$m[8])
   blogit.llh.mm.5(check$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+
+  dbmt.0 = NULL
+  check <- blogit.mm.map.6(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                           m.0=m.0, P.0=P.0, dbmt.0=dbmt.0, calc.V=FALSE, trace=FALSE, maxit=maxit)
+  c(check$m[1:7], exp(check$m[8]));
+  blogit.llh.mm.6(check$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+
+  dbmp.0 = NULL
+  check <- blogit.mm.map.7(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                           m.0=m.0, P.0=P.0, dbmp.0=dbmp.0, calc.V=FALSE, trace=FALSE, maxit=maxit)
+  check$m
+  blogit.llh.mm.7(check$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+
+  ## source("Logit-MixedModel.R")
+  check.8 <- blogit.mm.map.8(y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
+                             m.0=array(0, dim=c(ncol(X.fe))),
+                             P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))),
+                             ab.0=NULL, calc.V=FALSE, trace=FALSE, maxit=1000)
   
   ## Check results using lme4 package.  I'm still unclear on their priors.
   mm.df = data.frame("y"=y, "FE1"=X.fe[,1], "group"=factor(rowSums(t(t(X.re) * 1:5))))
@@ -300,23 +328,36 @@ if (run$polls) {
   if (load.old) load(file.name);
   
   for (i in run.methods) {
+    ## source("Logit-MixedModel.R")
     nm = mm.method[i]
     bench.polls[[nm]] <- benchmark.blogit.mm(y, X.re, X.fe, n, shape, rate, m.0=m.0, C.0=solve(P.0),
                                              samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                              method=nm,
-                                             dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=1)
+                                             dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=kappa,
+                                             center=NULL)
   }
 
-  polls.tbl = setup.table(bench.polls, "ab")
+  polls.tbl = setup.table(bench.polls, "abm")
 
   if (write.it) save(y, X.re, X.fe, n, shape, rate, prec.b, m.0, P.0, df, bench.polls, polls.tbl, file=file.name);
 
+}
+
+if (FALSE) {
+  
+  abpm.temp = c(colMeans(bench.polls$PGMM2$gb$abm), 0)
+  len = length(abpm.temp)
+  abpm.temp[len] = abpm.temp[len-1]
+  abpm.temp[len-1] = mean(bench.polls$PGMM2$gb$phi)
+  grad.blogit.mm.4(abpm.temp, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+  blogit.llh.mm.4(abpm.temp, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+
   ## .........................................................
   ## Check sensitivity to hyperparameters and model structure.
-  
+
   ## Without mean of random effects.
   check <- blogit.mm.map(y, X.re, X.fe, n, shape=shape, rate=rate, 
-                         m.0=m.0, P.0=P.0, abphi.0=NULL, calc.V=TRUE, trace=FALSE)
+                         m.0=m.0, P.0=P.0, abphi.0=NULL, calc.V=TRUE, trace=FALSE, maxit=1000)
   c(check$m[1:49], check$m[50])
 
   ## With mean of random effects.
@@ -327,18 +368,72 @@ if (run$polls) {
   kappa = 100
   check.4 <- blogit.mm.map.4(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
                              m.0=m.0, P.0=P.0, abphim.0=NULL, calc.V=TRUE, trace=FALSE, maxit=10000)
+  grad.blogit.mm.4(check.4$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+  blogit.llh.mm.4(check.4$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+
+  ## source("Logit-MixedModel.R")
+  check.newton <- newton.4(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                           m.0=m.0, P.0=P.0, abpm.0=NULL, maxiter=100, trace=100, reltol=0.0)
+  grad.blogit.mm.4(check.newton$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+  
+  ## source("Logit-MixedModel.R")
+  check.newton <- newton.4.gibbs(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                           m.0=m.0, P.0=P.0, abpm.0=abpm.0, maxiter=1000, trace=10, reltol=1e-14)
+
+  seed=list("abm"=c(check.newton$m[1:50], check.newton$m[52]), "phi"=check.newton$m[51]);
+  out.pg2 <- logit.PG.mm.2(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0,
+                           samp=samp, burn=burn, verbose=verbose, seed=NULL);
   
   check.5 <- blogit.mm.map.5(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
                              m.0=m.0, P.0=P.0, abtm.0=NULL, calc.V=TRUE, trace=FALSE, maxit=10000)
-
+  
+  ## source("Logit-MixedModel.R")
+  check.8 <- blogit.mm.map.8(y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
+                             m.0=array(0, dim=c(ncol(X.fe))),
+                             P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))),
+                             ab.0=NULL, calc.V=FALSE, trace=FALSE, maxit=1000)
+  
   ## Check results using lme4 package.  I'm still unclear on their priors.
   hglm1 = glmer(bush ~ black + (1 | state), family=binomial(link="logit"), data=polls)
-
-  coef(hglm1)
+  hlm1 = lmer(bush ~ black + (1 | state), data=polls, REML=TRUE)
+  
+  c = coef(hglm1)
   r = ranef(hglm1, postVar = TRUE)
   summary(hglm1)
   ## Grab the posterior variances associated with each random effect
   attr(r$state,"postVar")
+
+  alpha.temp = coef(hglm1)$state[,1]
+  beta.temp  = fixef(hglm1)[-1]
+  phi.temp   = 0.4
+  m.temp     = fixef(hglm1)[1]
+  abpm.temp = c(alpha.temp, beta.temp, phi.temp, m.temp)
+  grad.blogit.mm.4(abpm.temp, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+  blogit.llh.mm.4(abpm.temp, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+
+  cbind(c$state[,1], check.4$m[1:49])
+
+  ## Plot
+  for(k in c(52)) {
+  apbm.base = abpm.temp
+  x.idc = k
+  x.grid = seq(apbm.base[x.idc]-0.2, apbm.base[x.idc]+0.2, 0.02)
+  phi.grid = seq(5, 15, 0.05)
+  len.x = length(x.grid)
+  len.phi = length(phi.grid)
+  abpm.val = abpm.temp
+  llh.val = matrix(0, nrow=len.x, ncol=len.phi)
+  phi.idc = length(abpm.val) - 1
+  for (i in 1:len.x) {
+    for (j in 1:len.phi) {
+      abpm.val[x.idc] = x.grid[i]
+      abpm.val[phi.idc] = phi.grid[j]
+      llh.val[i,j] = blogit.llh.mm.4(abpm.val, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+    }
+  }
+  contour(x.grid, phi.grid, llh.val)
+  ## readline("");
+  }
   
 }
 
@@ -354,7 +449,10 @@ if (run$xerop) {
   Xerop$id = factor(Xerop$id)
 
   y    = Xerop$respinfect
-  X.fe = model.matrix(respinfect ~ xerop + age.month + sex + ht.for.age + stunted + factor(season) + 0, data=Xerop)
+  Xerop$sex.num = as.numeric(Xerop$sex)
+  ## model.matrix is messing things up when I do + 0.  It then includes two dummy variables for sex.
+  X.fe = model.matrix(respinfect ~ xerop + age.month + sex + ht.for.age + stunted + factor(season) + 1, data=Xerop)
+  X.fe = X.fe[,-1]
   X.re = model.matrix(respinfect ~ id + 0, data=Xerop)
   n    = rep(1, length(y))
   
@@ -378,25 +476,45 @@ if (run$xerop) {
 
   bench.xerop = list()
   if (load.old) load(file.name);
-  
+
+  ## source("Logit-MixedModel.R")
   for (i in run.methods) {
     ## Calculating Hessian numerically is a problem for a problem of this size.
     nm = mm.method[i]
     bench.xerop[[nm]] <- benchmark.blogit.mm(y, X.re, X.fe, n, shape, rate, m.0=m.0, C.0=solve(P.0),
                                              samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                              method=nm,
-                                             dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=0)
+                                             dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=kappa)
   }
 
-  xerop.tbl = setup.table(bench.xerop, "ab")
+  xerop.tbl = setup.table(bench.xerop, "abm")
 
   if (write.it) save(y, X.re, X.fe, n, shape, rate, prec.b, m.0, P.0, df, bench.xerop, xerop.tbl, file=file.name);
 
+}
+
+if (FALSE) {
+  
   ## .........................................................
   hglm1 <- glmer(respinfect ~ xerop + age.month + sex + ht.for.age + stunted + factor(season) + (1 | id),
                  family=binomial(link="logit"), data=Xerop)
+
   ## This doesn't seem to work for glms.
   ## lme4.samp = mcmcsamp(hglm1, n = 12000)
+  
+  kappa = 100
+  check.4 <- blogit.mm.map.4(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                             m.0=m.0, P.0=P.0, abphim.0=NULL, calc.V=TRUE, trace=FALSE, maxit=10000)
+  grad.blogit.mm.4(check.4$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+  blogit.llh.mm.4(check.4$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+
+  ## source("Logit-MixedModel.R")
+  check.newton <- newton.4(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                           m.0=m.0, P.0=P.0, abpm.0=NULL, maxiter=10000, trace=TRUE)
+
+  ## source("Logit-MixedModel.R")
+  check.newton <- newton.4.gibbs(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
+                           m.0=m.0, P.0=P.0, abpm.0=abpm.0, maxiter=1000, trace=10, reltol=1e-8)
   
 }
 

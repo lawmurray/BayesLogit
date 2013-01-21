@@ -91,6 +91,12 @@ blogit.llh.mm.3 <- function(abtm, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
                             m.0=array(0, dim=c(ncol(X.fe))),
                             P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))))
 {
+  ## abtm: alpha, beta, theta, m
+  ## \psi_t = X.fe alpha + X.re \beta
+  ## \phi = log \theta
+  ## alpha \sim N(m, 1/\phi)
+  ## m \sim N(0, \kappa^2 / \phi)
+  
   ## abphi: (P.a + P.b + 1) x J-1; coefficients, column assumed to be beta_J = 0.
   ## y : N; number of responses
   ## X : N x P.ab: design matrix
@@ -179,6 +185,12 @@ blogit.llh.mm.4 <- function(abphim, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
                             m.0=array(0, dim=c(ncol(X.fe))),
                             P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))))                         
 {
+  ## abphim: alpha, beta, phi, m
+  ## \psi_t = X.fe alpha + X.re \beta
+  ## \phi = log \theta
+  ## alpha \sim N(m, 1/\phi)
+  ## m \sim N(0, \kappa^2 / \phi)
+  
   ## abphi: (P.a + P.b + 1) x J-1; coefficients, column assumed to be beta_J = 0.
   ## y : N; number of responses
   ## X : N x P.ab: design matrix
@@ -247,7 +259,7 @@ grad.blogit.mm.4 <- function(abphim, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
   grad[1:P.ab] = t(y - p * n) %*% X;
   grad[b.idc]  = grad[b.idc] - P.0 %*% (beta - m.0)
   grad[a.idc]  = grad[a.idc] - phi * (alpha - m);
-  grad[f.idc]  = (0.5 * (P.a + shape) - 1 ) / phi - 0.5 * (sum(alpha*alpha) + rate);
+  grad[f.idc]  = (0.5 * (P.a + shape) - 1 ) / phi - 0.5 * (t(alpha-m) %*% (alpha-m) + rate);
   if (kappa!=0) {
     grad[f.idc] = grad[f.idc] + (0.5 / phi) * not.flat - 0.5 * m^2 / kappa^2;
     grad[m.idc] = (sum(alpha-m) - m / kappa^2) * phi
@@ -258,7 +270,7 @@ grad.blogit.mm.4 <- function(abphim, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
 
 hessian.blogit.mm.4 <- function(abphim, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
                                 P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))) )
-{
+{  
   ## Using phi parameterization
   N    = length(y)
   X    = cbind(X.re, X.fe);
@@ -308,6 +320,14 @@ blogit.llh.mm.5 <- function(abtm, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
                             m.0=array(0, dim=c(ncol(X.fe))),
                             P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))))                         
 {
+  ## THIS IS INCORRECT.  USE VERSION 3.  REPARAMETERIZATION SHOULD CHANGE POSTERIOR.
+  
+  ## abtm: alpha, beta, theta, m
+  ## \psi_t = X.fe alpha + X.re \beta
+  ## \phi = log \theta
+  ## alpha \sim N(m, 1/\phi)
+  ## m \sim N(0, \kappa^2 / \phi)
+  
   ## this finds the mode under a different parameterization.  But this should
   ## not be used for sampling phi, the precision.
 
@@ -355,7 +375,11 @@ blogit.llh.mm.6 <- function(dbmt, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
                             m.0=array(0, dim=c(ncol(X.fe))),
                             P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))))
 {
-  ## now assume that we have m + alpha_i + x_{ij} beta
+  ## dbmp: delta, beta, m, phi
+  ## \psi_t = X.fe (m + \delta) + X.re \beta
+  ## \phi = log \theta
+  ## delta \sim N(0, 1/\phi)
+  ## m \sim N(0, \kappa^2 / \phi)
   if (kappa == 0) return(NA);
   
   N    = length(y)
@@ -394,7 +418,6 @@ blogit.llh.mm.6 <- function(dbmt, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
 
 hessian.blogit.mm.6 <- function(dbmt, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
                                 P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))) )
-
 {
   ## Different parameterization of prior, log gamma, produces different posteriors.
   N    = length(y)
@@ -439,10 +462,10 @@ blogit.llh.mm.7 <- function(dbmp, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
                             m.0=array(0, dim=c(ncol(X.fe))),
                             P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))))                         
 {
-  ## abphi: (P.a + P.b + 1) x J-1; coefficients, column assumed to be beta_J = 0.
-  ## y : N; number of responses
-  ## X : N x P.ab: design matrix
-  ## P.0 : P.b x P.b; array of matrices for independent prior. 
+  ## dbmp: delta, beta, m, phi
+  ## \psi_t = X.fe (m + \delta) + X.re \beta
+  ## delta \sim N(0, 1/\phi)
+  ## m \sim N(0, \kappa^2 / \phi)
   if (kappa == 0) return(NA);
   
   N = length(y)
@@ -519,6 +542,47 @@ hessian.blogit.mm.7 <- function(dbmp, y, X.re, X.fe, n, shape=1, rate=1, kappa=1
   hess
 }
 
+blogit.llh.mm.8 <- function(ab, y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
+                            m.0=array(0, dim=c(ncol(X.fe))),
+                            P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))))                         
+{
+  ## abphim: alpha, beta, phi, m
+  ## \psi_t = X.fe alpha + X.re \beta
+  ## \phi = log \theta
+  ## alpha \sim N(m, 1/\phi)
+  ## m \sim N(0, \kappa^2 / \phi)
+  ## Now integrate out phi and m.
+  ## \alpha sim N(0, (1+\kappa^2) / \phi)
+  ## \alpha sim t(shape, 0, rate * (1+\kappa)^2).
+  ## I need to check the last equation.
+  
+  ## abphi: (P.a + P.b + 1) x J-1; coefficients, column assumed to be beta_J = 0.
+  ## y : N; number of responses
+  ## X : N x P.ab: design matrix
+  ## P.0 : P.b x P.b; array of matrices for independent prior. 
+  
+  N = length(y)
+  X.re = as.matrix(X.re)
+  X.fe = as.matrix(X.fe)
+  X   = cbind(X.re, X.fe)
+  P.a = ncol(X.re)
+  P.b = ncol(X.fe)
+  P.ab = P.a + P.b
+  a.idc = 1:P.a
+  b.idc = 1:P.b + P.a
+
+  alpha = ab[a.idc]
+  beta  = ab[b.idc]
+
+  ab = ab[1:P.ab]
+  Psi = X %*% ab;
+  ## p = exp(Psi) / (1 + exp(Psi));
+
+  llh = t(y) %*% Psi - sum(n * log(1 + exp(Psi)));
+  llh = llh - 0.5 * t(beta - m.0) %*% P.0 %*% (beta - m.0);
+  llh = llh - 0.5 * (shape + P.a) * log( 1 + t(alpha) %*% alpha / (rate * (1 + kappa^2)) )
+  llh
+}
 
 ################################################################################
 ##------------------------------------------------------------------------------
@@ -526,7 +590,7 @@ hessian.blogit.mm.7 <- function(dbmp, y, X.re, X.fe, n, shape=1, rate=1, kappa=1
 blogit.mm.map <- function(y, X.re, X.fe, n, shape=1, rate=1,
                        m.0=array(0, dim=c(ncol(X.fe))),
                        P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))),
-                       abphi.0=NULL, calc.V=TRUE, trace=FALSE, maxit=maxit)
+                       abphi.0=NULL, calc.V=TRUE, trace=FALSE, maxit=100)
 { 
   X = cbind(X.re, X.fe);
   
@@ -539,7 +603,7 @@ blogit.mm.map <- function(y, X.re, X.fe, n, shape=1, rate=1,
                      y=y, X.re=X.re, X.fe=X.fe, n=n, shape=shape, rate=rate,
                      m.0=m.0, P.0=P.0,
                      hessian=FALSE,  method="CG",
-                     control=list(fnscale=-1, trace=trace, maxit=maxit));
+                     control=list(fnscale=-1, trace=trace, maxit=maxiter));
   if (trace) cat("Finished optim.\n")
 
   ## optim.out = optim(abphi.0, blogit.llh.mm, gr=grad.blogit.llh.mm, method="BFGS", hessian=TRUE,
@@ -746,6 +810,164 @@ blogit.mm.map.7 <- function(y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
   out = list("optim.out"=optim.out, "V"=V, "convergence"=optim.out$convergence, "m"=dbmp.pm)
   out$H = hess
   ## out$H.pen = hess.pen
+
+  out
+}
+
+blogit.mm.map.8 <- function(y, X.re, X.fe, n, shape=1, rate=1, kappa=1,
+                            m.0=array(0, dim=c(ncol(X.fe))),
+                            P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))),
+                            ab.0=NULL, calc.V=FALSE, trace=FALSE, maxit=1000)
+{ 
+  X = cbind(X.re, X.fe);
+  
+  N = nrow(X);
+  P = ncol(X);
+
+  if (is.null(ab.0)) { ab.0 = matrix(0, nrow=P); }
+
+  optim.out <- optim(ab.0, blogit.llh.mm.8, gr=NULL,
+                     y=y, X.re=X.re, X.fe=X.fe, n=n, shape=shape, rate=rate,
+                     kappa=kappa, m.0=m.0, P.0=P.0,
+                     hessian=TRUE,  method="CG",
+                     control=list(fnscale=-1, trace=trace, maxit=maxit));
+
+  ab.pm = optim.out$par;
+  hess  = optim.out$hessian
+
+  V = NA;
+  if (calc.V) V = solve(-1 * hess);
+
+  if (optim.out$convergence != 0) cat("Did not converge:", optim.out$conv, "\n");
+
+  out = list("optim.out"=optim.out, "V"=V, "convergence"=optim.out$convergence, "m"=ab.pm)
+  out$H = hess
+  ## out$H.pen = hess.pen
+
+  out
+}
+
+newton.4 <- function(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, abpm.0=NULL,
+                     maxiter=100, reltol=1e-8, trace=FALSE)
+{
+  X = cbind(X.re, X.fe);
+  N = nrow(X);
+  P = ncol(X);
+
+  if (is.null(abpm.0)) { abpm.0 = matrix(0, nrow=P+1+as.numeric(kappa!=0)); abpm.0[P+1] = 1; }
+  
+  abpm = abpm.0
+
+  llh.old = blogit.llh.mm.4(abphim=abpm, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0);
+  
+  go = TRUE
+  iter = 0
+  
+  while (go && iter < maxiter) {
+    grad <- grad.blogit.mm.4(abphim=abpm, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0);
+    hess <- hessian.blogit.mm.4(abphim=abpm, y, X.re, X.fe, n, shape, rate, kappa, P.0);
+    ## Cholesky
+    U = chol(-1 * hess);
+    V = chol2inv(U)
+    ## Eigen
+    ## E = eigen(-1 * hess);
+    ## V = E$vectors %*% diag(1/E$values) %*% t(E$vectors)
+    h = V %*% grad
+    abpm = abpm + h
+    llh = blogit.llh.mm.4(abphim=abpm, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0);
+    if (abs(llh - llh.old) < abs(llh.old) * reltol) go = FALSE
+    llh.old = llh
+    if (trace != 0) {
+      if (iter %% trace == 0) cat("iter:", iter, "llh:", llh, "\n");
+    }
+    iter = iter + 1
+  }
+
+  ## Give things names.
+  the.names = c(colnames(X.re), colnames(X.fe), "phi");
+  if (kappa != 0) the.names[P+2] = "m"
+  abpm = array(abpm, dim=length(abpm));
+  names(abpm) = the.names
+  
+  c.error = 0;
+  if (iter >= maxiter) {cat("newton.4: reached max iter.\n"); c.error=1;}
+
+  out = list("hess"=hess, "grad"=grad, "iter"=iter, "c.error"=c.error, "llh"=llh, "mode"=abpm)
+
+  out
+}
+
+newton.4.gibbs <- function(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, abpm.0=NULL,
+                           maxiter=100, reltol=1e-8, trace=FALSE)
+{
+  N    = length(y)
+  X    = cbind(X.re, X.fe);
+  P.a  = ncol(X.re)
+  P.b  = ncol(X.fe)
+  P.ab = P.a + P.b
+  a.idc = 1:P.a
+  b.idc = 1:P.b + P.a
+  f.idc = P.ab + 1;
+  m.idc = f.idc + 1;
+  P.all = P.a + P.b + 1 + as.numeric(kappa!=0)
+
+  if (is.null(abpm.0)) { abpm.0 = matrix(0, nrow=P.ab+1+as.numeric(kappa!=0)); abpm.0[P.ab+1] = 1; }
+  if (length(abpm.0) != P.all) return(NA)
+  
+  abpm = abpm.0
+
+  llh.old = blogit.llh.mm.4(abphim=abpm, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0);
+  
+  go = TRUE
+  iter = 0
+  m  = 4
+  maxiter = maxiter * m
+  idc = a.idc
+  scale = 1
+  ## abpm[f.idc] = 1.6 ## checking when phi is fixed.
+  
+  while (go && iter < maxiter) {
+    grad <- grad.blogit.mm.4(abphim=abpm, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0);
+    hess <- hessian.blogit.mm.4(abphim=abpm, y, X.re, X.fe, n, shape, rate, kappa, P.0);
+    if (iter %% m == 0) {
+      idc = a.idc
+      scale = 1
+    } else if (iter %% m == 1) {
+      idc = b.idc
+      scale = 1
+    } else if (iter %% m == 3) {
+      idc = f.idc
+      scale = 1
+    } else if (iter %% m == 2) {
+      idc = m.idc
+      scale = 1
+    }
+    grad.sub = grad[idc]
+    hess.sub = hess[idc, idc]
+    U = chol(-1 * hess.sub);
+    V = chol2inv(U)
+    h = V %*% grad.sub
+    abpm[idc] = abpm[idc] + h * scale
+
+    llh = blogit.llh.mm.4(abphim=abpm, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0);
+    if (abs(llh - llh.old) < abs(llh.old) * reltol) go = FALSE
+    llh.old = llh
+    if (trace != 0) {
+      if (iter %% trace == 0) cat("iter:", iter, "llh:", llh, "\n");
+    }
+    iter = iter + 1
+  }
+
+  ## Give things names.
+  the.names = c(colnames(X.re), colnames(X.fe), "phi");
+  if (kappa != 0) the.names[m.idc] = "m"
+  abpm = array(abpm, dim=P.all);
+  names(abpm) = the.names
+
+  c.error = 0;
+  if (iter >= maxiter) {cat("newton.4.gibbs: reached max iter.\n"); c.error=1;}
+
+  out = list("hess"=hess, "grad"=grad, "iter"=iter, "c.errer"=c.error, "llh"=llh, "mode"=abpm)
 
   out
 }
@@ -1352,7 +1574,7 @@ draw.abpm.ind.MH.4 <- function(abpm, y, X.re, X.fe, n, shape, rate, kappa, m0, P
 
 ind.metropolis.blogit.4 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1, kappa=1,
                                     m.0=rep(0, ncol(X.fe)), P.0=matrix(0, nrow=ncol(X.fe), ncol=ncol(X.fe)),
-                                    samp=1000, burn=100, verbose=1000, df=Inf)
+                                    samp=1000, burn=100, verbose=1000, df=Inf, center=NULL)
 {
   ## An independent MH routine that can be adapted to varying P0.
   ## Assume proper posterior
@@ -1388,16 +1610,32 @@ ind.metropolis.blogit.4 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1,
   out <- list(abpm = matrix(0, nrow=samp, ncol=P.all),
               a.prob = rep(0, samp)
               )
+  
+  ## Set the proposal.
+  if (!is.null(center)) {
+    grad <- grad.blogit.mm.4(abphim=center, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0);
+    hess <- hessian.blogit.mm.4(abphim=center, y, X.re, X.fe, n, shape, rate, kappa, P.0);
+    ## Cholesky
+    U = chol(-1 * hess);
+    V = chol2inv(U)
+    m = V %*% grad
+    out.map = list("c"=0)
+  } else {
+    ## Find mode
+    ## out.map = blogit.mm.map.4(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, abphim.0=NULL, maxit=100000)
+    ## m = out.map$m
+    ## U = chol(-1 * out.map$H)
+    out.map <- newton.4.gibbs(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, abpm.0=NULL,
+                              maxiter=100000, reltol=1e-14, trace=FALSE)
+    m = out.map$m
+    U = chol(-1 * out.map$hess);
+  }
 
-  ## Find mode
-  out.map = blogit.mm.map.4(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, abphim.0=NULL, maxit=100000)
-  m = out.map$m
-  U = chol(-1 * out.map$H)
-  cat("Finished with MLE.  Convergence =", out.map$convergence, "\n")
+  cat("Finished with MLE.  Convergence =", out.map$c, "\n")
 
   ## start at ppsl mean.
   ep   = rep(0, P.all)
-  abpm = out.map$m
+  abpm = m
   log.fdivq = log.tget.to.ppsl.blogit.4(abpm, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, m, U, df=df, is.prec=FALSE)
   
   ## Generate proposal
@@ -1550,7 +1788,7 @@ logit.PG.mm <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1,
 ##------------------------------------------------------------------------------
 logit.PG.mm.2 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1, kappa=1,
                         m0=rep(0, ncol(X.fe)), P0=matrix(0, nrow=ncol(X.fe), ncol=ncol(X.fe)),
-                        samp=1000, burn=500, verbose=500)
+                        samp=1000, burn=500, verbose=500, seed=list("abm"=NULL, "phi"=NULL))
 {
   ## X: n by p matrix
   ## y: n by 1 vector, total # response
@@ -1589,6 +1827,9 @@ logit.PG.mm.2 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1, k
   dbm   = rep(0.0, P.all)
   m     = 0
   phi   = shape / rate;
+
+  if (!is.null(seed$abm)) { dbm = seed$abm; dbm[a.idc] = seed$abm[a.idc] - seed$abm[m.idc]; }
+  if (!is.null(seed$phi)) { phi = seed$phi; }
 
   out <- list(w = matrix(nrow=samp, ncol=N),
               abm = matrix(nrow=samp, ncol=P.ab+inc.m),
@@ -1723,7 +1964,7 @@ if (FALSE) {
   
   out.ind.3 = ind.metropolis.blogit.3(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, samp=samp, burn=burn, verbose=verbose, df=df)
   out.ind.4 = ind.metropolis.blogit.4(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, samp=samp, burn=burn, verbose=verbose, df=df)
-  out.pg.mm.2 = logit.PG.mm(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, samp=samp, burn=burn, verbose=verbose);
+  out.pg.mm.2 = logit.PG.mm.2(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, samp=samp, burn=burn, verbose=verbose);
 
   out.mlogit = mlogit.MH.R(y, X, n, m.0=m.0.mlogit, P.0=P.0.mlogit, beta.0=NULL,
     samp=samp, burn=burn, method="Ind", tune=1.0, df=df, verbose=1000)
