@@ -103,25 +103,25 @@ FFBS.C <- function(z, X, V, mu, phi, W, m0, C0)
   N.a = N - N.b;
 
   ## Check
-  not.ok = rep(6);
+  not.ok = rep(9);
   if (not.ok[1] <- length(mu)  != N.b)
-    { print("length(mu)!=N.b") ; }
+    { cat("length(mu) =", length(mu), "!= N.b =", N.b, "\n") ; }
   if (not.ok[2] <- length(phi) != N.b)
-    { print("length(phi)!=N.b"); }
+    { cat("length(phi) =", length(phi), "!= N.b =", N.b, "\n"); }
   if (not.ok[3] <- (ncol(W) != N.b || nrow(W) != N.b))
-    { print("W is not N.b x N.b"); }
+    { cat("dim(W) =", dim(W), "is not N.b x N.b =", N.b, N.b, "\n"); }
   if (not.ok[4] <- (nrow(X) != T || ncol(X) != N))
-    { print("X is not T x N"); }
+    { cat("dim(X) =", dim(X), "is not T x N =", T, N, "\n"); }
   if (not.ok[5] <- length(m0) != N)
-    { print("length(m0) != N"); }
+    { cat("length(m0) =", length(mu), "!= N =", N, "\n"); }
   if (not.ok[6] <- (nrow(C0) != N || ncol(C0) != N))
-    { print("C0 is not N x N"); }
+    { cat("dim(C0) =", dim(C0), "is not N x N =", N, N, "\n"); }
   if (not.ok[7] <- length(V) != T)
-    { print("length(V) != T"); }
+    { cat("length(V) =", length(V), "!= T =", T, "\n"); }
   if (not.ok[8] <- length(z) != T)
-    { print("length(z) != T"); }
+    { cat("length(z) =", length(z), "!= T =", T, "\n"); }
   if (not.ok[9] <- N.b > N)
-    { print("N.b > N"); }
+    { cat("N.b =", N.b, ">", "N =", N, "\n"); }
     
   if (!prod(!not.ok)) {
     cat("FFBS.C: problem.  Returning NA.\n");
