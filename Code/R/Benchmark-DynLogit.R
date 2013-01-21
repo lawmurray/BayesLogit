@@ -41,9 +41,10 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
                                 beta.true=NULL, iota.true=NULL,
                                 mu.true=NULL, phi.true=NULL, W.true=NULL)
 {
+  T = length(y)
   ## n is total number of trials per observation - not vectorized, i.e. the same for each i.
   cat("Will benchmark", method[1], "using", dset.name, "dataset for variable(s)", var.names, "\n");
-
+  
   sstat = list(); for (nm in var.names) sstat[[nm]] = list();
   arate    = rep(0, ntrials);
   ess.time = rep(0, ntrials);
@@ -51,7 +52,7 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
   for(i in 1:ntrials) {
 
     if (method=="PG") {
-      gb <- dyn.logit.PG(y=y, X.dyn=X.dyn, n=n, X.stc=X.stc,
+      gb <- dyn.logit.PG(y=y, X.dyn=X.dyn, n=rep(n,T), X.stc=X.stc,
                          samp=samp, burn=burn, verbose=verbose,
                          m.0=m.0, C.0=C.0,
                          mu.m0=mu.m0, mu.P0=mu.P0,
@@ -72,7 +73,7 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
                          mu.true=mu.true, phi.true=phi.true, W.true=W.true)
       gb$a.rate = 1
     } else if (method=="CUBS") {
-      gb <- cubs.mh(y=y, X.dyn=X.dyn, n=n, m0=m.0, C0=C.0,
+      gb <- cubs.mh(y=y, X.dyn=X.dyn, n=rep(n,T), m0=m.0, C0=C.0,
                     samp=samp, burn=samp, verbose=verbose,
                     mu.m0=mu.m0, mu.P0=mu.P0,
                     phi.m0=phi.m0, phi.P0=phi.P0,
@@ -126,7 +127,7 @@ if (run$tokyo) {
   T = length(tkrain)
   y = tkrain
   X = matrix(1, nrow=T, ncol=1)
-  n = rep(2, T)
+  n = 2
   
   ## Prior
   b.m0 = -1.0;

@@ -36,10 +36,10 @@ logit.meth <- c("PG", "FS", "RAM");
 ################################################################################
 
 benchmark.NB <- function(y, X, 
-                            samp=1000, burn=100, ntrials=1, verbose=100,
-                            method = c("PG", "FS", "IndMH"),
-                            m.0=NULL, C.0=NULL,
-                            dset.name="")   
+                         samp=1000, burn=100, ntrials=1, verbose=100,
+                         method = c("PG", "FS", "IndMH"),
+                         m.0=NULL, C.0=NULL,
+                         dset.name="")   
 {
   
   ## Initialize
