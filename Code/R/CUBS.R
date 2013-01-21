@@ -21,7 +21,7 @@ poisson.solve <- function(rs, fq)
   out
 }
 
-CUBS.R <- function(y, X, n, mu, phi, W, m0, C0)
+CUBS.R <- function(y, X, n, mu, phi, W, m0, C0, obs=c("binom", "nbinom", "norm"), max.iter=100)
 {
   ## When tracking (beta_t, alpha).  It may be the case that there is no alpha.
   ## z_t = x_t (beta_t, alpha_t) + ep_t, ep_t \sim N(0, V_t).
@@ -76,36 +76,37 @@ CUBS.R <- function(y, X, n, mu, phi, W, m0, C0)
     A.i = rho.i / q.i;
 
     ## Conjugate update
-    ## ## Binomial
-    rs.i = multiroot(binom.solve, start=c(0.1,0.1), maxiter=1000, fq=c(f.i, q.i));
-    ## cat("f:", f.i, "q:", q.i, "iter:", rs.i$iter, "precis:",
-    ##     rs.i$estim.precis, "r:", rs.i$root[1], "s:", rs.i$root[2], "\n");
-    rs[,i.l] = rs.i$root
-    rstar.i = rs.i$root[1] + y[i.l];
-    sstar.i = n[i.l] - y[i.l] + rs.i$root[2];
-    fqstar.i = binom.solve(c(rstar.i, sstar.i), c(0, 0));
-    ## ## cat("f,q:", f.i, q.i, "root:", rs.i$root, "f.root:", rs.i$f.root, "\n");
-    ## ## Gaussian
-    ## qstar.i = (1 / (1 / q.i + 1 / n[i.l]))
-    ## fstar.i = (f.i / q.i + y[i.l] / n[i.l]) * qstar.i
-    ## fqstar.i = c(fstar.i, qstar.i)
-    ## ## cat(c(f.i, q.i), fqstar.i, "\n")
-    ## ## Poisson
-    ## r.i = multiroot(function(r,q){trigamma(r)-q}, start=1, q=q.i);
-    ## s.i = exp(digamma(r.i$root[1]) - f.i)
-    ## rs.i = list(root=c(r.i$root[1], s.i));
-    ## rs[,i.l] = rs.i$root
-    ## fstar.i = digamma(rs.i$root[1] + y[i.l]) - log(rs.i$root[2] + 1)
-    ## qstar.i = trigamma(rs.i$root[1] + y[i.l])
-    ## fqstar.i = c(fstar.i, qstar.i)
-    ## Neg. Binomial
-    ## fhat.i = f.i - log(n[i.l])
-    ## rs.i = multiroot(binom.solve, start=c(1,1), fq=c(fhat.i, q.i));
-    ## rs[,i.l] = rs.i$root
-    ## rstar.i = rs.i$root[1] + y[i.l];
-    ## sstar.i = n[i.l] + rs.i$root[2];
-    ## fqstar.i = binom.solve(c(rstar.i, sstar.i), c(0, 0));
-    ## fqstar.i[1] = fqstar.i[1] + log(n[i.l])
+    if (obs=="binom") { # Binomial
+      rs.i = multiroot(binom.solve, start=c(0.1,0.1), maxiter=max.iter, fq=c(f.i, q.i));
+      ## cat("f:", f.i, "q:", q.i, "iter:", rs.i$iter, "precis:",
+      ##     rs.i$estim.precis, "r:", rs.i$root[1], "s:", rs.i$root[2], "\n");
+      rs[,i.l] = rs.i$root
+      rstar.i = rs.i$root[1] + y[i.l];
+      sstar.i = n[i.l] - y[i.l] + rs.i$root[2];
+      fqstar.i = binom.solve(c(rstar.i, sstar.i), c(0, 0));
+      ## ## cat("f,q:", f.i, q.i, "root:", rs.i$root, "f.root:", rs.i$f.root, "\n");
+    } else if (obs=="norm") { # Gaussian
+      qstar.i = (1 / (1 / q.i + 1 / n[i.l]))
+      fstar.i = (f.i / q.i + y[i.l] / n[i.l]) * qstar.i
+      fqstar.i = c(fstar.i, qstar.i)
+      ## cat(c(f.i, q.i), fqstar.i, "\n")
+    } else if (obs=="pois") { # Poisson
+      r.i = multiroot(function(r,q){trigamma(r)-q}, start=1, q=q.i, maxiter=max.iter);
+      s.i = exp(digamma(r.i$root[1]) - f.i)
+      rs.i = list(root=c(r.i$root[1], s.i));
+      rs[,i.l] = rs.i$root
+      fstar.i = digamma(rs.i$root[1] + y[i.l]) - log(rs.i$root[2] + 1)
+      qstar.i = trigamma(rs.i$root[1] + y[i.l])
+      fqstar.i = c(fstar.i, qstar.i)
+    } else if (obs=="nbinom") { # Neg. Binomial
+      fhat.i = f.i - log(n[i.l])
+      rs.i = multiroot(binom.solve, start=c(1,1), fq=c(fhat.i, q.i), maxiter=max.iter);
+      rs[,i.l] = rs.i$root
+      rstar.i = rs.i$root[1] + y[i.l];
+      sstar.i = n[i.l] + rs.i$root[2];
+      fqstar.i = binom.solve(c(rstar.i, sstar.i), c(0, 0));
+      fqstar.i[1] = fqstar.i[1] + log(n[i.l])
+    }
     
     m[,i]  = a[,i] + A.i * (fqstar.i[1] - f.i[1]);
     C[,,i] = R[,,i] + rho.i %*% t(rho.i) * ( (fqstar.i[2] / q.i - 1) / q.i );
