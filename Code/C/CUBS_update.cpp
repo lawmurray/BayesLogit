@@ -178,10 +178,17 @@ void CUBSSolver::solve(const double* fq, double* rs, double epsabs, double epsre
   int i = 0;
   int msg = GSL_CONTINUE;
   for(i = 0; i < max_iter && msg != GSL_SUCCESS; i++) {
-    gsl_multiroot_fsolver_iterate(s);
+    msg = gsl_multiroot_fsolver_iterate(s);
+    if (msg == GSL_EBADFUNC || msg == GSL_ENOPROG) break;
     // printf("x: %g, %g \t f: %g, %g\n", s->x->data[0], s->x->data[1], s->f->data[0], s->f->data[0]);
     // check |dx| < epsabs + epsrel * |x|
     msg = gsl_multiroot_test_delta(s->dx, s->x, epsabs, epsrel);
+  }
+
+  // You can turn off GSL error handling so it doesn't crash things.
+  if (msg != GSL_SUCCESS) {
+    fprintf(stderr, "CUBSSolver::solve: Error %i.  Break.\n", msg);
+    fprintf(stderr, "r=%g, s=%g\n", s->x->data[0], s->x->data[1]);
   }
 
   memmove(rs, s->x->data, 2 * sizeof(double));
