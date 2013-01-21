@@ -958,6 +958,123 @@ x_i \beta, \Sigma).
 They sample $z_i$, which is a truncated multivariate normal, by using Geweke.
 They sample $\Sigma$ using a Metropolis-Hastings step.
 
+\section{FS and Fussl, 2012}
+
+They use the difference of utilitities representation.  In HH, we had
+\[
+\begin{cases}
+y_i = \one \{ z_i > 0 \} \\
+z_i = x_i \beta + \ep_i, \ep_i \sim \text{Lo}.
+\end{cases}
+\]
+
+I believe in FSF 2010 they extend a similar representation to the binomial case,
+which is then used (or extended further) in this paper.
+
+In particular, changing notation slightly, we have
+\[
+\begin{cases}
+\tilde y_i = y_i \cdot 1 \\
+y_{ij} = \one \{ y_{ij1}^u > y_{ij0}^u \} \\
+y_{ij0}^u = \ep_{ij0}^u \\
+y_{ij1}^u = \psi_i + \ep_{ij1}^u, & \psi_i = x_i \beta \\
+\ep_{ijk}^u \sim - \log \mcE(1).
+\end{cases}
+\]
+Here I am thinking of $y_i$ being vectorized so that it indicates if there was a
+success or failure for $n_i$ components.  An important observation is that we
+may aggregate things.  They aggregate and then take logs.  Let $^+$ denote $-\log
+\sum_j\exp(- \cdot)$ so that
+\[
+\begin{cases}
+y_{i0}^+ = -\log \sum_{j} e^{-\ep_{ij0}^u} \\
+y_{i1}^+ = -\log \sum_{j} e^{-y_{ij1}^u}\\
+y_{i1}^+ = -\log \exp(-\psi_i) \sum_{j} e^{-\ep_{ij1}^u} = \psi_i + - \sum_{j}
+e^{-\ep_{ij1}^u} \\
+\ldots \\
+y_{i1}^+ - y_{i0}^+ = \psi_i + \ep_{i1}^+ - \ep_{i0}^+ \\
+y_{i}^* = \psi_i + \ep_i^*, & \ep_i^* \sim \text{Type III Logistic}.
+\end{cases}
+\]
+But $\ep_{ik}^+$ is $- \log \text{Gamma}$, the difference of which is type III
+logistic.  They use the discrete mixture of normals trick on that distribution.
+
+Given $y^*$ and $r$, the mixture components, we can sample $\beta$, or $\beta_t$
+in a dynamic regression.  Given $y^*$ and $\psi$ we can sample $r$.  Thus we
+just need to describe how to produce $y^*$.  We can do this marginally given
+$\lambda = e^\psi$.
+
+Return to the formulation when we have exponential random variables.  We can
+write this as
+\[
+\begin{cases}
+\tilde y_i = \sum y_{ij} \\
+y_{ij} = \one \{ \xi_{ij1} < \xi_{ij0} \} \\
+\xi_{ij1} = \mcE(1) / \lambda_i \\
+\xi_{ij0} = \mcE(1) \\
+\xi_{ijk} = \exp (- y_{ijk}^u).
+\end{cases}
+\]
+Now we return to our old friend, the max-trick.  We know that for $x_i \sim
+\mcE(\lambda_i)$,
+\[
+\begin{cases}
+p(x_1 | x_1 < x_2) \sim \mcE(rate = \lambda_1 + \lambda_2) \\
+p(x_1 | x_1 > x_2) \sim x_2 + \mcE(rate = \lambda_1).
+\end{cases}
+\]
+Of course, this is precisely the information we are conditioning things on.
+
+Actually, we need to joint distribution, which we can get in the following way.
+First, recall that (given some conditions)
+\[
+p(x_1, x_2 | (x_1, x_2) \in A) = p(x_1, x_2) \one \{ (x_1, x_2) \in A \}.
+\]
+(This makes sense if we think in terms of densities.  Also, maybe think in terms
+of the canoncial space.)  Then we can show that
+\[
+p(x_1, x_2 | x_1 > x_2) = \lambda_1 e^{- \lambda_1 (x_1 - x_2)} 
+(\lambda_2 + \lambda_1) e^{-(\lambda_2 + \lambda_1) x_2} \one \{x_1 > x_2\} \one
+\{x_2 > 0 \}.
+\]
+Thus we can factor this as
+\[
+p(x_1 | x_2, x_1 > x_2) p(x_2 | x_1 > x_2) = p(x_1 \sim \mcE(\lambda_1) + x_2)
+p(x_2 \sim \mcE(\lambda_1 + \lambda_2)).
+\]
+
+Thus, if $x_1 \sim \mcE(\lambda_1)$ and $x_2 \sim \mcE(\lambda_2)$ and we are
+told that $x_1 > x_2$, then we can take a joint draw of $(x_1, x_2 | x_1 > x_2)$
+by
+\[
+x_2 \sim \mcE(\lambda_1 + \lambda_2) \text{ and } 
+x_1 \sim x_2 + \mcE(\lambda_1).
+\]
+Hence we have
+\[
+\begin{cases}
+\xi_{ij1} \sim \mcE(\lambda_i + 1), \xi_{ij0} \sim \xi_{ij1} + \mcE(1), & y_{ij} =
+1 \\
+\xi_{ij0} \sim \mcE(\lambda_i + 1), \xi_{ij1} \sim \xi_{ij0} + \mcE(\lambda_i), &
+y_{ij} = 0.
+\end{cases}
+\]
+Thus to form $(y^*|\lambda,y)$ we have (implicity conditioning on $\lambda$)
+\[
+(y_{i}^* | y) = - \log \sum_{j} (\xi_{ij1}|y) + -\log \sum_{j} (\xi_{ij0}|y).
+\]
+The exact order of $y$ does not matter since we scramble that information in the
+sum.  Thus for $i =1, \ldots, y_i$ we have
+\[
+\begin{cases}
+\Xi_{j1} \sim \mcE(\lambda_i+1), j=1, \ldots, y_i \\
+\Xi_{j0} \sim \Xi_{j1} + \mcE(1), j=1, \ldots, y_i \\
+\Xi_{j0} \sim \mcE(\lambda_i+1), j=y_i+1, \ldots, n_i \\
+\Xi_{j1} \sim \Xi_{j0} + \mcE(\lambda_i), j=y_i+1, \ldots, n_i.
+\end{cases}
+\]
+We can simplify further by summing and drawing gammas.
+
 \section{Miscellaneous}
 
 \begin{outline}

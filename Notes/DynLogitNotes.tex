@@ -1084,7 +1084,180 @@ the next iteration.
 
 \section{Dynamic Binary Logistic Regression}
 
+\section{Likelihood of DGLM:}
 
+My sampler is having problems.  It seems like it may have to do with some sort
+of ill-posedness when allowing one to estimate $\phi$ and $W$.  It also appears
+when I have a multidimensional $\beta$.  So what is the Hessian?  Also, there
+are more degrees of freedom than there are observations, though $\beta$ is
+correlated so those aren't completely free parameters.  How does that affect
+things?  I will break things up into two pieces.  The piece I get from the
+evolution of $\beta$ and the piece I get from the observation.
+
+Let us consider the observation equation first.
+\[
+\log \prod_{i=1}^T |W|^{-1/2} \exp \Big[ - \frac{1}{2} (\beta_t - \Phi
+\beta_{t-1})' W^{-1} (\beta_t - \Phi \beta_{t-1}) \Big].
+\]
+and for the sake of simplicity, let's replace the variance with the precision:
+\[
+\log \prod_{t=1}^T |\Xi|^{1/2} \exp \Big[ - \frac{1}{2} (\beta_t - \Phi
+\beta_{t-1})' \Xi (\beta_t - \Phi \beta_{t-1}) \Big].
+\]
+This is
+\[
+\frac{T}{2} \log |\Xi| - \frac{1}{2} \sum_{t=1}^T (\beta_t - \Phi
+\beta_{t-1})' \Xi (\beta_t - \Phi \beta_{t-1}).
+\]
+A catch is that we are not just interested in $\phi$ and $\Xi$, we eventually
+must estimate $\beta$ as well.  For now I will ignore the prior, though later
+maybe we will need to add that back in.  Let's start taking directional
+derivatives.  
+
+Let's just consider a single term in the sum for now:
+\[
+\frac{1}{2} (\beta_t - \Phi \beta_{t-1})' \Xi (\beta_t - \Phi \beta_{t-1}).
+\]
+\begin{description}
+\item[$\beta_t$:] \hfill
+\[
+\frac{\del}{\del \beta_t} (\cdot) = (\beta_t - \Phi \beta_{t-1})' \Xi h^{\beta_t}
+\]
+
+\item[$\beta_{t-1}$:] \hfill
+\[
+\frac{\del}{\del \beta_{t-1}} (\cdot) = -(\beta_t - \Phi \beta_{t-1})' \Xi \Phi h^{\beta_{t-1}}.
+\]
+
+\item[$\phi$:] \hfill
+\[
+\frac{\del}{\del \phi} (\cdot) = - (\beta_t - \Phi \beta_{t-1})' \Xi
+\text{d}(\beta_{t-1}) h^{\phi}
+\]
+where $d(\cdot)$ takes a vector and sends it to a diagonal matrix.  We can do
+this because $d(\phi) \beta_{t-1} = d(\beta_{t-1}) \phi$.
+
+\item[$\Xi$:] \hfill
+\[
+\frac{\del}{\del \Xi} (\cdot) = \frac{1}{2} (\beta_t - \Phi \beta_{t-1})' H^{\Xi} (\beta_t - \Phi \beta_{t-1}).
+\]
+
+\item[$\beta_t$ and $\beta_t$:] \hfill
+\[
+\frac{\del^2}{\del \beta_t \del \beta_t} \cdot = {h^{\beta_t}_2}' \Xi h^{\beta_t}_1.
+\]
+
+\item[$\beta_t$ and $\beta_{t-1}$:] \hfill
+\[
+\frac{\del^2}{\del \beta_t \del \beta_{t-1}} (\cdot) = - {h^{\beta_t}_2}' \Xi h^{\beta_{t-1}}_1.
+\]
+
+\item[$\beta_t$ and $\phi$:] \hfill
+\[
+\frac{\del^2}{\del \beta_t \del \phi} (\cdot) = - {h^{\beta_t}_2}' \Xi d(\beta_{t-1}) h^{\phi}_1.
+\]
+
+\item[$\beta_t$ and $\Xi$:] \hfill
+\[
+\frac{\del^2}{\del \beta_t \del \Xi} (\cdot) = (\beta_t - \Phi \beta_{t-1})'
+H^{\Xi}_1 h^{\beta_t}_2.
+\]
+
+\item[$\beta_{t-1}$ and $\beta_{t-1}$:]
+\[
+\frac{\del^2}{\del \beta_{t-1} \del \beta_{t-1}} (\cdot) = h^{\beta_{t-1}}_2
+\Phi \Xi \Phi h^{\beta_{t-1}}_1.
+\]
+
+\item[$\beta_{t-1}$ and $\phi$:]
+\[
+\frac{\del^2}{\del \beta_{t-1} \del \phi} (\cdot) = 
+ {h^{\beta_{t-1}}_2}' \Phi \Xi d(\beta_{t-1}) h^{\phi}_1
+- (\beta_t - \Phi \beta_{t-1})' \Xi d(h^{\phi}_1) h^{\beta_{t-1}}_2.
+\]
+
+\item[$\beta_{t-1}$ and $\Xi$:]
+\[
+\frac{\del^2}{\del \beta_{t-1} \del \Xi}(\cdot) = 
+-(\beta_{t-1} - \Phi \beta_{t-1})' H^{\Xi}_1 h^{\beta_{t-1}}_2.
+\]
+
+\item[$\phi$ and $\phi$:]
+\[
+\frac{\del^2}{\del \phi \del \phi}(\cdot) = {h^{\phi}_2}' d(\beta_{t-1}) \Xi
+d(\beta_{t-1}) h^{\phi}_1.
+\]
+
+\item[$\phi$ and $\Xi$:]
+\[
+\frac{\del^2}{\del \phi \del \Xi} = - (\beta_t - \Phi \beta_{t-1})' H^{\Xi}_1
+d(\beta_{t-1}) h^{\phi}_2.
+\]
+
+\item[$\Xi$ and $\Xi$:]
+\[
+\frac{\del^2}{\del \Xi \del \Xi} (\cdot) = 0.
+\]
+
+\end{description}
+
+And now let's consider $\log |\Xi|$:
+\begin{description}
+
+\item[$\Xi$:]
+
+\item[$\Xi$ and $\Xi$:]
+
+\end{description}
+
+The observation equation is only going to help us with the $\beta$ terms.
+
+\subsection{Stochastic Volatility}
+
+A single term from a stochastic volatility observation is
+\[
+e^{-x_t \beta_t/2} e^{-y_t^2 e^{-x_t \beta_t} / 2}
+\]
+so the log of that is
+\[
+- \frac{x_t \beta_t}{2} - \frac{y_t^2}{2} e^{-x_t \beta_t}.
+\]
+Taking derivatives we have
+\begin{description}
+
+\item[$\beta_t$:] \hfill
+\[
+\frac{\del}{\del \beta_{t}}(\cdot) = - \frac{x_t h^{\beta_t}}{2} 
++ \frac{y_t^2}{2} e^{-x_t \beta_t} x_t h^{\beta_t}.
+\]
+
+\item[$\beta_t$ and $\beta_t$:]
+\[
+\frac{\del^2}{\del \beta_t \del \beta_{t}}(\cdot) = 
+-\frac{y_t^2}{2} e^{-x_t \beta_t} x_t h^{\beta_t}_2 x_t h^{\beta_t}_1.
+\]
+
+\end{description}
+
+\section{Question}
+
+In normal mixture case, we can look at things marginally, i.e. we can
+marginalize out the states of $\beta$ and then get an estimate of $\phi$ and
+$W$.  We can then use those to draw $\beta$, yielding a joint draw.  Further, by
+marginalizing $\beta$, it would see that we might have a nicer looking
+likelihood, though maybe that is fantasy?  Actually, that must be fantasy.  We
+have
+\[
+p(y, \beta | \Theta) = p(y | \beta) p(\beta | \Theta)
+\]
+and
+\[
+p(y, \beta | \Theta) = p(\beta | y, \Theta) p(y | \Theta).
+\]
+The latter is like generating $y$ from, for instance an ARMA(1,1) in the DLM
+case, and then using the DLM to sample $\beta$.  In either case, we have the
+same likelihood.  However, that doesn't change the fact that it may be better to
+do sampling in the latter case.
 
 % If you have a bibliography.
 % The file withe bibliography is name.bib.

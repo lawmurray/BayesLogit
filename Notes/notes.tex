@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass[draft]{article}
 
 \input{commands}
 
@@ -18,6 +18,9 @@
 \newcommand{\floor}[1]{\lfloor #1 \rfloor}
 \newcommand{\eqd}{\,{\buildrel d \over =}\,}
 \newcommand{\KS}{\text{KS}}
+
+\newcommand{\graddel}[1]{\frac{\del}{\del #1}}
+\newcommand{\hessdel}[2]{\frac{\del^2}{\del #1 \del #2}}
 
 % Page Layout
 \setlength{\oddsidemargin}{0.0in}
@@ -1073,7 +1076,7 @@ Factrs for FS\&F:
 
 \;
 
-\1 She says this is based on \cite{scott-2004} and \cite{mcfadden-1974}, which
+\1 She says this is based on \cite{scott-2011} and \cite{mcfadden-1974}, which
 is actually a representation for multinomial.  (I think my Scott reference may
 have been a technical paper in 2004, but wasn't published until 2011.  Or maybe
 I have the reference wrong.)
@@ -1888,6 +1891,211 @@ variables instead of just $T$.  We could remedy that by find a normal mixture
 for the sum of independent Logistics, which is
 \[
 \sum_{i=1}^n Lo_i = log(\Ga(n,1)) - \log(Ga(n,1)).
+\]
+
+\section{Mixed Model}
+
+Let's check the model and the posterior.  The model we are working with is
+\[
+\begin{cases}
+y_i \sim \text{binom}(n_i, p_i) \\
+p_i = e^{\psi_i} / (1 + e^{\psi_i}) \\
+\psi_i = \bbI_{i \in j} \alpha_j + x_i \beta \\
+\beta \sim N(m_0, C_0) \\
+\alpha_i \sim N(m, 1/\phi) \\
+m \sim N(0, \kappa^2 / \phi).
+\end{cases}
+\]
+So the posterior is proportional to
+\begin{align*}
+& \Big[ \prod_{i=1}^T \frac{{e^{y_i (x_i^{re} \alpha + x_i^{fe} \beta})}}
+  {(1+e^{x_i^{re} \alpha + x_i^{fe} \beta})^{n_i}} \Big] \\
+& \exp \Big( \frac{-1}{2} (\beta-m_0)' P_0 (\beta-m_0) \Big) \\
+& |\phi|^{P_a/2} \exp \Big( \frac{-1}{2} (\alpha - \one m)' I \phi (\alpha -
+\one m) \Big) \\
+& (\phi^{1/2} / \kappa) \exp \Big( \frac{-1}{2} \phi \frac{m^2}{\kappa^2} \Big) \\
+& \phi^{a/2-1} e^{- \phi b / 2}.
+\end{align*}
+
+Assume we have a binomial logistic observation.  The llh conditional on $\phi$
+and $m$ is
+\[
+y X (\alpha, \beta) - \sum_i n_i \log (1 + e^{x_i (\alpha, \beta)}).
+\]
+The prior structure that I am using is
+\[
+\begin{cases}
+\beta \sim N(m_0, C_0) \\
+\alpha_i \sim N(m, 1/\phi) \\
+m \sim N(0, \kappa^2 / \phi) \\
+\phi \sim Ga(s/2, r/2).
+\end{cases}
+\]
+Thus the log posterior is
+\begin{align*}
+& y X (\alpha, \beta) - \sum_i n_i \log (1 + e^{x_i (\alpha, \beta)}) \\
+& - 0.5 (\beta - m_0)' P_0 (\beta - m_0) \\
+& + \frac{p_a}{2} \log \phi - 0.5 \phi \sum_{i=1}^{p_a} (\alpha_i - m)^2 \\
+& + 0.5 \log \phi - 0.5 \phi \frac{m^2}{\kappa^2} \\
+& + (s/2 - 1) \log \phi - \frac{r}{2} \phi
+\end{align*}
+which becomes
+\begin{align*}
+& y X (\alpha, \beta) - \sum_i n_i \log (1 + e^{x_i (\alpha, \beta)}) \\
+& - 0.5 (\beta - m_0)' P_0 (\beta - m_0) \\
+& (0.5 (p_a + s + \one_{\kappa != 0}) - 1) \log \phi - 0.5 (\sum_{i=1}^{p_a}
+(\alpha_i - m)^2 + r + m^2 / \kappa^2 \one_{\kappa != 0}) \phi.
+\end{align*}
+The indicator function shows what terms to delete when $\kappa == 0$, which
+corresponds to assuming $m$ is known and equal to zero.
+
+Alternatively, if we parameterize things in terms of $\delta = \alpha - m$ then
+we have
+\begin{align*}
+& y (X,1) (\delta, \beta, m) - \sum_i n_i \log (1 + e^{(x_i,1) (\delta, \beta, m)}) \\
+& - 0.5 (\beta - m_0)' P_0 (\beta - m_0) \\
+& (0.5 (p_a + s + \one_{\kappa != 0} \one_{\kappa != \infty}) - 1) \log \phi - 0.5 (\sum_{i=1}^{p_a}
+\delta_i^2 + r + m^2 / \kappa^2 \one_{\kappa != 0}) \phi.
+\end{align*}
+
+Note that we can change variables from $(\delta, m)$ to $\alpha, m$ by
+\[
+\begin{bmatrix}
+I & \one \\
+0 & 1
+\end{bmatrix}
+\begin{bmatrix}
+\delta \\ m
+\end{bmatrix}
+= 
+\begin{bmatrix}
+\alpha \\ m
+\end{bmatrix}.
+\]
+Further the determinant of the linear transform is $1$.  Thus we have a similar
+transformation when including all of the variables.  Now, consider an arbitrary
+linear transformation $y = A x$.  Suppose we want to find the gradient of $g(x)
+= f(y) = f(A x)$.  Then we have
+\[
+(\del_x g(x))' h^{x} = (\del_y f(Ax))' A h^{x}.
+\]
+Similarly, for the Hessian we have
+\[
+{h^x_2}1' (\del_x \del_x g(x)) h^x_1 = {h^{x}_2}' A' (\del_y \del_y f(Ax)) A h^{x}_1.
+\]
+Thus we can go between the llh, the gradient of the llh, and the hessian under
+each coordinates system by using our knowledge of these transformations.
+
+However, if we are consider the posterior instead of the likelihood, then we
+must be slightly more careful.  To go from the posterior in $y$ to the posterior
+in $x$ we need to consider the Jacobian.  In particular, suppose we are working
+with the posterior $f(y) dy$ and we want to consider the posterior in the $x$
+coordiante system.  Then we would need 
+\[
+f(y) dy = f(Ax) |J(x)| dx
+\]
+where $J(x) = \frac{\del y}{\del x}(x)$.  For our simple linear transformation
+$J(x) = A$ and hence $dy = |A| dx$.  Since $|A|=1$ we just have $dy = dx$.  Thus
+the posterior $f(y)$ goes to the posterior $g(x)$ without any apparent
+adjustment.  This means that when we calculate the log-likelihood, we may do so
+in either coordinate system.  I suppose this is actually true whenever we are
+making a linear transformation, however when the transformation is non-linear,
+as is the case when changing the coordinate system for $\phi$ below, then we
+must take $|J(x)|$ into account.
+
+Let us consider the gradient and the Hessian of the log-likelihood
+\begin{align*}
+& y X (\alpha, \beta) - \sum_i n_i \log (1 + e^{x_i (\alpha, \beta)}) \\
+& - 0.5 (\beta - m_0)' P_0 (\beta - m_0) \\
+& (0.5 (p_a + s + \bbI_{\kappa != 0}) - 1) \log \phi - 0.5 (\sum_{i=1}^{p_a}
+(\alpha_i - m)^2 + r + m^2 / \kappa^2 \bbI_{\kappa != 0}) \phi.
+\end{align*}
+\begin{description}
+
+\item[$(\alpha, \beta)$:]
+\begin{align*}
+\frac{\del}{\del (\alpha, \beta)} (\cdot) 
+& = y X h^{(\alpha, \beta)} 
+  - \sum_i n_i (1 + e^{x_i(\alpha, \beta)})^{-1} e^{x_i (\alpha, \beta)} x_i h^{(\alpha, \beta)} \\
+& - (\beta - m_0)' P_0 h^{\beta}
+  - (\alpha -  m)' \phi h^{\alpha}.
+\end{align*}
+
+\item[$\phi$:]
+\begin{align*}
+\graddel{\phi} (\cdot) = (0.5 (p_a + s + \bbI_{\kappa != 0}) - 1) \phi^{-1}
+h^{\phi}
++ - 0.5 (\sum_{i=1}^{p_a}
+(\alpha_i - m)^2 + r + m^2 / \kappa^2 \bbI_{\kappa != 0}) h^{\phi}.
+\end{align*}
+
+\item[$m$:]
+\begin{align*}
+\graddel{m} (\cdot) = ( (\alpha - \one m)' \one - m / \kappa^2
+\bbI_{\kappa != 0}) \phi h^{m}.
+\end{align*}
+
+\item[$(\alpha, \beta)$ and $(\alpha, \beta)$:]
+\begin{align*}
+\hessdel{(\alpha,\beta)}{(\alpha,\beta)} (\cdot)
+& = \sum_i \Big[ n_i (1 + e^{x_i(\alpha, \beta)})^{-2} {e^{x_i (\alpha,
+    \beta)}}^2 x_i h^{(\alpha,\beta)}_2 x_i h^{(\alpha,\beta)}_1 \\
+& - n_i (1 + e^{x_i(\alpha, \beta)})^{-1} e^{x_i (\alpha, \beta)} x_i
+  h^{(\alpha,\beta)}_2 x_i h^{(\alpha,\beta)}_1 \Big] \\
+& + - h^{\beta}_2 P_0 h^{\beta}_1 - h^{\alpha}_2 \phi h^{\alpha}_1.
+\end{align*}
+Simplying, this is
+\begin{align*}
+\hessdel{(\alpha,\beta)}{(\alpha,\beta)} (\cdot)
+& = \sum_i \Big[ n_i (p_i^2 - p_i) x_i
+  h^{(\alpha,\beta)}_2 x_i h^{(\alpha,\beta)}_1 \Big] \\
+& + - h^{\beta}_2 P_0 h^{\beta}_1 - h^{\alpha}_2 \phi h^{\alpha}_1.
+\end{align*}
+
+\item[$(\alpha,\beta)$ and $\phi$:]
+\[
+\hessdel{\phi}{(\alpha, \beta)} (\cdot) = -(\alpha-m)' h^{\alpha}_1 h^{\phi}_2
+\]
+
+\item[$(\alpha, \beta)$ and $m$:]
+\[
+\hessdel{m}{(\alpha, \beta)} (\cdot) = \phi h^{m}_2 1' h^{\alpha}_1.
+\]
+
+\item[$\phi$ and $\phi$:]
+\[
+\hessdel{\phi}{\phi} (\cdot) =  - (0.5 (p_a + s + \bbI_{\kappa != 0}) - 1) \phi^{-2}
+h^{\phi}_2 h^{\phi}_1.
+\]
+
+\item[$\phi$ and $m$:]
+\[
+\hessdel{m}{\phi} (\cdot) = ( (\alpha - \one m)' \one - m / \kappa^2
+\bbI_{\kappa != 0}) h^{m}_2 h^{\phi}_1.
+\]
+
+\item[$m$ and $m$:]
+\[
+\hessdel{m}{m} (\cdot) = -\one' \one \phi h^{m}_2 h^{m}_1 - 1/\kappa^2 \bbI_{\kappa !=
+  0} \phi h^{m}_2 h^{m}_1.
+\]
+
+\end{description}
+
+\subsection{Change of variables in prior}
+
+If we let $\phi = e^\theta$ then we get a different prior.  This will change the
+posterior mode.  (In general, a transformation does not preserve the mode of a
+distribution.  You can see this by considering the gamma distribution.  It's
+mode, if it exists, is $(shape - 1) / rate$.  But for a log-gamma distribution
+the mode, if it exists, is $shape / rate$.)  In particular, this transformation
+will change the form of the log-likelihood, but barely.  Instead of
+\[
+(0.5 (p_a + s + \bbI_{\kappa != 0}) - 1) \log \phi
+\]
+we have
+\[
+0.5 (p_a + s + \bbI_{\kappa != 0}) \theta.
 \]
 
 % If you have a bibliography.
