@@ -41,6 +41,7 @@ CUBS.C(z, X, n, mu, phi, W, m0, C0, obs=c("binom", "nbinom", "norm"), eps.rel=1e
   \item{n}{An N dimensional vector; the interpreation of \eqn{n_i} changes with obs.}
   \item{mu}{A P.b dim. vector; the mean of beta.}
   \item{phi}{A P.b dim. vector; the autocorrelation of beta.}
+  \item{W}{A P.b x P.b dim matrix; the innovation variance of beta.}
   \item{m0}{A P.b dimensional prior mean.}
   \item{C0}{A P.b x P.b dimensional prior precision.}
   \item{obs}{The type of response.}
@@ -54,6 +55,10 @@ CUBS.C(z, X, n, mu, phi, W, m0, C0, obs=c("binom", "nbinom", "norm"), eps.rel=1e
 
   \item{beta}{A (N+1) x P array; the posterior sample of the dynamic regression
   coefficients.}
+
+  \item{a.rate}{Acceptance rate.}
+
+  \item{ess.time}{The time to generate the samples that are returned.}
 
 }
 
