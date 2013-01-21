@@ -125,7 +125,7 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
     ## phi = draw.phi.R(beta, mu, W, phi.m0, phi.V0, phi)
     ## W   = draw.W.R  (beta, mu, phi, W.a0, W.b0)
     if (!know.mu)  mu  = draw.mu.ar1.ind (beta, phi, W, mu.m0, mu.P0)
-    if (!know.phi) phi = draw.phi.ar1.ind(beta, phi, W, phi.m0, phi.P0, phi)
+    if (!know.phi) phi = draw.phi.ar1.ind(beta, mu, W, phi.m0, phi.P0, phi)
     if (!know.W)   W   = draw.W.ar1.ind  (beta, mu, phi, W.a0, W.b0)
 
     # Record if we are past burn-in.
@@ -155,25 +155,27 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
 if (FALSE) {
 
   T = 400;
-  P = 1;
+  P = 4;
 
   beta = array(0, dim=c(P, T+1));
-  X = matrix(1, nrow=T, ncol=P);
+  X = matrix(0.1+rnorm(T*P), nrow=T, ncol=P);
 
   N = nrow(X);
 
   ## Parameters
   iota = 0;
-  W   = 0.1;
-  mu  = 2.0;
-  phi = 0.95
+  W   = rep(0.1, P);
+  mu  = rep(1.0, P);
+  phi = rep(0.9, P)
 
   ## Prior
-  b.m0 = 0.0;
-  b.C0 = 2.0;
-  phi.m0 = 0.9
-  phi.V0 = 0.1;
-  W.a0   = 10;
+  b.m0 = rep(0.0, P);
+  b.C0 = diag(2.0, P);
+  mu.m0 = mu
+  mu.P0 = rep(0.1, P)
+  phi.m0 = rep(0.9, P)
+  phi.P0 = rep(100, P);
+  W.a0   = rep(10, P);
   W.b0   = W.a0 * W;
 
   ## Synthetic
@@ -189,16 +191,27 @@ if (FALSE) {
   
   ## Simulate
   source("DynLogitPG.R")
-  samp = 500
+  samp = 1000
   burn = 0
   out <- dyn.logit.PG(y, X, samp=samp, burn=burn, verbose=100,
                       m.0=b.m0, C.0=b.C0,
-                      mu.m0=NULL, mu.P0=NULL,
-                      phi.m0=NULL, phi.P0=NULL,
+                      mu.m0=mu.m0, mu.P0=mu.P0,
+                      phi.m0=phi.m0, phi.P0=phi.P0,
                       W.a0=W.a0, W.b0=W.b0,
                       beta.true=NULL, iota.true=NULL, w.true=NULL,
-                      mu.true=0.0, phi.true=1.0, W.true=NULL)
+                      mu.true=mu, phi.true=phi, W.true=NULL)
 
+  source("DynLogitPG.R")
+  samp = 1000
+  burn = 0
+  out <- dyn.logit.PG(y, X, samp=samp, burn=burn, verbose=100,
+                      m.0=b.m0, C.0=b.C0,
+                      mu.m0=mu.m0, mu.P0=mu.P0,
+                      phi.m0=phi.m0, phi.P0=phi.P0,
+                      W.a0=W.a0, W.b0=W.b0,
+                      beta.true=NULL, iota.true=NULL, w.true=NULL,
+                      mu.true=NULL, phi.true=NULL, W.true=NULL)
+  
   ess = apply(out$beta[, 1, ], 2, ESS);
   mean(ess)
   
@@ -213,16 +226,17 @@ if (FALSE) {
   ymin = min(beta.mean, out$beta);
   ymax = max(beta.mean, out$beta);
 
-  plot(0:T, beta.mean[1,], col=2, type="l", ylim=c(ymin,ymax));
-  lines(0:T, beta.95[1,], col="pink")
-  lines(0:T, beta.05[1,], col="pink")
+  i = 4
+  plot(0:T, beta.mean[i,], col=2, type="l", ylim=c(ymin,ymax));
+  lines(0:T, beta.95[i,], col="pink")
+  lines(0:T, beta.05[i,], col="pink")
   abline(h=mean(beta.mean[1,]), col=2, lty=c(2,2));
 
-  lines(0:T, beta[1,]);
+  lines(0:T, beta[i,]);
   
   points(1:T, y*(ymax-ymin) + ymin, cex=0.1);
   
-  lines(0:T, out$beta[300,1,], col=3);
+  lines(0:T, out$beta[300,i,], col=3);
   
 }
 

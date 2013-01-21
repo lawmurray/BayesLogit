@@ -211,7 +211,7 @@ dyn.logit.FS <- function(y, X.dyn, n=1, X.stc=NULL,
     ## mu  = draw.mu.R(beta, phi, W, mu.m0, mu.V0) 
     ## phi = draw.phi.R(beta, mu, W, phi.m0, phi.V0, phi)
     if (!know.mu)  mu  = draw.mu.ar1.ind (beta, phi, W, mu.m0, mu.P0)
-    if (!know.phi) phi = draw.phi.ar1.ind(beta, phi, W, phi.m0, phi.P0, phi)
+    if (!know.phi) phi = draw.phi.ar1.ind(beta, mu, W, phi.m0, phi.P0, phi)
     if (!know.W)   W   = draw.W.ar1.ind  (beta, mu, phi, W.a0, W.b0)
     
     if (j > burn) {

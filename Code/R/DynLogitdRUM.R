@@ -1,5 +1,7 @@
 ## Dynamic Binomial logistic regression using FS and Fussl 2012.
 
+source("compmix.R")
+
 ################################################################################
 
 ## Taken from binomlogit package.
@@ -13,7 +15,7 @@ draw.yStar <- function(lambda, y, n){
 
 ################################################################################
 
-dyn.logit.dRUM <- function(y, X.dyn, n=rep(1,length(y)), X.stc=NULL,
+dyn.logit.dRUM <- function(y, X.dyn, n=1, X.stc=NULL,
                            samp=1000, burn=100, verbose=100,
                            m.0=NULL, C.0=NULL,
                            mu.m0=NULL, mu.P0=NULL,
@@ -28,7 +30,7 @@ dyn.logit.dRUM <- function(y, X.dyn, n=rep(1,length(y)), X.stc=NULL,
 
   ## y: binomial repsonse in {0:n} (T)
   ## X: the design matrix (including covariates for non-dynamic coef.) (T x P)
-  ## n: the number of trials (T)
+  ## n: the number of trials (1)
 
   ## m.0: prior mean for (iota,beta_0) or (beta_0).  (P)
   ## C.0: prior var  for (iota,beta_0) or (beta_0).  (P)
@@ -85,6 +87,7 @@ dyn.logit.dRUM <- function(y, X.dyn, n=rep(1,length(y)), X.stc=NULL,
   phi  = matrix(phi.m0, P.b);
   W    = W.b0 / W.a0;
   with.iota = TRUE
+  n.rep = rep(n, T)
 
   ## Using compmix nmix.n ~ Type III logis.
   nmix.n    = as.list(compmix(n));
@@ -111,10 +114,6 @@ dyn.logit.dRUM <- function(y, X.dyn, n=rep(1,length(y)), X.stc=NULL,
 
   ## Check that we are okay.
   if (know.beta && P.a > 0 && !know.iota) {printf("Know beta, not iota, X.stc!=NULL."); return(0);}
-
-  ## For binomial.
-  expand = as.numeric( matrix(1:T, nrow=n, ncol=T, byrow=TRUE) );
-  samp.y = function(x){ sample(c(rep(1,x),rep(0,n-x)), n) };
   
   ## SAMPLE ##
   
@@ -129,7 +128,7 @@ dyn.logit.dRUM <- function(y, X.dyn, n=rep(1,length(y)), X.stc=NULL,
     lambda = exp(psi);
 
     ## USING compmix
-    z = draw.yStar(lambda, y, n)
+    z = draw.yStar(lambda, y, n.rep)
     r = draw.indicators.C(z-psi, nmix.n);
     V.hat = nmix.n$v[r];
 
@@ -140,7 +139,7 @@ dyn.logit.dRUM <- function(y, X.dyn, n=rep(1,length(y)), X.stc=NULL,
 
     ## AR(1) - phi, W assumed to be diagonal, i.e. vectors in R!!!
     if (!know.mu)  mu  = draw.mu.ar1.ind (beta, phi, W, mu.m0, mu.P0)
-    if (!know.phi) phi = draw.phi.ar1.ind(beta, phi, W, phi.m0, phi.P0, phi)
+    if (!know.phi) phi = draw.phi.ar1.ind(beta, mu, W, phi.m0, phi.P0, phi)
     if (!know.W)   W   = draw.W.ar1.ind  (beta, mu, phi, W.a0, W.b0)
     
     if (j > burn) {
