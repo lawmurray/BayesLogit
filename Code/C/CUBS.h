@@ -44,7 +44,7 @@ extern "C" {
 		   double *mu_, double *phi_, double *W_, 
 		   double *m0_, double *C0_, int *N_b_, int *N_, int *T_,
 		   double *log_dens, double *eps_rel, int *max_iter);
-  
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

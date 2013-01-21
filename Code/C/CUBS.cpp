@@ -84,7 +84,7 @@ void cubs_nbinom(double *alpha_, double *beta_,
 		 double *z_, double *X_, double *n_,
 		 double *mu_, double *phi_, double *W_, 
 		 double *m0_, double *C0_, int *N_b_, int *N_, int *T_,
-		 double *log_dens, double* eps_rel_, double* max_iter_)
+		 double *log_dens, double* eps_rel_, int* max_iter_)
 {
   RNG r;
   
