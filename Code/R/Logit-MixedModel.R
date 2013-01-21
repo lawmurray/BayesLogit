@@ -1574,7 +1574,7 @@ draw.abpm.ind.MH.4 <- function(abpm, y, X.re, X.fe, n, shape, rate, kappa, m0, P
 
 ind.metropolis.blogit.4 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1, kappa=1,
                                     m.0=rep(0, ncol(X.fe)), P.0=matrix(0, nrow=ncol(X.fe), ncol=ncol(X.fe)),
-                                    samp=1000, burn=100, verbose=1000, df=Inf, center=NULL)
+                                    samp=1000, burn=100, verbose=1000, df=Inf, thin=1, center=NULL)
 {
   ## An independent MH routine that can be adapted to varying P0.
   ## Assume proper posterior
@@ -1583,6 +1583,8 @@ ind.metropolis.blogit.4 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1,
   ## X: design
   ## n: number of trials per draw.
   ## kappa: precision inflation.
+  thin = round(thin)
+  if (thin<1) {cat("thin must be > 0.\n"); return(NA); }
   
   y = as.matrix(y)
   X.re = as.matrix(X.re)
@@ -1643,29 +1645,35 @@ ind.metropolis.blogit.4 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1,
   abpm = out.abpm$abpm
   log.fdivq = out.abpm$log.fdivq
 
+  ## Total samp/burn
+  tsamp = thin * samp
+  tburn = thin * burn
+  tverb = thin * verbose
+  
   ## Timing
   start.time = proc.time()
   naccept = 0
 
   ## Do Metropolis ##
-  for (i in 1:(samp+burn)) {
+  for (i in 1:(tsamp+tburn)) {
 
-    if (i==burn+1) { start.ess = proc.time(); }
+    if (i==tburn+1) { start.ess = proc.time(); }
 
     ## Generate proposal
     out.abpm = draw.abpm.ind.MH.4(abpm, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, map=m, U.map=U, log.fdivq=log.fdivq, df=df)
     abpm = out.abpm$abpm
     log.fdivq = out.abpm$log.fdivq
     
-    if (i > burn) {
-      out$abpm[i-burn, ] = abpm
-      out$a.prob[i-burn] = out.abpm$a.prob
-      naccept = naccept + out.abpm$accept
+    if (i > tburn && i %% thin == 0) {
+      out$abpm[i/thin-burn, ] = abpm
+      out$a.prob[i/thin-burn] = out.abpm$a.prob
     }
+    naccept = naccept + out.abpm$accept * as.numeric(i > tburn)
 
-    if (i %% verbose == 0) {
-      if (i > burn) cat("Ind MM4: Ave a.prob:", mean(out$a.prob[1:(i-burn)]), ", ");
-      cat("Iteration:", i, "\n");
+    if (i %% tverb == 0) {
+      if (i > tburn) cat("Ind MM4: a.rate: ", naccept, "/", (i-tburn),
+                         " = ", signif(naccept/(i-tburn), 4), ", ", sep="");
+      cat("Iteration:", i / thin, "\n");
     }
     
   }
@@ -1673,8 +1681,8 @@ ind.metropolis.blogit.4 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1,
   end.time = proc.time()
   out$total.time = end.time - start.time
   out$ess.time   = end.time - start.ess
-  out$naccept    = naccept
-  out$acceptr    = naccept / samp;
+  out$naccept    = naccept / thin
+  out$acceptr    = naccept / tsamp;
   out$optim      = out.map
 
   out$phi   = out$abpm[,t.idc]

@@ -43,7 +43,7 @@ var.names <- list("PGMM"=c("ab", "phi"),
 benchmark.blogit.mm <- function(y, X.re, X.fe, n, shape=1, rate=1, m.0=NULL, C.0=NULL,
                                 samp=1000, burn=100, ntrials=1, verbose=100,
                                 method = c("PGMM", "IndMM1"),
-                                dset.name="", df=Inf, var.names="beta", kappa=0, center=NULL)   
+                                dset.name="", df=Inf, var.names="beta", kappa=0, center=NULL, thin=1)   
 { 
   ## Initialize
   cat("Will benchmark", method[1], "using", dset.name, "dataset for variable(s)", var.names, "\n");
@@ -111,7 +111,7 @@ benchmark.blogit.mm <- function(y, X.re, X.fe, n, shape=1, rate=1, m.0=NULL, C.0
     } else if (method=="IndMM4") {
 
       gb <- ind.metropolis.blogit.4(y, X.re, X.fe, n, shape, rate, kappa=kappa, m.0, P.0,
-                                    samp=samp, burn=burn, verbose=verbose, df=df, center=center)
+                                    samp=samp, burn=burn, verbose=verbose, df=df, center=center, thin=thin)
       gb$arate = gb$acceptr
       
     } else if (method=="PG") { ## binomial, fraction
@@ -214,7 +214,7 @@ if (run$ex01) {
                                             dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=kappa)
   }
   
-  ex01.tbl = setup.table(bench.ex01, "ab")
+  ex01.tbl = setup.table(bench.ex01, "abm")
   
   if (write.it) save(y, X.re, X.fe, n, shape, rate, prec.b, m.0, P.0, df, bench.ex01, ex01.tbl, file=file.name);
 
@@ -334,7 +334,7 @@ if (run$polls) {
                                              samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                              method=nm,
                                              dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=kappa,
-                                             center=NULL)
+                                             center=NULL, thin=100)
   }
 
   polls.tbl = setup.table(bench.polls, "abm")
@@ -373,7 +373,7 @@ if (FALSE) {
 
   ## source("Logit-MixedModel.R")
   check.newton <- newton.4(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
-                           m.0=m.0, P.0=P.0, abpm.0=NULL, maxiter=100, trace=100, reltol=0.0)
+                           m.0=m.0, P.0=P.0, abpm.0=NULL, maxiter=10000, trace=100, reltol=1e-10)
   grad.blogit.mm.4(check.newton$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
   
   ## source("Logit-MixedModel.R")
@@ -417,8 +417,8 @@ if (FALSE) {
   for(k in c(52)) {
   apbm.base = abpm.temp
   x.idc = k
-  x.grid = seq(apbm.base[x.idc]-0.2, apbm.base[x.idc]+0.2, 0.02)
-  phi.grid = seq(5, 15, 0.05)
+  x.grid = seq(apbm.base[x.idc]-1, apbm.base[x.idc]+1, 0.1)
+  phi.grid = seq(0.1, 20, 0.1)
   len.x = length(x.grid)
   len.phi = length(phi.grid)
   abpm.val = abpm.temp
@@ -431,7 +431,7 @@ if (FALSE) {
       llh.val[i,j] = blogit.llh.mm.4(abpm.val, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
     }
   }
-  contour(x.grid, phi.grid, llh.val)
+  contour(x.grid, phi.grid, exp(llh.val))
   ## readline("");
   }
   
