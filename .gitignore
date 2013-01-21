@@ -66,3 +66,6 @@ compute_mixture.m
 fludata/
 Code/C/include/Matrix/*
 Code/C/include/RNG/*
+Code/C/IO/
+Code/C/include/
+Code/C/Old/
