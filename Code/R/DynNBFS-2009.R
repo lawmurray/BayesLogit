@@ -4,7 +4,7 @@
 ## if (exists("TESTING")) {
 source("ComputeMixture.R")
 source("NB-Shape.R") ## Routine for sampling shape.
-source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
+source("AR1.R"); ## Independent AR(1)'s.  Maybe should change this.
 ## } ## TESTING
 
 ################################################################################
@@ -14,8 +14,8 @@ source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
 dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
                       samp=1000, burn=100, verbose=100000,
                       m.0=NULL, C.0=NULL,
-                      mu.m0=NULL, mu.V0=NULL,
-                      phi.m0=NULL, phi.V0=NULL,
+                      mu.m0=NULL, mu.P0=NULL,
+                      phi.m0=NULL, phi.P0=NULL,
                       W.a0=NULL, W.b0=NULL,
                       d.true=NULL, lambda.true=NULL, r.true=NULL,
                       beta.true=NULL, iota.true=NULL,
@@ -24,7 +24,7 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
   ## m.0 = prior mean for (iota,beta_0) or (beta_0).
   ## C.0 = prior var  for (iota,beta_0) or (beta_0).
 
-  ## y: the average response (T)
+  ## y: counts (T)
   ## X: the design matrix (including covariates for non-dynamic coef.) (T x P)
   ## n: the number of trials (T)
 
@@ -47,7 +47,7 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
   ## Structure.
   y = as.matrix(y)
   X = cbind(X.stc, X.dyn)
-  W = as.matrix(W);
+  ## W = as.matrix(W);
   C.0 = as.matrix(C.0);
   
   ## Dimension ##
@@ -59,14 +59,14 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
 
   ## Default prior parameters -- almost a random walk for beta ##
   if (is.null(m.0)    || is.null(C.0))    { m.0    = rep(0.0, P)   ; C.0    = diag(1.0, P  ); }
-  if (is.null(mu.m0)  || is.null(mu.V0))  { mu.m0  = rep(0.0 ,P.b) ; mu.V0  = rep(0.01, P.b); }
-  if (is.null(phi.m0) || is.null(phi.V0)) { phi.m0 = rep(0.99,P.b) ; phi.V0 = rep(0.01, P.b); }
+  if (is.null(mu.m0)  || is.null(mu.P0))  { mu.m0  = rep(0.0 ,P.b) ; mu.P0  = rep(100., P.b); }
+  if (is.null(phi.m0) || is.null(phi.P0)) { phi.m0 = rep(0.99,P.b) ; phi.P0 = rep(100., P.b); }
   if (is.null(W.a0)   || is.null(W.b0))   { W.a0   = rep(1.0, P.b) ; W.b0   = rep(1.0,  P.b); }
 
   ## Output data structure.
   out = list(
     d    = array(0, dim=c(M)),
-    iota   = array(0, dim=c(M, max(P.a, 1))),
+    alpha  = array(0, dim=c(M, max(P.a, 1))),
     beta   = array(0, dim=c(M, P.b, T+1)),
     lambda = array(0, dim=c(M, T)),
     r      = array(0, dim=c(M, T)),
@@ -79,9 +79,16 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
   d    = 1
   beta = matrix(0.00, P.b, T+1);  # mean = 1
   iota = rep(0.00, P.a);
-  mu   = matrix(mu.m0, P.b);
-  phi  = matrix(phi.m0, P.b);
-  W    = rep(W.b0 / W.a0, P.b);
+  mu   = mu.m0;
+  phi  = phi.m0;
+  W    = W.a0 / W.b0;
+
+  ## cat("length y:", length(y), "\n")
+  ## cat("dim X:", dim(X), "\n")
+  ## cat("dim X.dyn:", dim(X.dyn), "\n")
+  ## cat("length mu:", length(mu), "\n")
+  ## cat("length phi:", length(phi), "\n")
+  ## cat("length W:", length(W), "\n")
   
   ## In case we are doing testing or we want to constrain to local level model.
   know.d    = FALSE;
@@ -121,12 +128,18 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
 
     ## draw (d, lambda, r | beta) --- WARNING: JOINT DRAW.
     log.mean = apply(X.dyn * t(beta)[-1,], 1, sum);
-    if (P.a > 0) psi = log.mean + X.stc %*% iota;
+    if (P.a > 0) log.mean = log.mean + X.stc %*% iota;
     mu.lambda = exp(log.mean)
     
     ## draw (d | beta)
-    d = draw.df(d, mu.lambda, G, ymax);
+    if (!know.d) d = draw.df(y, d, mu.lambda, G, ymax);
 
+    ## par(mfrow=c(2,2))
+    ## ## plot(beta[1,], type="l")
+    ## for(i in 1:P.b)
+    ##   plot(beta[i,], col=i, type="l", main=paste(mu[i], phi[i], W[i], sep=" "))
+    ## readline("")
+    
     ## draw (lambda | d, beta)
     psi = log.mean - log(d);
     p = 1 / (1 + exp(-psi))
@@ -144,15 +157,16 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
     beta = ffbs$beta
 
     ## AR(1) - phi, W assumed to be diagonal !!!
-    ## mu  = draw.mu.R(beta, phi, W, mu.m0, mu.V0) 
-    ## phi = draw.phi.R(beta, mu, W, phi.m0, phi.V0, phi)
-    W   = draw.W.R  (beta, mu, phi, W.a0, W.b0)
+    if (!know.mu)  mu  = draw.mu.ar1.ind (beta, phi, W, mu.m0, mu.P0)
+    if (!know.phi) phi = draw.phi.ar1.ind(beta, mu, W, phi.m0, phi.P0, phi)
+    if (!know.W)   W   = draw.W.ar1.ind  (beta, mu, phi, W.a0, W.b0)
     
     # Record if we are past burn-in.
     if (j>burn) {
       out$d[j-burn]       = d
       out$lambda[j-burn,] = lambda
       out$r[j-burn,]      = r
+      out$alpha[j-burn,]  = iota
       out$beta[j-burn,,]  = beta
       out$mu[j-burn, ]    = mu;
       out$phi[j-burn, ]   = phi;
@@ -195,9 +209,9 @@ if (FALSE) {
   m.0     = 1.0;
   C.0     = 4.0;
   mu.m0  = 0.0;
-  mu.V0  = 4.0;
+  mu.P0  = 1/4;
   phi.m0 = 0.9;
-  phi.V0 = 0.1;
+  phi.P0 = 10;
   W.a0   = 10;
   W.b0   = 1.0;
 
@@ -222,12 +236,24 @@ if (FALSE) {
   out <- dyn.NB.FS(y, X.dyn=X, X.stc=NULL,
                    samp=samp, burn=burn, verbose=50,
                    m.0=m.0, C.0=C.0,
-                   mu.m0=mu.m0, mu.V0=mu.V0,
-                   phi.m0=phi.m0, phi.V0=phi.V0,
+                   mu.m0=mu.m0, mu.P0=mu.P0,
+                   phi.m0=phi.m0, phi.P0=phi.P0,
                    W.a0=W.a0, W.b0=W.b0,
                    d.true=NULL, lambda.true=NULL, r.true=NULL, 
                    beta.true=NULL, iota.true=NULL,
-                   mu.true=mu, phi.true=1.0, W.true=NULL)
+                   mu.true=mu, phi.true=rep(1.0, P), W.true=NULL)
+
+  ## source("DynNBFS-2009.R")
+  samp = 500; burn=0;
+  out <- dyn.NB.FS(y, X.dyn=X, X.stc=NULL,
+                   samp=samp, burn=burn, verbose=50,
+                   m.0=m.0, C.0=C.0,
+                   mu.m0=mu.m0, mu.P0=mu.P0,
+                   phi.m0=phi.m0, phi.P0=phi.P0,
+                   W.a0=W.a0, W.b0=W.b0,
+                   d.true=1, lambda.true=NULL, r.true=NULL, 
+                   beta.true=NULL, iota.true=NULL,
+                   mu.true=rep(0,P), phi.true=NULL, W.true=NULL)
   
 }
 

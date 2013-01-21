@@ -2,7 +2,7 @@
 ## We model the log-mean here.
 
 source("NB-Shape.R")
-source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
+source("AR1.R"); ## Independent AR(1)'s.  Maybe should change this.
 
 ################################################################################
                              ## Dynamc NB by PG ##
@@ -11,8 +11,8 @@ source("Stationary.R"); ## Independent AR(1)'s.  Maybe should change this.
 dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
                       samp=1000, burn=100, verbose=100000,
                       m.0=NULL, C.0=NULL,
-                      mu.m0=NULL, mu.V0=NULL,
-                      phi.m0=NULL, phi.V0=NULL,
+                      mu.m0=NULL, mu.P0=NULL,
+                      phi.m0=NULL, phi.P0=NULL,
                       W.a0=NULL, W.b0=NULL,
                       d.true=NULL, w.true=NULL,
                       beta.true=NULL, iota.true=NULL,
@@ -21,7 +21,7 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
   ## m.0 = prior mean for (iota,beta_0) or (beta_0).
   ## C.0 = prior var  for (iota,beta_0) or (beta_0).
 
-  ## y: the average response (T)
+  ## y: counts (T)
   ## X: the design matrix (including covariates for non-dynamic coef.) (T x P)
   ## n: the number of trials (T)
 
@@ -44,7 +44,6 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
   ## Structure.
   y = as.matrix(y)
   X = cbind(X.stc, X.dyn)
-  W = as.matrix(W);
   C.0 = as.matrix(C.0);
   
   ## Dimension ##
@@ -56,21 +55,21 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
 
   ## Default prior parameters -- almost a random walk for beta ##
   if (is.null(m.0)    || is.null(C.0))    { m.0    = rep(0.0, P)   ; C.0    = diag(1.0, P  ); }
-  if (is.null(mu.m0)  || is.null(mu.V0))  { mu.m0  = rep(0.0 ,P.b) ; mu.V0  = rep(0.01, P.b); }
-  if (is.null(phi.m0) || is.null(phi.V0)) { phi.m0 = rep(0.99,P.b) ; phi.V0 = rep(0.01, P.b); }
+  if (is.null(mu.m0)  || is.null(mu.P0))  { mu.m0  = rep(0.0 ,P.b) ; mu.P0  = rep(100., P.b); }
+  if (is.null(phi.m0) || is.null(phi.P0)) { phi.m0 = rep(0.99,P.b) ; phi.P0 = rep(100., P.b); }
   if (is.null(W.a0)   || is.null(W.b0))   { W.a0   = rep(1.0, P.b) ; W.b0   = rep(1.0,  P.b);  }
 
   ## Output data structure.
   out = list(
     d    = array(0, dim=c(M)),
     w    = array(0, dim=c(M, T)),
-    iota = array(0, dim=c(M, max(P.a, 1))),
     beta = array(0, dim=c(M, P.b, T+1)),
     mu   = array(0, dim=c(M, P.b)),
     phi  = array(0, dim=c(M, P.b)),
     W    = array(0, dim=c(M, P.b))
     )
-
+  if (P.a > 0) out$alpha = array(0, dim=c(M, P.a))
+  
   ## Initialize ##
   d    = 1
   beta = matrix(0.00, P.b, T+1);  # even odds.
@@ -115,10 +114,11 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
     
     ## draw (d, w | beta) --- WARNING: JOINT DRAW.
     log.mean = apply(X.dyn * t(beta)[-1,], 1, sum);
-    if (P.a > 0) psi = log.mean + X.stc %*% iota;
+    if (P.a > 0) log.mean = log.mean + X.stc %*% iota;
     mu.lambda  = exp(log.mean)
+    
     ## draw (d | beta) (w | d, beta)
-    d = draw.df(d, mu.lambda, G, ymax);
+    if (!know.d) d = draw.df(y, d, mu.lambda, G, ymax);
     psi = log.mean - log(d);
     w = rpg.devroye(T, y+d, psi);
 
@@ -128,12 +128,17 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
     ffbs = FFBS.C(z, X, 1/w, mu, phi, diag(W, P.b), m.0, C.0)
     iota = ffbs$alpha
     beta = ffbs$beta
+
+    ## AR(1) - phi, W assumed to be diagonal !!!
+    if (!know.mu)  mu  = draw.mu.ar1.ind (beta, phi, W, mu.m0, mu.P0)
+    if (!know.phi) phi = draw.phi.ar1.ind(beta, mu, W, phi.m0, phi.P0, phi)
+    if (!know.W)   W   = draw.W.ar1.ind  (beta, mu, phi, W.a0, W.b0)
     
     # Record if we are past burn-in.
     if (j>burn) {
       out$d[j-burn]      = d
       out$w[j-burn,]     = w
-      out$iota[j-burn]   = iota
+      out$alpha[j-burn,] = iota
       out$beta[j-burn,,] = beta
       out$mu[j-burn, ]   = mu;
       out$phi[j-burn, ]  = phi;
@@ -162,26 +167,28 @@ if (FALSE) {
   ## dyn.load("BayesLogit.so"); source("LogitWrapper.R"); source("FFBS.R");
   
   T = 500;
-  P = 2;
+  P = 4;
 
   beta = array(0, dim=c(P, T+1));
-  X = matrix(1, T, P);
+  ## X = matrix(1, T, P);
+  X.dyn = matrix(rnorm(T*P), nrow=T, ncol=P)
+  ## X.stc = matrix(1, nrow=T, ncol=1)
 
   ## Parameters
-  W = rep(0.1, P)
+  W = rep(0.05, P)
   phi = rep(0.95, P)
-  mu = rep(3.0, P)
+  mu = rep(0.0, P)
   d = 4
 
   ## Prior
   m.0    = mu;
   C.0    = diag(4.0, P);
-  mu.m0  = rep(mu , P);
-  mu.V0  = rep(4.0, P);
+  mu.m0  = mu;
+  mu.P0  = rep(1/4, P);
   phi.m0 = rep(0.9, P);
-  phi.V0 = rep(0.1, P);
+  phi.P0 = rep(100, P);
   W.a0   = rep(10 , P);
-  W.b0   = rep(1.0, P);
+  W.b0   = rep(10 , P);
 
   ## Synthetic
   beta[,1] = m.0;
@@ -189,7 +196,7 @@ if (FALSE) {
     beta[,i] = mu + phi* (beta[,i-1] - mu) + sqrt(W) * rnorm(P);
   }
 
-  log.mean  = apply(X * t(beta)[-1,], 1, sum)
+  log.mean  = apply(X.dyn * t(beta)[-1,], 1, sum)
   psi       = log.mean - log(d)
   mu.lambda = exp(log.mean)
 
@@ -199,15 +206,27 @@ if (FALSE) {
   ## Simulate ##
   ## source("DynNBPG.R")
   samp = 500; burn=000; verbose=100;
-  out <- dyn.NB.PG(y, X.dyn=X, X.stc=NULL,
+  out <- dyn.NB.PG(y, X.dyn=X.dyn, X.stc=NULL,
                    samp=samp, burn=burn, verbose=verbose,
                    m.0=m.0, C.0=C.0,
-                   mu.m0=NULL, mu.V0=NULL,
-                   phi.m0=NULL, phi.V0=NULL,
+                   mu.m0=NULL, mu.P0=NULL,
+                   phi.m0=NULL, phi.P0=NULL,
                    W.a0=W.a0, W.b0=W.b0,
                    d.true=NULL, w.true=NULL,
                    beta.true=NULL, iota.true=NULL,
                    mu.true=mu, phi.true=rep(1,P), W.true=NULL)
+
+  ## source("DynNBPG.R")
+  samp = 500; burn=000; verbose=100;
+  out <- dyn.NB.PG(y, X.dyn=X.dyn, X.stc=NULL,
+                   samp=samp, burn=burn, verbose=verbose,
+                   m.0=m.0, C.0=C.0,
+                   mu.m0=mu.m0, mu.P0=mu.P0,
+                   phi.m0=phi.m0, phi.P0=phi.P0,
+                   W.a0=W.a0, W.b0=W.b0,
+                   d.true=NULL, w.true=NULL,
+                   beta.true=NULL, iota.true=NULL,
+                   mu.true=NULL, phi.true=NULL, W.true=NULL)
 }
 
 if (FALSE) {
