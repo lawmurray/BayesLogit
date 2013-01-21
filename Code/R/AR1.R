@@ -57,7 +57,8 @@ draw.W.ar1 <- function(x, mu, phi, nu.0, Psi.0)
   P = nrow(x)
   T = ncol(x)
   
-  x = x - mu
+  phi = as.numeric(phi)
+  x = x - as.numeric(mu)
   e = x[,-1,drop=FALSE] - x[,-T,drop=FALSE] * phi;
 
   Psi.T = Psi.0 + e %*% t(e);
@@ -69,10 +70,12 @@ draw.W.ar1 <- function(x, mu, phi, nu.0, Psi.0)
 
 draw.W.ar1.ind <- function(x, mu, phi, a.0, b.0)
 {
+  ## Assume phi is not a matrix.  It needs less structure.
   P = nrow(x)
   T = ncol(x);
   
-  x = x - mu
+  phi = as.numeric(phi)
+  x = x - as.numeric(mu)
   e = x[,-1,drop=FALSE] - x[,-T,drop=FALSE] * phi;
 
   a.N = (T-1) + a.0
@@ -88,7 +91,7 @@ draw.phi.ar1 <- function(x, mu, W, phi.m0, phi.P0, phi.prev)
   P = nrow(x)
   T = ncol(x);
   
-  x = x - mu
+  x = x - as.numeric(mu)
   WI = solve(W);
   
   lx.x  = x[,-T,drop=FALSE] %*% t(x[,-1,drop=FALSE]);
@@ -124,7 +127,7 @@ draw.phi.ar1.ind <- function(x, mu, W, phi.m0, phi.P0, phi.prev)
   ## To Return.
   phi = 0;
 
-  x = x - mu
+  x = x - as.numeric(mu)
   WI = 1 / W;
   
   lx.x  = apply(x[,-N,drop=FALSE] * x[,-1,drop=FALSE], 1, sum) ## g0
@@ -153,9 +156,10 @@ draw.mu.ar1 <- function(x, phi, W, mu.m0, mu.P0)
   T = ncol(x);
 
   ## one minus phi
+  phi = as.numeric(phi)
   omp = (1-phi)
   WI = solve(W)
-  
+
   e = x[,-1,drop=FALSE] - x[,-T,drop=FALSE] * phi;
   e = e / omp;
   
@@ -176,13 +180,15 @@ draw.mu.ar1 <- function(x, phi, W, mu.m0, mu.P0)
 draw.mu.ar1.ind <- function(x, phi, W, mu.m0, mu.P0)
 {
   ## Assume W is diagonal, i.e. a vector.
+  ## Assume phi is not a matrix.
   P = nrow(x)
   T = ncol(x);
 
   ## one minus phi inverse
+  phi = as.numeric(phi)
   omp = (1-phi)
   WI  = 1 / W
-  
+
   e = x[,-1,drop=FALSE] - x[,-T,drop=FALSE] * phi;
   e = e / omp;
   
