@@ -853,10 +853,11 @@ newton.4 <- function(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, abpm.0=NULL
   X = cbind(X.re, X.fe);
   N = nrow(X);
   P = ncol(X);
+  P.all = P+1+as.numeric(kappa!=0)
 
-  if (is.null(abpm.0)) { abpm.0 = matrix(0, nrow=P+1+as.numeric(kappa!=0)); abpm.0[P+1] = 1; }
-  
-  abpm = abpm.0
+  if (is.null(abpm.0)) { abpm.0 = matrix(0, nrow=P.all); abpm.0[P+1] = 1; }
+  if (length(abpm.0) != P.all) return(NA)
+  abpm = as.matrix(abpm.0)
 
   llh.old = blogit.llh.mm.4(abphim=abpm, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0);
   
@@ -914,7 +915,7 @@ newton.4.gibbs <- function(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, abpm.
   if (is.null(abpm.0)) { abpm.0 = matrix(0, nrow=P.ab+1+as.numeric(kappa!=0)); abpm.0[P.ab+1] = 1; }
   if (length(abpm.0) != P.all) return(NA)
   
-  abpm = abpm.0
+  abpm = as.numeric(abpm.0)
 
   llh.old = blogit.llh.mm.4(abphim=abpm, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0);
   
