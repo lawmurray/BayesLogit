@@ -371,10 +371,13 @@ if (FALSE) {
   grad.blogit.mm.4(check.4$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
   blogit.llh.mm.4(check.4$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
 
+  ## abpm.0 = NULL
   ## source("Logit-MixedModel.R")
-  check.newton <- newton.4(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
-                           m.0=m.0, P.0=P.0, abpm.0=NULL, maxiter=10000, trace=100, reltol=1e-10)
+  check.newton <- newton.4(y=y, X.re=X.re, X.fe=X.fe, n=n, shape=shape, rate=rate, kappa=kappa,
+                           m.0=m.0, P.0=P.0, abpm.0=abpm.0, maxiter=500, trace=100, reltol=1e-16)
+  check.4 = check.newton
   grad.blogit.mm.4(check.newton$m, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
+
   
   ## source("Logit-MixedModel.R")
   check.newton <- newton.4.gibbs(y, X.re, X.fe, n, shape=shape, rate=rate, kappa=kappa,
@@ -392,6 +395,22 @@ if (FALSE) {
                              m.0=array(0, dim=c(ncol(X.fe))),
                              P.0=array(0, dim=c(ncol(X.fe), ncol(X.fe))),
                              ab.0=NULL, calc.V=FALSE, trace=FALSE, maxit=1000)
+
+  ## comparison between the posterior mode and the posterior mean
+  post.abm = colMeans(bench.polls$PGMM2$gb$abm)
+  post.phi = mean(bench.polls$PGMM2$gb$phi)
+  post.mean = c(post.abm, post.phi)
+  ##
+  len.mode = length(check.newton$m)
+  post.mode = as.numeric(check.newton$m)
+  post.mode[len.mode] = check.newton$m[len.mode-1]
+  post.mode[len.mode-1] = check.newton$m[len.mode]
+
+  ## png(filename="polls-mean-mode.png")
+  plot(post.mode, col=1, main="Posterior mode and mean", xlab="(alpha, beta, m, phi)", ylab="")
+  points(post.mean, col=2)
+  legend("topleft", legend=c("Post. mode", "Post. mean"), col=c(1,2), pch=c(1,1))
+  ## dev.off()
   
   ## Check results using lme4 package.  I'm still unclear on their priors.
   hglm1 = glmer(bush ~ black + (1 | state), family=binomial(link="logit"), data=polls)
@@ -403,6 +422,7 @@ if (FALSE) {
   ## Grab the posterior variances associated with each random effect
   attr(r$state,"postVar")
 
+  ## from hglm
   alpha.temp = coef(hglm1)$state[,1]
   beta.temp  = fixef(hglm1)[-1]
   phi.temp   = 0.4
@@ -410,10 +430,13 @@ if (FALSE) {
   abpm.temp = c(alpha.temp, beta.temp, phi.temp, m.temp)
   grad.blogit.mm.4(abpm.temp, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
   blogit.llh.mm.4(abpm.temp, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
-
+  
   cbind(c$state[,1], check.4$m[1:49])
 
-  ## Plot
+  ## from post mode
+  abpm.temp = check.newton$m
+  
+  ## Plot the contours of phi against something else
   for(k in c(52)) {
   apbm.base = abpm.temp
   x.idc = k
@@ -431,9 +454,22 @@ if (FALSE) {
       llh.val[i,j] = blogit.llh.mm.4(abpm.val, y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0)
     }
   }
-  contour(x.grid, phi.grid, exp(llh.val))
+  contour(x.grid, phi.grid, llh.val)
   ## readline("");
   }
+
+  ## png(filename="logpost.png")
+  contour(x.grid, phi.grid, llh.val, main="Log posterior at mode with variations in m, phi", xlab="m", ylab="phi")
+  ## dev.off()
+
+  ## scatter plot
+  gb = bench.polls$PGMM2$gb
+  ## png(filename="scatterplot-phi-m.png")
+  plot(gb$abm[,51], gb$phi, pch=19, col="#00000020", main="Posterior draws of phi vs. m", xlab="m", ylab="phi")
+  ## dev.off()
+  ## png(filename="hist-phi.png")
+  hist(gb$phi, breaks=50, main="Histogram of phi", xlab="phi", ylab="")
+  ## dev.off()
   
 }
 
