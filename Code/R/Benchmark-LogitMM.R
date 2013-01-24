@@ -11,20 +11,22 @@ source("Benchmark-Utilities.R")
 ################################################################################
 
 run <- list("ex01"= FALSE,
-            "polls" = FALSE,
-            "xerop" = FALSE)
+            "polls" = TRUE,
+            "xerop" = TRUE)
 
-samp = 1000
-burn = 200
-verbose = 100
+samp = 10000
+burn = 2000
+verbose = 1000
 kappa = 100
-df = Inf
-ntrials = 1
+df = 6
+ntrials = 10
+thin = 10
 
 mm.method = c("PGMM", "IndMM1", "IndMM2", "PGMM2", "IndMM3", "IndMM4", "PG", "IndMH");
 run.methods = c(4,6);
 
-write.it = FALSE
+write.it = TRUE
+write.tb = TRUE
 load.old = FALSE
 
 var.names <- list("PGMM"=c("ab", "phi"),
@@ -184,7 +186,8 @@ if (run$ex01) {
 
   load("DataSets/mm-example.RData")
   dset.name = "mm-example"
-  file.name = "bench-logitmm-ex01.RData"
+  file.name = paste("bench-logitmm-", dset.name, "-", df, ".RData", sep="")
+  
   
   P.a = ncol(X.re);
   P.b = ncol(X.fe);
@@ -211,13 +214,14 @@ if (run$ex01) {
     bench.ex01[[nm]] <- benchmark.blogit.mm(y, X.re, X.fe, n, shape, rate, m.0=m.0, C.0=solve(P.0),
                                             samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                             method=nm,
-                                            dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=kappa)
+                                            dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=kappa, thin=thin)
   }
   
   ex01.tbl = setup.table(bench.ex01, "abm")
   
-  if (write.it) save(y, X.re, X.fe, n, shape, rate, prec.b, m.0, P.0, df, bench.ex01, ex01.tbl, file=file.name);
-
+  if (write.it) save(y, X.re, X.fe, n, shape, rate, prec.b, m.0, P.0, df, bench.ex01, ex01.tbl, thin, file=file.name);
+  if (write.tb) write.table(ex01.tbl$table, file=paste("table", dset.name, df, sep="."))
+  
 }
 
 if (FALSE) {
@@ -299,7 +303,7 @@ if (run$polls) {
 
   polls = read.csv("DataSets/polls.csv")
   dset.name = "polls"
-  file.name = "bench-logitmm-polls.RData"
+  file.name = paste("bench-logitmm-", dset.name, "-", df, ".RData", sep="")
 
   idc  = !is.na(polls$bush)
   y    = polls$bush[idc]
@@ -334,13 +338,14 @@ if (run$polls) {
                                              samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                              method=nm,
                                              dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=kappa,
-                                             center=NULL, thin=100)
+                                             center=NULL, thin=thin)
   }
 
   polls.tbl = setup.table(bench.polls, "abm")
 
-  if (write.it) save(y, X.re, X.fe, n, shape, rate, prec.b, m.0, P.0, df, bench.polls, polls.tbl, file=file.name);
-
+  if (write.it) save(y, X.re, X.fe, n, shape, rate, prec.b, m.0, P.0, df, thin, bench.polls, polls.tbl, file=file.name);
+  if (write.tb) write.table(polls.tbl$table, file=paste("table", dset.name, df, sep="."))
+  
 }
 
 if (FALSE) {
@@ -479,7 +484,7 @@ if (run$xerop) {
   
   require("epicalc")
   dset.name = "Xerop"
-  file.name = "bench-logitmm-xerop.RData"
+  file.name = paste("bench-logitmm-", dset.name, "-", df, ".RData", sep="")
   
   data(Xerop)
   Xerop$id = factor(Xerop$id)
@@ -520,13 +525,14 @@ if (run$xerop) {
     bench.xerop[[nm]] <- benchmark.blogit.mm(y, X.re, X.fe, n, shape, rate, m.0=m.0, C.0=solve(P.0),
                                              samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                              method=nm,
-                                             dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=kappa)
+                                             dset.name=dset.name, df=df, var.names=var.names[[nm]], kappa=kappa, thin=thin)
   }
 
   xerop.tbl = setup.table(bench.xerop, "abm")
 
-  if (write.it) save(y, X.re, X.fe, n, shape, rate, prec.b, m.0, P.0, df, bench.xerop, xerop.tbl, file=file.name);
-
+  if (write.it) save(y, X.re, X.fe, n, shape, rate, prec.b, m.0, P.0, df, thin, bench.xerop, xerop.tbl, file=file.name);
+  if (write.tb) write.table(xerop.tbl$table, file=paste("table", dset.name, df, sep="."))
+  
 }
 
 if (FALSE) {
