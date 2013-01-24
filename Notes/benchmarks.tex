@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass[11pt]{article}
 
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -17,6 +17,7 @@
 
 \newcommand{\Polya}{P\'{o}lya}
 \newcommand{\PG}{\text{PG}}
+\newcommand{\tablesize}{\small}
 
 % Page Layout
 \setlength{\evensidemargin}{0.0in}
@@ -37,23 +38,23 @@ We benchmark the \Polya-Gamma method against several alternatives for binary
 logistic regression and negative binomial regression for count data to measure
 its relative performance.  All of these benchmarks are empirical and hence some
 caution is urged.  Our primary metric of comparison is the effective sampling
-rate, which is the effective sample size per second.  This is the most practical
-metric since it tells us how quickly one can produce independent draws from the
-posterior distribution.  However, this metric is also sensitive to numerous
-idiosyncrasies relating to the implementation of the routines.  We generate
-these benchmarks using R, though some of the routines make calls to external C
-code.  The specifics of each method are discussed in further detail below.  In
-general, we found that the \Polya-Gamma technique compared favorably to other
-data augmentation methods; specifically, the \Polya-Gamma technique performed
-better than the methods of \cite{obrien-dunson-2004},
-\cite{gramacy-polson-2012}, and \cite{fruhwirth-schnatter-fruhwirth-2010}.  The
-latter paper itself provides a detailed comparison of several methods itself.
-For instance, the authors found that method of \cite{holmes-held-2006} did not
-beat their discrete mixture of normals, something that we found as well and
-hence omitted from the comparisons below.  For the simple case of binary
-logistic regression we found that often an independence Metropolis sampler
-performed well.  We draw the following conclusions from these numerical
-experiments:
+rate, which is the effective sample size per second and which quantifies how
+quickly one can produce independent draws from the posterior distribution.
+However, this metric is sensitive to numerous idiosyncrasies relating to the
+implementation of the routines, the language in which they written, and hardware
+on which they are run.  We generate these benchmarks using R, though some of the
+routines make calls to external C code.  The specifics of each method are
+discussed in further detail below.  In general, we find that the \Polya-Gamma
+technique compares favorably to other data augmentation methods; specifically,
+the \Polya-Gamma technique performs better than the methods of
+\cite{obrien-dunson-2004}, \cite{gramacy-polson-2012}, and
+\cite{fruhwirth-schnatter-fruhwirth-2010}.  The latter paper itself provides a
+detailed comparison of several methods itself.  For instance, the authors find
+that method of \cite{holmes-held-2006} did not beat their discrete mixture of
+normals, something that we find as well and hence omit from the comparisons
+below.  For the simple case of binary logistic regression we find that often an
+independence Metropolis sampler performs well.  We draw the following
+conclusions from these numerical experiments:
 
 \begin{itemize}
 
@@ -63,7 +64,7 @@ experiments:
 
 \item In negative binomial regression, the \Polya-Gamma method performs well
   when the count sizes are not too high or when the regression coefficient has a
-  complex underlying structure, for instance, when it is a Gaussian process.
+  complex prior structure, for instance, when the prior is a Gaussian process.
 
 \item Independence Metropolis works well for binary logistic regression.  This
   is not surprising as the asymptotics suggest that a normal approximation may
@@ -77,8 +78,7 @@ experiments:
   technique in particular, is that it is easy to construct and code more
   complicated models, whereas independence Metropolis only works well in the
   simplest case.  For instance, the \Polya-Gamma method easily accommodates more
-  sophisticated models that produce a Gaussian ``prior'' distribution for
-  $\beta$, such as mixed models and factor models.
+  sophisticated models such as mixed models and factor models.
 
 \end{itemize}
 
@@ -90,25 +90,304 @@ each, discarding the first 2,000 as burn in to leave a total of 10 batches of
 was calculated using the \texttt{coda} package and then averaged across the 10
 batches.  We then calculated the minimum, median, and maximum of these average
 effective sample sizes.  A similar calculation was performed for the effective
-sampling rates.  The time and average acceptance rate are averaged across the 10
-batches as well.  The time refers to the time taken to produce the 10,000
-samples, not the total run time.  Thus any preprocessing and burn-in are not
-included in the total time reported.  When discussing the various methods the
-primary metric we refer to is the median effective sampling rate, following the
-example of \cite{fruhwirth-schnatter-fruhwirth-2010}.  
+sampling rates.  The time and acceptance rate are averaged across the 10 batches
+as well.  ``Time'' refers to the time taken to produce the 10,000 samples, not
+the total run time.  Thus preprocessing and burn-in are not included in the
+total time reported.  When discussing the various methods the primary metric we
+refer to is the median effective sampling rate, following the example of
+\cite{fruhwirth-schnatter-fruhwirth-2010}.
 
 All of these experiments were run using R 2.15.1 on an Ubuntu machine with 8GB
 or RAM and an Intel Core i5 quad core processor.  The number of cores is a
 potentially important factor as some libraries, including those that perform the
 matrix operations in R, may take advantage of multiple cores.  The C code that
-we have written does not take advantage of this parallelism.
+we have written does not use parallelism.
 
 \subsection{Binary Logistic Regression}
 
-\subsubsection{The Data Sets}
+\subsubsection{Data Sets and Methods}
 
-We benchmark against the data sets used by \cite{holmes-held-2006} and
-\cite{fruhwirth-schnatter-fruhwirth-2010} for binary logistic regression.
+We generate the benchmarks using the data sets employed by
+\cite{holmes-held-2006} and \cite{fruhwirth-schnatter-fruhwirth-2010}.  Details
+about the individual data sets and the specific methods can be found in Appendix
+\ref{sec:blogit-datasets}.
+
+\subsubsection{Results}
+
+As seen in Appendix \ref{sec:blogit-benchmarks} the \Polya-Gamma method beats
+all other data augmentation techniques for binary logistic regression in terms
+of both effective sample size and effective sampling rate.  The \Polya-Gamma
+method almost always beats the independence Metropolis samplers in terms of
+effective sample size; however, it does not beat the independence Metropolis
+samplers in terms of effective sampling rate.  Independence Metropolis samplers
+perform well when the asymptotics take effect ensuring that the posterior
+distribution appears Gaussian.  Further, one may generate Metropolis proposals
+rapidly for binary logistic regression as the heavy computations are taken care
+of in the preprocessing stage.
+
+However, a major advantage of data augmentation, and hence the \Polya-Gamma
+technique, is that it is easily adapted to more complicated models.  Consider,
+for instance, a binary logistic mixed model whose intercepts are random effects,
+in which case the log odds are modeled by:
+\begin{equation}
+\label{eqn:mixed-model}
+\begin{cases}
+\psi_{ij} = \alpha_i + x_{ij} \beta \\
+\alpha_i \sim N(m, 1/\phi) \\
+m \sim N(0, \kappa^2 / \phi) \\
+\phi \sim Ga(1,1) \\
+\beta \sim N(0, 100 I).
+\end{cases}
+\end{equation}
+for observation $j$ in group $i$.  An extra step is easily added to the
+\Polya-Gamma Gibbs sampler to estimate $(\alpha, \beta, m)$ and $\phi$.  It is
+not clear that an independence Metropolis sampler is easily constructed.  The
+simplest possible route is to write down the new log-posterior and use the
+subsequent Laplace approximation.  However, as seen in Table
+\ref{tab:mm-examples}, this procedure does not work well for medium or large
+problems, presumably due to the fact that the proposal poorly approximates the
+posterior.  We tried a $t_6$ proposal as well, but it performed just as poorly.
+To improve the abysmal acceptance rate, one might consider implementing a
+Metropolis step within Gibbs to sample $(\alpha,\beta,m)$, but this would
+require re-estimating the posterior mode and variance of $(\alpha,\beta,m)$ at
+each step for a given $\phi$, a time consuming process.  Without prejudicing the
+other possible routes to finding a better Metropolis-Hastings based sampler, we
+simply point out that what works well in the simplest case does not necessarily
+work well in a slightly more complicated case; however, the \Polya-Gamma method
+works equally well in both cases.  This discrepancy would be exacerbated further
+were we to consider a yet more complicated model, such as a factor model for
+binary data.  In such a model one must estimate the factor loadings, the factor
+variances, and the idiosyncratic variances.  A \Polya-Gamma Gibbs sampler easily
+incorporates complete conditional samples of these quantities, while
+independence Metropolis sampling is essentially hopeless.  Thus, while the
+Polya-Gamma technique may be the runner-up in the simplest scenario, it appears
+to be globally the best choice, performing well for both simple and complicated
+models.  A discussion of why the independence Metropolis sampler does not work
+may be found in Appendix \ref{sec:logitmm-discussion}.
+
+\begin{table}
+\tablesize
+\centering
+\label{tab:mm-examples}
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Synthetic: $N=500$, $P_a=5$, $P_b=1$, samp=10,000, burn=2,000, thin=1} \\
+\hline
+Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+PGMM2   &     7.29 &     1.00 &  4289.29 &  6975.73 &  9651.69 &   588.55 &   957.18 &  1324.31 \\ 
+IndMM4  &     3.96 &     0.70 &  1904.71 &  3675.02 &  4043.42 &   482.54 &   928.65 &  1022.38 \\
+%\end{tabular}
+
+%\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Polls: $N=2015$, $P_a=49$, $P_b=1$, samp=100,000, burn=20,000, thin=10} \\
+\hline
+Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+ PGMM2  &    31.94 &     1.00 &  5948.62 &  9194.42 &  9925.73 &   186.25 &   287.86 &   310.75 \\ 
+IndMM4  &   146.76 &  0.00674 &    31.36 &    52.81 &    86.54 &     0.21 &     0.36 &     0.59 \\
+% \end{tabular}
+
+% df = 6 ppsl for polls
+% \begin{tabular}{l r r r r r r r r } 
+%           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+%            PGMM2  &    31.80 &     1.00 &  5886.46 &  9301.77 &  9982.79 &   185.13 &   292.55 &   313.97 \\ 
+%           IndMM4  &   147.17 & 0.004617 &    33.78 &    69.14 &   121.47 &     0.23 &     0.47 &     0.83
+%  \end{tabular}
+
+% \begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Xerop: $N=1200$, $P_a=275$, $P_b=8$, samp=100,000, burn=20,000, thin=10} \\
+\hline
+Method  &     time &     ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+ PGMM2  &   174.38 &      1.00 &   850.34 &  3038.76 &  4438.99 &     4.88 &    17.43 &    25.46 \\ 
+IndMM4  &   457.86 & 0.00002.5 &     1.85 &     3.21 &    12.32 &     0.00 &     0.01 &     0.03
+\end{tabular}
+
+% df = 6 ppsl for xerop
+% \begin{tabular}{l r r r r r r r r } 
+%           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+%            PGMM2  &   174.36 &     1.00 &   863.39 &  2924.02 &  4337.20 &     4.95 &    16.77 &    24.88 \\ 
+%           IndMM4  &   461.92 &  2.5e-05 &     2.22 &     4.01 &     9.38 &     0.00 &     0.01 &     0.02
+%  \end{tabular}
+
+\caption{A set of three benchmarks for binary logistic mixed models.  $N$
+  denotes the number of samples, $P_a$ denotes the number of groups, and $P_b$
+  denotes the dimension of the fixed effects coefficient.  The random effects
+  are limited to group dependent intercepts.  Notice that the second and third
+  benchmarks are thinned every 10 samples to produce a total of 10,000 posterior
+  draws.  Even after thinning the effective sample size for each is low compared
+  to the PG method.  The effective samples sizes are taken for the collection
+  $(\alpha, \beta, m)$ and do not include $\phi$.}
+
+\end{table}
+
+
+% \begin{table}
+% \begin{tabular}{l r r r r r r r r } 
+%  Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+%    PGMM  &     6.82 &     1.00 &  4297.65 &  6599.02 &  7052.02 &   630.41 &   968.01 &  1034.42 \\ 
+% IndMHMM  &     3.53 &     0.42 &  1256.11 &  1501.59 &  1694.51 &   356.27 &   425.35 &   480.10 \\ 
+%      PG  &     5.70 &     1.00 &  4478.19 &  6863.88 &  7367.59 &   785.55 &  1204.03 &  1292.48 \\ 
+%   IndMH  &     2.25 &     0.91 &  6646.28 &  7765.85 &  7938.66 &  2949.70 &  3445.48 &  3523.12
+%  \end{tabular}
+%  \caption{
+%    The effective sample sizes found for a synthetic data set with 
+%    5 groups, corresponding to 5 different intercepts drawn from the same
+%    distribution $N(0, 1/\phi), \phi=1$, 100 observations within each group (for a total of
+%    500 observations), and 1 shared covariate.  The covariate was drawn from
+%    $N(0,1)$.  PGMM is the \Polya-Gamma Gibbs sampler for the mixed model.  IndMHMM
+%    is the independence Metropolis sampler for the mixed model using a normal
+%    proposal based upon the Laplace approximation.  We tried using a $t_6$ proposal
+%    as well, but that did not improve the results.  The last two rows correspond to
+%    the case when $\phi$ is known, which returns us to binomial regression with a
+%    $N(0, I)$ prior $\alpha$.  In the mixed models we used a $\text{Ga}(1,
+%    \text{rate}=1)$ prior for $\phi$.  Notice that the effective sampling rate,
+%    which is taken over the components of $(\alpha, \beta)$, is
+%    excellent in the binomial regression case, but drops precipitously for
+%    unknown $\phi$.
+%  }
+% \end{table}
+
+\subsection{Negative Binomial Regression}
+
+The \Polya-Gamma method shows excellent effective sample sizes in negative
+binomial regression.  However, its effective sampling rates fare less well,
+especially when working with lots of counts.  Currently, our \Polya-Gamma
+sampler can draw from $\PG(n, \psi)$, $n=1$ quickly.  But we have not
+constructed a fast sampler for general $n$.  To sample from $\PG(n, \psi)$ for
+integral $n > 1$ we take $n$ independent samples of $\PG(1, \psi)$ and sum them.
+In the negative binomial case one must sample roughly $\sum_{i=1}^N y_i$, where
+$y_i$ is the response, at every MCMC iteration.  When the number of counts is
+relatively high this becomes a burden and the \Polya-Gamma sampler performs
+poorly.  We see this in Table (\ref{tab:nb-synth}), where the \Polya-Gamma
+sampler does well when working with relatively small count sizes, but poorly
+when that is not the case.  In both cases $N=400$ synthetic data points were
+created using the model
+\[
+\begin{cases}
+y_i \sim NB(\textmd{mean}=\mu_i, d) \\
+\log \mu_i = \alpha + x_i \beta
+\end{cases}
+\]
+with three covariates excluding the intercept.  The parameter $d$ is estimated
+using a random-walk Metropolis-Hastings step.  The model with fewer counts
+corresponds to $\alpha = 2$ while the model with more counts corresponds to
+$\alpha = 3$, which produced a sample mean of roughly 8 in the former and 24 in
+the latter.  Notice that the \Polya-Gamma method has superior effective sample
+size in both cases.  It is an open challenge to create an efficient \Polya-Gamma
+sampler for arbitrary $n$, which would make it the best choice in both cases.
+
+The \Polya-Gamma method starts to shine when working with more complicated
+models that devote proportionally less time to sampling the auxiliary variables.
+For instance, consider the model
+\[
+\begin{cases}
+y_i \sim NB(\text{mean} = \mu(x_i), d) \\
+\log \mu  \sim GP(0, K)
+\end{cases}
+\]
+where $K$ is the square exponential covariance kernel,
+\[
+K(x_1,x_2) = \kappa + \exp \Big( \frac{\|x_1 - x_2\|^2}{2 \ell^2} \Big)
+\]
+with characteristic length scale $\ell$ and nugget $\kappa$.  Using either the
+\Polya-Gamma or \cite{fruhwirth-schnatter-etal-2009} data augmentation
+techniques, one arrives at a complete conditional for $\upsilon = \log \mu$ that
+appears to be generated by
+\[
+z_i = \upsilon(x_i) + \ep_i, \; \ep_i \sim N(0, V_i)
+\]
+where $V_i$ is a function of the $i$th auxiliary variable and $z_i$ is some
+pseudo-data.  Since the prior for $\upsilon$ is a Gaussian process one may use
+conjugate formulas to sample the complete conditional of $\upsilon$; however,
+producing a random variate from this distribution is expensive as one must
+calculate the Cholesky decomposition of a relatively large matrix at each
+iteration.  Consequently, the relative time spent sampling the auxiliary
+variables in each model decreases, making the \Polya-Gamma method competitive,
+and sometimes better, than the method of Fr\"{u}hwirth-Schnatter et al.  We
+provide one such example in Table (\ref{tab:nb-gp-ex01}).  In the first
+synthetic data set, 256 equally spaced points were used to generate a draw
+$\upsilon(x_i)$ and $y_i$ for $i=1, \ldots, 256$ where $\upsilon \sim GP(0, K)$
+and $K$ has length scale $\ell = 0.1$ and a nugget $=0.0$.  The average count
+value of the synthetic data set is $\bar y = 35.7$, yielding 9137 total counts,
+which is roughly the same amount as in the larger negative binomial example
+discussed earlier.  Whereas before the \Polya-Gamma method lost when working
+with this number of total counts, it now wins.  In the second synthetic data
+set, 1000 randomly selected points were chosen to generate a draw from
+$\upsilon(x_i)$ and $y_i$ where $\upsilon \sim GP(0, K)$ where $K$ has length
+scale $\ell = 0.1$ and a nugget $=0.0001$.  The average count value is $\bar y =
+22.72$, yielding $22,720$ total counts.  The larger problem shows an even
+greater improvement in performance over the method of Fr\"{u}hwirth-Schnatter et
+al.
+
+\begin{table}
+\tablesize
+\centering
+\label{tab:nb-synth}
+\begin{tabular}{l r r r r r r r r }
+\hline 
+\multicolumn{9}{c}{Less Counts: $\alpha = 2$, $\bar y = 8.11$, $\sum y_i = 3244$, $N=400$} \\
+\hline
+Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+    PG  &    26.84 &     1.00 &  7269.13 &  7646.16 &  8533.51 &   270.81 &   284.85 &   317.91 \\ 
+    FS  &     8.10 &     1.00 &   697.38 &   719.36 &   759.13 &    86.10 &    88.80 &    93.70 \\ 
+   RAM  &    10.17 &    30.08 &   737.95 &   748.51 &   758.57 &    72.59 &    73.62 &    74.61 \\
+\hline
+\multicolumn{9}{c}{More Counts: $\alpha = 3$, $\bar y = 23.98$, $\sum y_i = 9593$, $N=400$} \\
+\hline
+Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+    PG  &    58.99 &     1.00 &  3088.04 &  3589.67 &  4377.21 &    52.35 &    60.85 &    74.20 \\ 
+    FS  &     8.21 &     1.00 &   901.50 &   915.39 &   935.06 &   109.73 &   111.45 &   113.84 \\ 
+   RAM  &     8.69 &    30.33 &   757.91 &   763.81 &   771.73 &    87.25 &    87.93 &    88.84
+ \end{tabular}
+ \caption{
+   Negative binomial regression.  PG is the \Polya-Gamma Gibbs sampler.  FS follows
+   \cite{fruhwirth-schnatter-etal-2009}.  RAM is the random walk
+   Metropolis-Hastings sampler from the \texttt{bayesm} package. 
+   $\alpha$ is the true intercept and $y_i$ is the $i$th response.  Each model
+   has three continuous predictors.
+ }
+\end{table}
+
+\begin{table}
+\tablesize
+\centering
+\label{tab:nb-gp-ex01}
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Gaussian Process: $\bar y = 35.7$, $\sum y_i = 9137$, $N=256$, $\ell=0.1$, nugget=$0.0$} \\
+\hline
+Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+    PG  &   101.89 &     1.00 &   790.55 &  6308.65 &  9798.04 &     7.76 &    61.92 &    96.19 \\ 
+    FS  &    53.17 &     1.00 &   481.36 &  1296.27 &  2257.27 &     9.05 &    24.38 &    42.45 \\
+
+% \label{tab:nb-gp-ex02}
+% \begin{tabular}
+\hline
+\multicolumn{9}{c}{Gaussian Process: $\bar y = 22.7$, $\sum y_i = 22732$, $N=1000$, $\ell=0.1$, nugget=$0.0001$} \\
+\hline
+Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+    PG  &  2021.78 &     1.00 &  1966.77 &  6386.43 &  9862.54 &     0.97 &     3.16 &     4.88 \\ 
+    FS  &  1867.05 &     1.00 &   270.13 &  1156.52 &  1761.70 &     0.14 &     0.62 &     0.94
+% \end{tabular}
+
+ \end{tabular}
+ \caption{Non-parametric negative binomial regression.  PG is the \Polya-Gamma Gibbs sampler.  FS follows
+   \cite{fruhwirth-schnatter-etal-2009}.  There are roughly as many total counts
+   as in the first table as their are in the larger example in Table \ref{tab:nb-synth}; however, the cost of
+   drawing the posterior mean at the observed data points is much greater in
+   this case, which reduces the penalty associated with sampling many
+   \Polya-Gamma random variables.  The second table shows that the cost drawing
+   the posterior mean is even more pronounced for larger problems.  $N$ is the
+   total number of observations and $y_i$ denotes the $i$th observation.}
+\end{table}
+
+\appendix
+
+\section{Binary Logistic Regression: Data Sets and Methods}
+\label{sec:blogit-datasets}
+
+\subsection{Data Sets}
 
 \begin{outline}
 
@@ -146,7 +425,7 @@ categorical or binary.  There were 37 observations with missing attribute
 values.  These missing values have been replaced by the mode of the attribute in
 the case of categorical data and the mean of the attribute for continuous data.
 This dataset is linearly separable and results in some divergent regression
-coefficients, though these are kept in check by the prior.
+coefficients, which are kept in check by the prior.
 
 \1 German Credit: 
 
@@ -161,28 +440,29 @@ stratified by dummy variables, yielding a total of 48 predictors.
 
 \end{outline}
 
-\subsubsection{The Methods}
+\subsection{Methods}
 
 All of these routines are implemented in R, though some of them make calls to C.
 In particular, the independence Metropolis samplers do not make use of any
-non-standard calls to C, though their implementation's have very little R
+non-standard calls to C, though their implementations have very little R
 overhead in terms of function calls; the \Polya-Gamma method calls a C routine
 to sample the \Polya-Gamma random variates, but otherwise only uses R.  We think
 this is fair since other basic random variate generators in R call compiled
-code.  As a check upon our independence Metropolis sampler we also used the
+code.  As a check upon our independence Metropolis sampler we include the
 independence Metropolis sampler of \cite{rossi-etal-2005}, which may be found in
-the \texttt{bayesm} package, though their sampler uses a $t_6$ proposal while
-ours uses a normal proposal.  The suite of routines in the \texttt{binomlogit}
-package implement the techniques discussed in
-\cite{fruhwirth-schnatter-fruhwirth-2010}.  The benchmark labeled FS refers to
-the discrete mixture of normals used in
-\cite{fruhwirth-schnatter-fruhwirth-2010} and makes use of single C wrapper.
-Specifically, the methods FS and dRUMAuxMix are different implementations of the
-same method; we see that they have similar effective sample sizes.  Gramacy and
-Polson's R package, \texttt{reglogit}, also calls external C code.  For every
-data set we used at diffuse $N(0, 0.01 I)$ prior, except when using Gramacy and
-Polson's method, in which case we used $\exp(\sum_{i} |\beta_i / 100|)$ prior
-per the specifications of the \texttt{reglogit} package.
+the \texttt{bayesm} package \citep{bayesm-2012}, though their sampler uses a
+$t_6$ proposal while ours uses a normal proposal.  The suite of routines in the
+\texttt{binomlogit} package \citep{binomlogit-2012} implement the techniques
+discussed in \cite{fussl-etal-2011-slides}.  One routine provided by the
+\texttt{binomlogit} package coincides with the technique described in
+\cite{fruhwirth-schnatter-fruhwirth-2010} for the case of binary logistic
+regression.  A separate routine implements the latter and uses a single call to
+C.  Gramacy and Polson's R package, \texttt{reglogit}, also calls external C
+code \citep{reglogit-2012}.  For every data set the regression coefficient was
+given a diffuse $N(0, 0.01 I)$ prior, except when using Gramacy and Polson's
+method, in which case it was given a $\exp(\sum_{i} |\beta_i / 100|)$ prior per
+the specifications of the \texttt{reglogit} package.  The following is a short
+description of each method along with its abbreviated name.
 
 \begin{outline}
 
@@ -212,221 +492,137 @@ pick the mean and scale matrix of the proposal.
 logistic regression; it is binary regression using a student's T cumulative
 distribution function as the inverse link function.
 
-\1 dRUMAuxMiX: The same as FS, but from the R package \texttt{binomlogit}.
-
-\1 dRUMIndMH: Exploit the representation (\ref{eqn:hh-rep}), but use a single
-normal to approximate the logistic distribution and then correct using a
-Metropolis-Hastings step.  From the R package \texttt{binomlogit}.
-
-\1 IndivdRUMIndMH: This is the same as dRUMIndMH, but specific to binary
-logistic regression for improved efficientcy.  From the R package
+\1 dRUMAuxMix: Work by \cite{fussl-etal-2013} that extends the technique of
+\cite{fruhwirth-schnatter-fruhwirth-2010}.  A convenient representation is found
+that relies on a discrete mixture of normals approximation for posterior
+inference that works for binomial logistic regression.  From the R package
 \texttt{binomlogit}.
 
-\1 dRUMHAM: Again, use the representation (\ref{eqn:hh-rep}), but now
-approximate the logistic distribution using a discrete mixture of normals, the
-number of components to mix over being determined by $y_i / n_i$.  From the R
-package \texttt{binomlogit}.
+\1 dRUMIndMH: Similar to dRUMAuxMix, but instead of using a discrete mixture of
+normals, use a single normal to approximate the error term and correct using
+Metropolis-Hastings.  From the R package \texttt{binomlogit}.
+
+\1 IndivdRUMIndMH: This is the same as dRUMIndMH, but specific to binary
+logistic regression.  From the R package \texttt{binomlogit}.
+
+\1 dRUMHAM: Identical to dRUMAuxMix, but now use a discrete mixture of normals
+approximation in which the number of components to mix over is determined by
+$y_i / n_i$.  From the R package \texttt{binomlogit}.
 
 \1 GP: \cite{gramacy-polson-2012}: Another data augmentation scheme with only a
 single layer of latents.  This routine uses a double exponential prior.  We set
 the scale of this prior to agree with the scale of the normal prior we used in
 all other cases above.  Below you will notice that the \Polya-Gamma method often
 has a better sample size than Gramacy and Polson, but just barely.  We used the
-\texttt{reglogit} package for these experiment, which is currently rather
-slow.  If the runtime of this routine were to drop signficantly than it could
-perform almost as well as the \Polya-Gamma method.
+\texttt{reglogit} package for these experiment, which is currently sluggish.  If
+the runtime of this routine were to improve significantly than it could perform
+almost as well as the \Polya-Gamma method.
 
 \end{outline}
-
-Independence Metropolis works well for binomial regression; however, a major
-advantage of data augmentation, and hence the \Polya-Gamma technique, is that it
-is easily adapted to more complicated models.  Consider, for instance, binary
-regression with multiple random intercepts, in which case the log odds are
-modeled as
-\[
-\begin{cases}
-\psi_{ij} = \alpha_i + x_{ij} \beta \\
-\alpha_i \sim N(0, 1/\phi)
-\end{cases}
-\]
-for observation $j$ in group $i$.  An extra step is easily added to the
-\Polya-Gamma Gibbs sampler to estimate $(\alpha, \beta)$ and $\phi$; however, it
-is not clear that an independence Metropolis sampler is as easily constructed.
-The simplest possible route is to write down the new log-posterior involving
-$\phi$ and use the subsequent Laplace approximation.  However, as shown in Table
-(\ref{tab:mm-example}) for a synthetic dataset, this may result in an inferior
-effective sample rate.  One might consider implementing a Metropolis step within
-Gibbs to sample $(\alpha,\beta)$, but this would require re-estimating the
-posterior mode and variance of $(\alpha,\beta)$ at each step, a time consuming
-process.  Without prejudicing the other possible routes to finding a better
-Metropolis-Hastings based sampler, we simply point out that what works well in
-the simplest case does not necessarily work well in a slightly more complicated
-case; however, the \Polya-Gamma method works equally well in both cases.  This
-discrepancy would be exacerbated further were we to consider a yet more
-complicated model, such as a larger mixed model or a factor model for binary
-data.  In the latter one must estimate a set of factor loadings, the factor
-variances, and the idiosyncratic variances---something that one may easily
-incorporate into a \Polya-Gamma Gibbs sampler, but is less well suited to a
-joint draw from an independence Metropolis sampler.  In sum, data augmentation
-is useful, and the \Polya-Gamma technique is the best choice within that class
-for binary regression.
-
-\begin{table}
-\label{tab:mm-example}
-\begin{tabular}{l r r r r r r r r } 
- Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-   PGMM  &     6.82 &     1.00 &  4297.65 &  6599.02 &  7052.02 &   630.41 &   968.01 &  1034.42 \\ 
-IndMHMM  &     3.53 &     0.42 &  1256.11 &  1501.59 &  1694.51 &   356.27 &   425.35 &   480.10 \\ 
-     PG  &     5.70 &     1.00 &  4478.19 &  6863.88 &  7367.59 &   785.55 &  1204.03 &  1292.48 \\ 
-  IndMH  &     2.25 &     0.91 &  6646.28 &  7765.85 &  7938.66 &  2949.70 &  3445.48 &  3523.12
- \end{tabular}
- \caption{
-   The effective sample sizes found for a synthetic data set with 
-   5 groups, corresponding to 5 different intercepts drawn from the same
-   distribution $N(0, 1/\phi), \phi=1$, 100 observations within each group (for a total of
-   500 observations), and 1 shared covariate.  The covariate was drawn from
-   $N(0,1)$.  PGMM is the \Polya-Gamma Gibbs sampler for the mixed model.  IndMHMM
-   is the independence Metropolis sampler for the mixed model using a normal
-   proposal based upon the Laplace approximation.  We tried using a $t_6$ proposal
-   as well, but that did not improve the results.  The last two rows correspond to
-   the case when $\phi$ is known, which returns us to binomial regression with a
-   $N(0, I)$ prior $\alpha$.  In the mixed models we used a $\text{Ga}(1,
-   \text{rate}=1)$ prior for $\phi$.  Notice that the effective sampling rate,
-   which is taken over the components of $(\alpha, \beta)$, is
-   excellent in the binomial regression case, but drops precipitously for
-   unknown $\phi$.
- }
-\end{table}
-
-\subsection{Negative Binomial Regression}
-
-The \Polya-Gamma method shows excellent effective sample sizes in negative
-binomial regression.  However, its effective sampling rates fare less well,
-especially when working with lots of counts.  Currently, our \Polya-Gamma
-sampler can draw from $\PG(n, \psi)$, $n=1$ quickly.  But we have not
-constructed a fast sampler for general $n$.  To sample from $\PG(n, \psi)$ for
-integral $n > 1$ we take $n$ independent samples of $\PG(1, \psi)$ and sum them.
-In the negative binomial case one must sample roughly $\sum_{i=1}^N y_i$, where
-$y_i$ is the response, at every iteration.  When the number of counts is
-relatively high this becomes a burden and the \Polya-Gamma sampler performs
-poorly.  We see this in Table (\ref{tab:nb-synth}), where the \Polya-Gamma
-sampler does well when working with relatively small count sizes, but poorly
-when that is not the case.  In both cases $N=400$ synthetic data points were
-created using the model
-\[
-\begin{cases}
-y_i \sim NB(\textmd{mean}=\mu_i, d) \\
-\log \mu_i = \alpha + x_i \beta
-\end{cases}
-\]
-with three covariates excluding the intercept.  The parameter $d$ is estimated
-using a random-walk Metropolis-Hastings step.  The model with fewer counts
-corresponds to $\alpha = 2$ while the model with more counts corresponds to
-$\alpha = 3$, which produced a sample mean of roughly 8 in the former and 24 in
-the latter.  Notice that the \Polya-Gamma method has superior effective sample
-size in both cases.  It is an open challenge to create an efficient \Polya-Gamma
-sampler for arbitrary $n$, which would make it the best choice in both cases.
-
-The \Polya-Gamma method starts to shine when working with more complicated
-models that devote proportionally less time to sampling the auxiliary variables.
-For instance, consider the model
-\[
-\begin{cases}
-y_i \sim NB(\text{mean} = \mu(x_i), d) \\
-\log \mu  \sim GP(0, K)
-\end{cases}
-\]
-where $K$ is the square exponential covariance kernel,
-\[
-K(x_1,x_2) = \exp \Big( \frac{\|x_1 - x_2\|^2}{2 \ell^2} \Big)
-\]
-with characteristic length scale $\ell$.  Using either the \Polya-Gamma or
-\cite{fruhwirth-schnatter-etal-2009} data augmentation techniques one arrives at
-a complete conditional for $\upsilon = \log \mu$ that appears to be generated by
-\[
-z_i = \upsilon(x_i) + \ep_i, \; \ep_i \sim N(0, V_i)
-\]
-where $V_i$ is a function of the $i$th auxiliary variable and $z_i$ is some
-pseudo-data.  Since the prior for $\upsilon$ is a Gaussian process one may use
-conjugate formulas to sample the complete conditional of $\upsilon$; however,
-producing a random variate from this distribution is expensive as one must
-calculate the Cholesky decomposition of a relatively large matrix at each
-iteration.  Consequently, the relative time spent sampling the auxiliary
-variables in each model decreases, making the \Polya-Gamma method competitive,
-and sometimes better, than the method of Fr\"{u}wirth-Schnatter et al.  We
-provide one such example in Table (\ref{tab:nb-gp}).  A synthetic dataset of 256
-equally spaced points were used to generate a draw $\upsilon(x_i)$ and $y_i$ for
-$i=1, \ldots, 256$ where $\upsilon \sim GP(0, K)$ and $K$ has length scale $\ell
-= 0.1$.  The average count value of the synthetic data set is $\bar y = 35.7$,
-yielding 9137 total counts, which is roughly the same amount as in the larger
-negative binomial example discussed earlier.  Whereas before the \Polya-Gamma
-method lost when working with this number of total counts, it now wins.
-
-\begin{table}
-\label{tab:nb-synth}
-\begin{tabular}{l r r r r r r r r }
-\hline 
-\multicolumn{9}{c}{Less Counts: $\alpha = 2$, $\bar y = 8.11$, $\sum y_i = 3244$} \\
-\hline
-Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-    PG  &    26.84 &     1.00 &  7269.13 &  7646.16 &  8533.51 &   270.81 &   284.85 &   317.91 \\ 
-    FS  &     8.10 &     1.00 &   697.38 &   719.36 &   759.13 &    86.10 &    88.80 &    93.70 \\ 
-   RAM  &    10.17 &    30.08 &   737.95 &   748.51 &   758.57 &    72.59 &    73.62 &    74.61 \\
-\hline
-\multicolumn{9}{c}{More Counts: $\alpha = 3$, $\bar y = 23.98$, $\sum y_i = 9593$} \\
-\hline
-Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-    PG  &    58.99 &     1.00 &  3088.04 &  3589.67 &  4377.21 &    52.35 &    60.85 &    74.20 \\ 
-    FS  &     8.21 &     1.00 &   901.50 &   915.39 &   935.06 &   109.73 &   111.45 &   113.84 \\ 
-   RAM  &     8.69 &    30.33 &   757.91 &   763.81 &   771.73 &    87.25 &    87.93 &    88.84
- \end{tabular}
- \caption{
-   PG is the \Polya-Gamma Gibbs sampler.  FS follows
-   \cite{fruhwirth-schnatter-etal-2009}.  RAM is the random walk
-   Metropolis-Hastings sampler from the \texttt{bayesm} package. 
-   $\alpha$ is the true intercept and $y_i$ is the $i$th response.  Each model
-   has three continuous predictors.
- }
-\end{table}
-
-\begin{table}
-\label{tab:nb-gp}
-\begin{tabular}{l r r r r r r r r } 
-\hline
-\multicolumn{9}{c}{Gaussian Process: $\bar y = 35.7$, $\sum y_i = 9137$} \\
-\hline
-Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-    PG  &   101.89 &     1.00 &   790.55 &  6308.65 &  9798.04 &     7.76 &    61.92 &    96.19 \\ 
-    FS  &    53.17 &     1.00 &   481.36 &  1296.27 &  2257.27 &     9.05 &    24.38 &    42.45
- \end{tabular}
- \caption{PG is the \Polya-Gamma Gibbs sampler.  FS follows
-   \cite{fruhwirth-schnatter-etal-2009}.  There are roughly as many total counts
-   as in the larger example in Table \ref{tab:nb-synth}; however, the cost of
-   drawing the posterior mean at the observed data points is much greater in
-   this case, which reduces the penalty associated with sampling many
-   \Polya-Gamma random variables.}
-\end{table}
-
-\begin{table}
-\label{tab:nb-gp-ex02}
-\begin{tabular}{l r r r r r r r r } 
-\hline
-\multicolumn{9}{c}{Gaussian Process: $\bar y = 22.7$, $\sum y_i = 22732$} \\
-\hline
-Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-    PG  &  2021.78 &     1.00 &  1966.77 &  6386.43 &  9862.54 &     0.97 &     3.16 &     4.88 \\ 
-    FS  &  1867.05 &     1.00 &   270.13 &  1156.52 &  1761.70 &     0.14 &     0.62 &     0.94
- \end{tabular}
-\caption{$N = 1000$.  $\ell=0.1$.  $nug=0.0001$.}
-\end{table}
-
-\appendix
 
 \section{Binary Logistic Regression Benchmarks}
 \label{sec:blogit-benchmarks}
 
 % \input{blogit_table_02}
 \input{blogit_table_03}
+
+\pagebreak
+
+\section{Binary Logistic Mixed Model Data Sets}
+
+\begin{outline}
+
+\1 Synthetic:
+
+A synthetically generated dataset with 5 groups, 100 observations within each
+group, and a single fixed effect.
+
+\1 Polls:
+
+Voting data from the 2000 Presidential campaign.  The response indicators a vote
+for or against former President George W. Bush.  There are 49 groups
+corresponding to variation by states.  Some states have few observations,
+necessitating a model that shrinks coefficients towards a global mean to get
+reasonable estimates.  A single fixed effect corresponding to race is included.
+Entries with missing data were deleted to yield a total of 2015 observations.
+
+\1 Xerop:
+
+The Xerop data set from the \texttt{epicalc} R package \citep{epicalc-2012}.
+Indonesian children where observed to examine the causes of respiratory
+infections; of specific interest is whether vitamin A deficiencies cause such
+illness.  Multiple observations of each individual were made.  The data is
+grouped by individual id yielding a total of 275 random intercepts.  A total of
+5 fixed effects are included in the model---age, sex, height, stunted growth,
+and season---corresponding to an 8 dimensional regression coefficient after
+expanding the season covariate using dummy variables.
+
+\end{outline}
+
+\section{Binary Logistic Mixed Model Discussion}
+\label{sec:logitmm-discussion}
+
+While an independence Metropolis sampler works well for binary logistic
+regression, it does not work well for some of the mixed models we consider.
+Presumably, part of the reason it works well for logistic regression is because
+the posterior distribution is well approximated by the Laplace approximation.
+In the mixed model, this approximation performs adequately for the synthetic
+data set; however, that data set has 100 observations per group, which is a
+rather large amount of data given only a random intercept and single fixed
+effect.  The posterior mode roughly coincides with the posterior mean in this
+case.
+% PGMM2 mean (10000) : 
+% alpha: -0.6713863 -1.3605894  0.7193656 -0.6476419 -0.7775381
+% beta: 1.1156864 
+% m: -0.5483927
+% ph: 1.569225 
+% 
+% MAP: 
+% alpha: -0.6633656 -1.3470510  0.7239056 -0.6401559 -0.7692829  
+% beta: 1.0992942
+% m: -0.5391792
+% phi: 1.3867589
+In the case of the larger, more complex mixed models considered this is no
+longer the case.  For instance, in the polls data set, one finds at least two
+heuristics that suggest the Laplace approximation will be a poor proposal.
+First, the posterior mode does not coincide with the posterior mean.  Second,
+the Hessian at the mode is nearly singular.  Its smallest eigenvalue, in
+absolute terms, corresponds to an eigenvector that points predominantly in the
+direction of $\phi$.  Thus, there is a great deal of uncertainty in the
+posterior mode of $\phi$.  If we iteratively solve for the MLE by starting at
+the posterior mean, or if we start at the posterior mode for all the coordinates
+except $\phi$, which we initialize at the posterior mean of $\phi$, then we
+arrive at the same end point, suggesting that behavior is not due to a poor
+choice of initial value or a poor stopping rule.
+
+The first image in Figure \ref{fig:phi-mm} shows that the difference between the
+posterior mode and posterior mean is, by far, greatest in the $\phi$ coordinate.
+The second image in Figure \ref{fig:phi-mm} provides one example of the lack of
+curvature in $\phi$ at the mode.  If one plots $\phi$ against the other
+coordinates, then one sees a similar, though often less extreme, picture.  In
+general, large values of $\phi$ are found at the tip of an isosceles triangular
+whose base runs parallel to the coordinate that is not $\phi$.  While the upper
+tip of the triangle may posses the most likely posterior values, the rest of the
+posterior does not fall away quick enough to make that a likely posterior random
+variate.
+
+
+
+\begin{figure}
+\label{fig:phi-mm}
+\centering
+\includegraphics[scale=0.45]{Images/polls-mean-mode.png}
+\includegraphics[scale=0.45]{Images/logpost.png}
+
+\includegraphics[scale=0.45]{Images/hist-phi.png}
+\includegraphics[scale=0.45]{Images/scatterplot-phi-m.png}
+
+\caption{Proceeding from left to right and top to bottom: the posterior mode and
+  the posterior mean of $(\alpha, \beta, m \phi)$; variations in $m$ and $\phi$
+  of the log posterior evaluated at the posterior mode; the marginal posterior
+  distribution of $\phi$; a scatter plot of $\phi$ and $m$.  Notice that the
+  log-posterior changes slowly when moving along the $\phi$ coordinate.}
+\end{figure}
 
 % If you have a bibliography.
 % The file withe bibliography is name.bib.
