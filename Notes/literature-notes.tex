@@ -7,6 +7,8 @@
 % \usepackage{bibentry}
 
 \newcommand{\qt}{}
+\newcommand{\graddel}[2]{\frac{\del #1}{\del #2}}
+\newcommand{\hessdel}[3]{\frac{\del^2 #1}{\del #2 \del #3}}
 
 % Page Layout
 \setlength{\oddsidemargin}{0.0in}
@@ -857,9 +859,9 @@ the $\beta_k$ in the multinomial case.
 Title: Data augmentation, frequentist estimation, and the Bayesian analysis of
 multinomial logit models
 
-Citation: \cite{scott-2004}
+Citation: \cite{scott-2011}
 
-BibKey: scott-2004 (I think everyone refers to a working paper from 2004)
+BibKey: scott-2011 (I think everyone refers to a working paper from 2004)
 
 Key papers he mentions
 \begin{itemize}
@@ -1075,6 +1077,489 @@ sum.  Thus for $i =1, \ldots, y_i$ we have
 \]
 We can simplify further by summing and drawing gammas.
 
+\section{Migon etal 2005}
+
+Dynamic Models, from the Handbook of Statistics vol. 25.
+
+Really, this article is a review of other work.
+
+\begin{outline}
+
+\1 Review of dynamic linear models
+
+\1 I liked their ``Practical aspects of Bayesian forecasting'' section
+
+  \2 Variance law: you can model $V_t$.
+
+  \2 Discount factor: you can let $W_t$ evolve.
+  
+  \2 Missing observations are easily handled.
+  
+  \2 You can do retrospective analysis.
+  
+  \2 Easy to monitor and intervene.
+
+\1 They have a section on Sequential Monte Carlo.  I think we can avoid that
+since we want to produce exact posterior distributions.
+
+\1 MCMC to sample states.
+
+\2 They mention the normal DLM.  FFBS is one option.  They also mention doing a
+joint draw of the states by using some sparse decomposition routine for the
+precision matrix.
+
+\2 Gammerman (1998) suggests a proposal for the innovations $\omega_t$.
+
+\2 Shephard and Pitt (1997) and Knorr-Held (1999) supposedly have some sort of
+block proposals.
+
+\2 And that is where they stop.
+
+\end{outline}
+
+\section{Gamerman 1997}
+
+Sampling from the posterior distribution in generalized linear mixed models
+
+Setup:
+\[
+\begin{cases}
+\eta_i = x_i' \beta + z_i' \gamma \\
+\gamma \sim N(0, \Sigma) \\
+\Sigma \sim IW \\
+\beta \sim N(a, R).
+\end{cases}
+\]
+
+Consider a generalized linear model.  Check out Wedderburn, 1974 below if you do
+not remember this.  We can use quasi-likelihoods to estimate $\beta$.  In
+particular, we can come up with can interprate Newton-Raphson as iterative least
+squares by letting
+\[
+\begin{cases}
+\tilde y_i(\beta) = \eta_i + (y_i - \mu_i) g'(\mu_i) \\
+W_i(\beta) = 1 / (b''(\theta_i) g'(\mu_i)^2)
+\end{cases}
+\]
+where $\eta_i = x_i \beta$, $\eta = g(\mu)$, and the exponential family has the
+form
+\[
+x \sim h(x) \exp \Big( \frac{x \theta - b(\beta)}{\phi_i} \Big).
+\]
+Then we can iteratively solve for $\beta^*$ as the least squares estimate of
+\[
+\tilde y(\beta) = X \beta^* + \ep, \; \ep \sim N(0, W^{-1}(\beta)).
+\]
+Incorporating a prior into the likelihood is equivalent to finding the posterior
+mode $\beta^*$ for the linear model above with a $\beta^* \sim N(a, R)$ prior.
+
+Gamerman suggest combining a Newton Raphson step with a Metropolis step. Suppose
+one has drawn $\beta^{(t-1}$.  Now, one can use that $\beta$ to construct the
+new psuedo-data and psuedo-weights, $\tilde y(\beta^{(t-1)}$ and
+$W(\beta^{(t-1)}$.  Then one can calculate the posterior moments $m^{(t)}$ and
+$C^{(t)}$.  Then one can then propose $\beta^* \sim N(m^{(t)}, C^{(t)})$ and
+accept or reject to get $\beta^*{(t)}$.
+
+I think it is illuminating to go back to the orignal interpretation.  One is
+standing at $\beta^{(t-1)}$.  One wants to generate a proposal.  Instead of
+doing, for instance, independence-Metropolis, the idea is to generate a proposal
+centered at $\beta^{(t-1)}$.  So you do the Taylor expansion at that point to
+generate a normal proposal.  This is the normal proposal described above.  So
+really, this is like a random walk Metropolis with a smart proposal.
+
+One could also move towards an independence Metropolis sampler.  Instead of
+basing the next proposal on $\beta^{(t-1)}$, we could base the next proposal on
+$m^{(t-1)}$.  In that case we could be moving towards the posterior mode and the
+Hessian at the posterior mode.  Along the way we would be sampling $\beta$'s.
+One could presumably stop picking new $m$'s and $C$'s once $m$ stopped moving
+around.
+
+Gamerman suggests blocking for the mixed model, which reduces to two iteratively
+reweighted steps and an extra step to draw $\Sigma$.  One coulde, in fact,
+jointly sample $\beta$ and $\gamma$, thought this might not (automatically) take
+advantage of the sparsity present in the ``joint'' design matrix.  Gamerman's
+suggestion is:
+\begin{itemize}
+\item Sample $(\beta | \gamma, \Sigma)$ using the normal approxmation centered
+  at $\beta^{(t-1)}$.  This is weighted least squares plus a metropolis step.
+\item Sample $(\gamma | \beta, \Sigma)$ using the normal approximation centered
+  at $\gamma^{(t-1)}$.  This is weighted least squares plus a metropolis step.
+\item Sample $(\Sigma | \beta, \gamma) = (\Sigma | \gamma)$, which is conjugate
+  given $\gamma$.
+\end{itemize}
+This will involve inverting matrices in the first and second steps at every
+iteration of the MCMC, which presumably could be slow.
+
+\section{Gamerman 1998}
+
+Markov Chain Monte Carlo for Dynamic Generalized Linear Models
+
+In Wedderburn (1974) one sees that Netwon-Raphson can be viewed as iteratively
+reweighted least squares when working within exponential families.  This can be
+extended to the case in which one has a prior distribution on $\beta$, which was
+evidently shown by M. West (1985).  Evidently, you can take this one step
+further to dynamic linear models, which was done by Singh \& Roberts (1992).
+
+My guess is the following.  You can do the same analysis as in Wedderburn,
+excpet that instead of looking at the derivative of $\beta_i$, you need to
+consider $\beta_{it}$.  That will not change much in the log-likelihood, except
+as to eliminate the summation.  The Hessian will be
+\[
+\frac{1}{V_{\mu_t}} \Big( \frac{d\mu_t}{d Y_t} \Big)^2 x_{it} x_{jt} 
+\]
+and the gradient will be
+\[
+\frac{r_t}{V(\mu_t)} \frac{d \mu_t}{d Y_t} x_{it}.
+\]
+But this is a vector (matrix) in $i$ (and $j$) \emph{and} $t$.  Notice that the
+Hessian is ``block diagonal in $t$.''  Were there no ``prior'' this would be a
+rather useless model.  The prior ties together the $\beta_{it}$'s.  Suppose $a$
+is the ``prior'' mean and $P$ is the ``prior'' precision, in the sense that $a$
+and $P$ describe the mean and precision for a, for instnace, AR(1) process.  In
+that case one can view Newton-Raphson as a DLM where one calculates the
+posterior mean at each iteration, which one can do via retrospective analysis.
+See Harrison and West p. 113.
+
+There are a few possibilities: one could take a joint draw from the Laplace
+approximation via FFBS and then do MH, but this has low acceptance rates; one
+could do things componentwise for $\{\beta_t\}$, i.e. one would sample
+$p(\beta_t | \beta_{t-1}, \beta_{t+1}, y_t)$ for $t=1, \ldots, T$, but this
+introduces a ton of autocorrelation.  I believe Gamerman suggests sampling the
+innovations $\omega_t$ component wise instead (it seems).  Evidently, Shephard
+and Pitt use ``random block sampling'' to use the FFBS framework to get decent
+acceptance rates and reduce the autocorrelation between samples.  Presumably,
+they FFBS+MH in blocks.  It appears that Gamerman does not test against Shephard
+and Pitt, 1997.  Evidently, this method works well against the others.
+
+I think one needs to make two distinctions here.  There are random-walk-like
+proposals and moving-to-mode like proposals.  Whenever you take a Laplace
+approximation, you must decide where it should be centered.  You will have the
+option to center it at the previously calculated approximate mode or at the
+previously drawn $\beta$.  I am thinking of random-walk-like proposals as
+proposals based upon approximations centered at the previous draw.  I am
+thinking of moving-to-mode like proposals being approximations centered at the
+previous ``mode.''  I believe Gamerman suggests generating proposals centered at
+the previous draw.
+
+\begin{outline}
+
+\1 It appears that the competition mentioned in this paper is
+
+  \2 Fahrmeir et al. (1992), rejection sampling
+
+  \2 Carlin and Polson (1992), use latent variables + Gibbs.
+
+  \2 Shephard and Pitt (1997), use FFBS+MH in blocks.
+
+  \2 Carlin et al. (1992), component wise in $\beta_t$.
+
+  with Gelfand and Smith.  Hierarchical Bayesian Analysis of Changepoint
+  Problems.  Applied Statistics, 42.
+
+  \2 Gamerman, use componenent wise MH for distribuances.  
+
+\end{outline}
+
+\section{Geweke and Tanizaki, 2001}
+
+They have a more comprehensive introduction than Ravines et al 2006.  To
+paraphrase/quote:
+\begin{outline}
+
+\1 Kitigawa (1987) and Kramer and Serenson (1988) proposed the nonlinear
+  filter and smoother using numerical integration.
+
+\1 Carlin et al. (1992) and Carter and Kohn (1994, 1996) use Gibbs sampling.
+
+\1 Gordon et al. (1993), Kitigawa (1996), and Kitagawa and Gersch (1996) propose
+filterting and smoothign using resampling.  This takes an extremely long time
+computationally.
+
+\1 Tanizaki (1996, 1999), Tanizaki and Mariano (1998) and Mariano Tanizaki
+(2000) proposed nonlinear filtering and smoothign using rejection sampling.
+This can have extremely low acceptance rates.
+
+\1 Geweke and Tanizaki (1999) is a non-normal smoother from a non-Bayesian point
+of view.  Presumably this paper is an extension of that.
+
+\end{outline}
+
+They consider the general Markovian state-space model, which is not limited by
+Gaussianity or linearity, just $p(y_t | x_t)$ and $p(x_t | x_{t-1})$ as the
+distributions (with suppressed parameters) that guide the evolution and
+measurements in the system.
+
+See the bottom of page 154 and top of 155 and the subsequent paragraph.  They
+are proposing a componenent wise Gibbs scheme.  They suggest using a second
+order approximation to the log-kernel, the kernel being $p(\alpha_t | y_t,
+\alpha_{t-1}, \alpha_{t+1})$ where $\alpha_t$ is the state.  I believe they
+suggest centering this proposal around the previous proposal.  In other words,
+they propose a Laplace approximation.  The consider cases in which the density
+is not locally concave.
+
+\section{Shephard and Pitt, 1997}
+
+Title: Likelihood analysis of non-Gaussian measurement time series
+
+As noted in the notes from Gamerman (1998), the goal here is to block and use
+the FFBS+MH with a suitable approximation.  So long as the blocks aren't too
+big, this should work okay.
+
+\section{Carter and Kohn, 1994}
+
+Title: On Gibbs Sampling and State Space Models.
+
+They suggested the FFBS in this paper concurrently with FS.  They also discuss
+using mixture of normals for the innovation and observation disturbances a la
+Carlin et al 1992.  As we know, this is all doable via Gibbs sampling.
+
+\section{Carlin, Polson, Stoffer, 1992}
+
+Title: A Monte Carlo approach to non-normal and nonlinear state space modeling.
+
+DLM:
+\[
+\begin{cases}
+y_t = H_t x_t + v_t, & v_t \sim N(0, \Upsilon) \\
+x_t = G_t x_{t-1} + u_t, & u_t \sim N(0, \Sigma).
+\end{cases}
+\]
+Their first suggestion: use normal mixtures so that the innovation and
+observation distribances are non-normal.  In partiuclar, if one has
+\[
+\begin{cases}
+y_t = H_t x_t + v_t, & v_t \sim N(0, \omega_t \Upsilon) \\
+x_t = G_t x_{t-1} + u_t, & u_t \sim N(0, \lambda_t \Sigma)
+\end{cases}
+\]
+then one can arrive at a variety of different forms for the marginal
+distributions $p(x_t | x_{t-1}, \Sigma)$ and $p(y_t | \Upsilon)$ (supressing
+``parameters'').  We can write lots of stuff as normal mixtures.
+
+I believe, if you look back at some of the work of Harrison, you will find that
+he employs something similar to this idea, though it is for discrete mixtures I
+believe.
+
+They then go on to discuss componenent wise Gibbs sampler.  This is pre FS and
+Carter and Kohn.
+
+\section{Wedderburn, 1974}
+
+Quasi-likelihood functions, generalized linear models, and the Gauss-Newton method
+
+This is a great paper.
+
+I believe this work comes from studying log-likelihoods.  At the end of the day,
+people are ineterested in maximizing likelihoods.  In that case, one can turn to
+Newton-Raphson for maximization.  That, in turn, can often be viewed as
+interatively reweighted least squares, which I think may be synonymous with
+Gauss-Newton.  Sometimes people do not want to use the the Hessian, so instead
+they use the Fischer information matrix which is the expectation of the Hessian,
+I believe.  That will often still converge to a (local) maximum.
+
+I think it is often the case that we are observing i.i.d. data at some sort of
+conditional mean; it may be the case that the conditional mean also impacts the
+variance.  In that case our log likelihood takes the form
+\[
+\ell(\beta | y) = \sum_{i=1}^n f(\mu_i = x_i' \beta).
+\]
+The partial of $\ell$ is
+\[
+\graddel{\ell}{\beta_i}[h_i]:= \sum_{k=1}^n \graddel{f}{\mu_k}
+\graddel{\mu_k}{\beta_i} h_i.
+\]
+Thus the gradient is
+\[
+G(\beta)[h] = \sum_{k=1}^n \graddel{f}{\mu_k}
+\graddel{\mu_k}{\beta} h.
+\]
+We are implicitly evaluating $\graddel{f}{\mu_i}$ and $\graddel{\mu_i}{\beta}$ in
+the summation.  Taking the derivative of the partial we have
+\[
+\hessdel{\ell}{\beta_j}{\beta_i}[h_i^{(1)}, h_j^{(2)}]:= \sum_{k=1}^n
+\hessdel{f}{\mu_k}{\mu_k} \graddel{\mu_k}{\beta_i} h_i^{(1)}
+\graddel{\mu_k}{\beta_j} h_j^{(2)} + \graddel{f}{\mu_k}
+\hessdel{\mu_k}{\beta_j}{\beta_i} h_i^{(1)} h_j^{(2)}.
+\]
+Thus, the Hessian of $\ell$ is
+\[
+H(\beta)[h_1, h_2] := 
+\sum_{i=1}^n h_2' 
+\graddel{\mu_i}{\beta}' \hessdel{f}{\mu_i}{\mu_i}\graddel{\mu}{\beta} h_1 
++ \graddel{f}{\mu_i} h_2' \hessdel{\mu_i}{\beta}{\beta} h_1
+\]
+where again we are implicitly evaluating the Hessian of $f$ in $\mu$ at $\mu_i =
+x_i \beta$.
+
+Once we have the gradient and the Hessian then we can use Newton-Raphson,
+i.e. succesive second order approximations to the curve to get to a local
+maximum.  As mentioned earlier, this may be interpreted as iteratively
+reweighted least squares.  
+
+There are several properties of likelihoods, which I still have to learn.  In
+any event, it is these properties that quasi-likelihoods possess.  Of course, as
+tools for frequentist estimation, the only thing that matters is that the
+quantity one arrives at is consistent and maybe some sort of limit theorem for
+the asympototic distribution.
+
+The properties are
+\begin{itemize}
+\item 
+  \(
+  \bbE \Big( \graddel{K}{\mu} \Big) = 0;
+  \)
+  
+\item
+  \(
+  \bbE \Big( \graddel{K}{\beta_i} \Big) = 0;
+  \)
+
+\item 
+  \(
+  \bbE \Big( \graddel{K}{\mu} \Big)^2 = - \bbE \Big( \frac{\del^2 K}{\del \mu^2}
+  \Big) = \frac{1}{V(\mu)}.
+  \)
+
+\item 
+  \(
+  \bbE \Big( \graddel{K}{\beta_i} \graddel{K}{\beta_j} \Big)
+  = - \bbE \Big( \hessdel{K}{\beta_i}{\beta_j} \Big) 
+  = \frac{1}{V(\mu)} \graddel{\mu}{\beta_i} \graddel{\mu}{\beta_j}.
+  \)
+\end{itemize}
+I believe one can equivalently require that a quasi-likelhood have the form
+\[
+\frac{\del K(z_i, \mu_i)}{\del \mu_i} = \frac{z_i - \mu_i}{V(\mu_i)}.
+\]
+One can certainly start from here and then arrive at the 4 items above, since
+that is what Wedderburn does.
+
+Further, I believe those properties are going to ensure that there is some
+maximum of the quasilikelihood.  The quasi-likelihood is defined in terms of
+$(z_i, \mu_i)$, which are the data and the conditional mean.  We know that $\del
+K / \del \beta_i$ has mean zero.  Wedderburn uses the notation $S$ to denote the
+summation operator.  Thus $S(K)$ will act like the log-likelihood.  Let $u =
+\del K / \del \beta$ and let $H = \del^2 S(K) / \del \beta_i \del \beta_j$, then
+$S(u)$ has expectation zero and dispersion $D = - \bbE(H)$.  Now if we follow a
+method of moments type argument, we want to pick $\beta$ so that $S(u)$ is zero
+for the observed data $z_i$.  We could also think in terms of maximizing the
+quasi-likelihood: we want $S(u)$ to be zero because that is the first order
+condition for a critical point.  In either case, we are going to move via
+Newton-Raphson to some critical point $\beta^*$.  At the critical point we have
+$S(u(\beta)) = S(u(\beta)) - S(u(\beta^*)) \simeq H(\beta - \beta^*)$.  We can
+approximate $H$ by $D$, which I can see being useful back in the day when one
+would not want to recalculate a bunch of (potentially large) matrices.
+
+Connection to Gauss-Newton: Wedderburn notes the following.  Let $v_i$ denote
+$\del \mu / \del \beta_i$ and $r_i = z_i - \mu_i$.  Then
+\[
+\graddel{S(K)}{\beta_i} = S \Big\{ \frac{z_k - \mu_k}{V(\mu_k)} \frac{\del
+  \mu_k}{ \del \beta_i} \Big\} = S \Big\{ \frac{r \odot v_i}{\odot V(\mu)} \Big\}.
+\]
+Further
+\[
+- \bbE \Big\{ \hessdel{S(K)}{\beta_i}{\beta_j} \Big\} = S \Big\{ \frac{v_i
+  \odot v_j}{\odot V(\mu)} \Big\}.
+\]
+Here, I am using the notation $\odot V(\mu)$ to emphasize that $V(\mu)$ is a
+vector and that the division above is component-wise.  Now we can do
+Newton-Raphson using these two quantities.  Wedderburn ties this Newton-Raphson
+to iteratively weighted least squares in Theorem 4 on p. 444.
+
+Consider Newton Raphson for a moment.  You have a gradient $G(\beta)$ and a
+Hessian $H(\beta)$ at the current value of $\beta$ of $F(\beta)$.  The maximum
+of the second order approximation is at $-H^{-1} G$, as one can see by
+completing the square or calculating the first derivative of
+\[
+F(\beta + x) \simeq \frac{1}{2} x' H x + G x + F(\beta),
+\]
+in which case
+\[
+Hx + G = 0 \implies x = - H^{-1} G.
+\]
+Thus we have
+\[
+\delta \beta = - H(\beta)^{-1} G(\beta)
+\]
+and
+\[
+\beta^* = \beta - H(\beta)^{-1} G(\beta).
+\]
+
+Wedderburn notes that when the conditional mean is determined by $f(\mu_k) =
+x_k' \beta = Y_k$, which we can think of saying that in general $\mu$ is a
+function of $Y$ and $\mu_k = \mu(Y_k)$, then we have that (for a single
+observation)
+\[
+v_i = \graddel{\mu}{\beta_i}(\beta_i) = \graddel{\mu}{Y} x_i .
+\]
+Hence the update for $\beta$ is determined by
+\[
+\sum_{jk} \frac{1}{V(\mu_k)} \Big(\graddel{\mu_k}{Y_k}\Big)^2 x_{ik} x_{jk} \delta
+\beta_j
+= \sum_{k} \frac{r_k}{V(\mu_k)}\graddel{\mu_k}{Y_k} x_{ik}
+\]
+where $\mu_k = \mu(x_k' \beta)$ and $\graddel{\mu_k}{Y_k} =
+\graddel{\mu}{Y}(x_k' \beta)$ and $x_k$ refers to the vector of predictors for
+observation $x_k$.  The $i$ and $j$th indices refer to the $i$ and $j$th
+predictors.
+
+Note that 
+\[
+\sum_{jk} \frac{1}{V(\mu_k)} \Big(\graddel{\mu_k}{Y_k}\Big)^2 x_{ik} x_{jk}
+\beta_j = 
+\sum_{k} \frac{1}{V(\mu_k)} \Big(\graddel{\mu_k}{Y_k}\Big)^2 x_{ik} Y_k.
+\]
+
+Thus the update $\beta^* = \beta + \del \beta$ can be written as
+\[
+\sum_{jk} \frac{1}{V(\mu_k)} \Big(\graddel{\mu_k}{Y_k}\Big)^2 x_{ik} x_{jk} 
+\beta_j^*
+=
+\sum_{k} \frac{1}{V(\mu_k)}\Big(\graddel{\mu_k}{Y_k} \Big)^2  x_{ik} (Y_k + r_{k} 
+\frac{\del Y_k}{\del \mu_k}).
+\]
+Putting this in matrix notation, let $D =
+\frac{1}{V(\mu_k)}\Big(\graddel{\mu_k}{Y_k} \Big)^2$ and let $X_{ik} = x_{ki}$.
+Then
+\[
+X' D X \beta^* = D X' \tilde Y
+\]
+where
+\[
+\tilde Y_k = Y_k + r_k \graddel{Y_k}{\mu_k}
+\]
+and $\tilde Y$ and $D$ are functions of the current value of $\beta$.  Thus we
+see that, indeed, the updates, $\beta^*$ can be seen as least squares solutions
+given the ``current'' response $\tilde Y$ and the ``current'' weights $D$.  In
+particular, we can view the update $\beta^*$ as the MLE or weighted least
+squares estimate of
+\[
+\tilde Y(\beta) = X \beta^* + \ep, \; \ep \sim N(0, D^{-1}(\beta)).
+\]
+Putting this all together, we have
+\[
+\begin{cases}
+  r_k = z_k - \mu_k \\
+  \mu_k = g(Y_k), \; g = f^{-1} \\
+  Y_k = x_k' \beta \\
+  \graddel{Y}{\mu}(\mu) = f'(\mu) = 1/g'(f(\mu)) \\
+  \graddel{Y_k}{\mu_k} = 1/g'(Y_k) = f'(\mu_k) \\
+  D_{ii} = \frac{1}{V(\mu_k)}\Big(\graddel{\mu_k}{Y_k} \Big)^2 \\
+  \graddel{\mu_k}{Y_k} = g'(Y_k) = 1/f'(\mu_k).
+\end{cases}
+\]
+
+One advantage of quasi-likelihoods is that you can include over-dispersion.
+Thus in Poisson regression, for instance, you can include a scale parameter and
+typographically replace $V(\mu_k)$ with $\sigma^2 V(\mu_k)$ everywhere above.
+
+\section{Green, 1984}
+
+Iteratively Reweighted Least Squares for Maximum Likelihood Estmation, and some
+Robust and Resistant Alternatives.
+
+
 \section{Miscellaneous}
 
 \begin{outline}
@@ -1084,6 +1569,8 @@ you can sample $p$ (the probability) directly whereas within probit you can only
 easily sample 1,0.  I don't know what he meant.
 
 \1 Think about Poisson Binomial
+
+\1 Coal mining data: \url{http://people.reed.edu/~jones/141/Coal.html}.
 
 \end{outline}
 
