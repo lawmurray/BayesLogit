@@ -22,7 +22,9 @@ run <- list("synth1"=FALSE,
             "diabetes"=FALSE,
             "australia"=FALSE,
             "heart"=FALSE,
-            "nodal"=FALSE)
+            "nodal"=FALSE,
+            "ortho"=FALSE,
+            "factor"=FALSE)
 
 write.dir = ""
 load.old = FALSE
@@ -450,6 +452,61 @@ if (run$nodal) {
   }
 
   if (write.it) save(y.nodal, X.nodal, glm.nodal, bench.nodal, file=file.name);
+  
+}
+
+##------------------------------------------------------------------------------
+## SYNTH ORTHO
+if (run$ortho) {
+
+  dset.name = "Ortho"
+  file.name = "bench-ortho.RData"
+
+  y = as.matrix(read.csv("Benchmark-DataSets/orthoy.csv"))
+  X = as.matrix(read.csv("Benchmark-DataSets/orthoX.csv"))
+  ## X = cbind(1, X)
+  
+  y.ortho = y
+  X.ortho = X
+
+  glm.ortho = glm(y ~ X + 0, family=binomial(link=logit))
+
+  bench.ortho = list()
+  if (load.old) load(file.name);
+  
+  for (nm in run.meth) {
+    bench.ortho[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+                                         method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
+  }
+
+  if (write.it) save(y.ortho, X.ortho, glm.ortho, bench.ortho, file=file.name);
+  
+}
+
+##------------------------------------------------------------------------------
+## SYNTH FACTOR
+if (run$factor) {
+
+  dset.name = "Factor"
+  file.name = "bench-factor.RData"
+
+  y = as.matrix(read.csv("Benchmark-DataSets/factory.csv"))
+  X = as.matrix(read.csv("Benchmark-DataSets/factorX.csv"))
+
+  y.factor = y
+  X.factor = X
+
+  glm.factor = glm(y ~ X + 0, family=binomial(link=logit))
+
+  bench.factor = list()
+  if (load.old) load(file.name);
+  
+  for (nm in run.meth) {
+    bench.factor[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
+                                         method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
+  }
+
+  if (write.it) save(y.factor, X.factor, glm.factor, bench.factor, file=file.name);
   
 }
 
