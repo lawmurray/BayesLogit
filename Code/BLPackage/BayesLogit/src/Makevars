@@ -4,11 +4,11 @@
 # PKG_LIBS = -lblas -llapack
 
 ## W/OUT Dynamic Stuff
-## OBJECTS = Matrix.o MatrixFrame.o RRNG.o RNG.o LogitWrapper.o
-## PKG_LIBS = $(BLAS_LIBS) $(FLIBS) $(LAPACK_LIBS) 
-## PKG_CPPFLAGS = -DUSE_R -Wall -DNDEBUG -DDISABLE_SINGLE
+OBJECTS = Matrix.o MatrixFrame.o RRNG.o RNG.o LogitWrapper.o
+PKG_LIBS = $(BLAS_LIBS) $(FLIBS) $(LAPACK_LIBS) 
+PKG_CPPFLAGS = -DUSE_R -Wall -DNDEBUG -DDISABLE_SINGLE
 
 ## With Dynamic Stuff 
 ## Link order matters.  I need -lblas for _cblas_caxpy.
-PKG_LIBS = $(BLAS_LIBS) $(FLIBS) $(LAPACK_LIBS) -L$(HOME)/Code/lib -lgsl -lblas
-PKG_CPPFLAGS = -DUSE_R -Wall -DNDEBUG -DDISABLE_SINGLE -I$(HOME)/Code/include 
+## PKG_LIBS = $(BLAS_LIBS) $(FLIBS) $(LAPACK_LIBS) -L$(HOME)/Code/lib -lgsl -lblas
+## PKG_CPPFLAGS = -DUSE_R -Wall -DNDEBUG -DDISABLE_SINGLE -I$(HOME)/Code/include 

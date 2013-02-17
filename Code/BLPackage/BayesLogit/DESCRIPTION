@@ -9,5 +9,4 @@ Description: The BayesLogit package does posterior simulation for binomial and
  technique. This method is fully automatic, exact, and fast.  A routine to
  efficiently sample from the Polya-Gamma class of distributions is included.
 License: GPL (>=3)
-Depends: R (>= 2.14.0), RcppEigen, rootSolve
-LinkingTo: RcppEigen
+Depends: R (>= 2.14.0)
