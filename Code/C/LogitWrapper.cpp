@@ -45,9 +45,13 @@ void rpg_gamma(double *x, double *n, double *z, int *num, int *trunc)
 
   for(int i=0; i < *num; ++i){
     #ifdef USE_R
-      if (i % 10 == 0) R_CheckUserInterrupt();
+      if (i % 1000 == 0) R_CheckUserInterrupt();
     #endif
-    x[i] = pg.draw_sum_of_gammas(n[i], z[i], r);
+      if (n[i]!=0.0) 
+	x[i] = pg.draw_sum_of_gammas(n[i], z[i], r);
+      else 
+	x[i] = 0.0;
+
   }
 
   #ifdef USE_R
@@ -67,7 +71,10 @@ void rpg_devroye(double *x, int *n, double *z, int *num)
   #endif
 
   for(int i=0; i < *num; ++i){
-    x[i] = pg.draw(n[i], z[i], r);
+    if (n[i]!=0)
+      x[i] = pg.draw(n[i], z[i], r);
+    else
+      x[i] = 0.0;
   }
 
   #ifdef USE_R
