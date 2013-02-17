@@ -100,7 +100,7 @@ CUBS.R <- function(y, X, n, mu, phi, W, m0, C0, obs=c("binom", "nbinom", "norm")
       fqstar.i = c(fstar.i, qstar.i)
     } else if (obs=="nbinom") { # Neg. Binomial
       fhat.i = f.i - log(n[i.l])
-      rs.i = multiroot(binom.solve, start=c(1,1), fq=c(fhat.i, q.i), maxiter=max.iter);
+      rs.i = multiroot(binom.solve, start=c(0.1,0.1), fq=c(fhat.i, q.i), maxiter=max.iter);
       rs[,i.l] = rs.i$root
       rstar.i = rs.i$root[1] + y[i.l];
       sstar.i = n[i.l] + rs.i$root[2];

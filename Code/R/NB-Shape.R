@@ -65,3 +65,27 @@ draw.df <- function(y, d.prev, mu, G, ymax)
     
   d.new
 }
+
+draw.df.real <- function(Y, r, Pr) {
+  ## r = d
+  if(r > 1) rstar = runif(1,r-1,r+1)
+  else rstar = runif(1,0,2)
+  ll = sum(dnbinom(Y, r, Pr, log=TRUE))
+  llstar = sum(dnbinom(Y, rstar, Pr, log=TRUE))
+  lalpha = llstar - ll
+  lu = log(runif(1))
+  if(lu < lalpha) r = rstar
+  r
+}
+
+draw.df.real.mean <- function(Y, r, mu) {
+  ## r = d
+  if(r > 1) rstar = runif(1,r-1,r+1)
+  else rstar = runif(1,0,2)
+  ll = sum(dnbinom(Y, r, mu / (mu+r), log=TRUE))
+  llstar = sum(dnbinom(Y, rstar, mu / (mu+rstar), log=TRUE))
+  lalpha = llstar - ll
+  lu = log(runif(1))
+  if(lu < lalpha) r = rstar
+  r
+}

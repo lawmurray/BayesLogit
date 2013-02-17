@@ -415,3 +415,69 @@ if (FALSE) {
   1/outp$c
   samp$rate
 }
+
+################################################################################
+                   ## CALCULATING AVERAGE NUMBER OF DRAWS ##
+################################################################################
+
+if (FALSE) {
+
+  tk = TRUNC
+  ## tk = 2
+  
+  ## source("PG.R")
+  zgrid = seq(0.0, 6, 0.001);
+  out   = zgrid
+  p = q = zgrid
+  len   = length(zgrid)
+  ig.accept = zgrid;
+  
+  for (i in 1:len) {
+    Z = zgrid[i]
+    fz = pi^2 / 8 + Z^2 / 2;
+    p[i] = cosh(Z) * (0.5 * pi) * exp( -1.0 * fz * tk) / fz;
+    q[i] = cosh(Z) * 2 * exp(-1.0 * Z) * pigauss(tk, 1.0/Z, 1.0);
+    ig.accept[i] = exp(-1.0 * Z) * pigauss(tk, 1.0/Z, 1.0) / pgamma(1/tk, 1/2, 1/2, lower.tail=FALSE)
+    out[i] = p[i] + q[i];
+  }
+
+  plot(zgrid, out)
+  
+}
+
+################################################################################
+                   ## CALCULATING AVERAGE PROB OF STOPPING ##
+################################################################################
+
+if (FALSE) {
+
+  tk = TRUNC
+  ## tk = 2
+  
+  ## source("PG.R")
+  n.terms = 16
+  lower = 0:n.terms
+  upper = 0:n.terms
+  int.a = 0:n.terms
+
+  Z = 1.378
+  fz = pi^2 / 8 + Z^2 / 2;
+  p = cosh(Z) * (0.5 * pi) * exp( -1.0 * fz * tk) / fz;
+  q = cosh(Z) * 2 * exp(-1.0 * Z) * pigauss(tk, 1.0/Z, 1.0);
+
+  c.z = p + q;
+  
+  for (n in 0:n.terms) {
+    d.n = 2*n+1
+    mu.n = d.n / Z
+    lambda.n = d.n^2
+    y.n = 0.5 * (Z^2 + (n + 1/2)^2 * pi^2)
+    lower[n+1] = 2 * exp(-d.n*Z) * pigauss(tk, mu.n, lambda.n)
+    upper[n+1] = 0.5 * pi * d.n / y.n * exp(-y.n * tk)
+    int.a[n+1] = lower[n+1] + upper[n+1]
+  }
+
+  prob.n = cosh(Z) * (int.a[-n.terms-1] - int.a[-1]) / c.z
+  tail   = rev(cumsum(rev(prob.n)))
+  
+}

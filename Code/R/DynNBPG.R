@@ -64,6 +64,7 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
     d    = array(0, dim=c(M)),
     w    = array(0, dim=c(M, T)),
     beta = array(0, dim=c(M, P.b, T+1)),
+    alpha= array(0, dim=c(M, 1)),
     mu   = array(0, dim=c(M, P.b)),
     phi  = array(0, dim=c(M, P.b)),
     W    = array(0, dim=c(M, P.b))
@@ -167,17 +168,17 @@ if (FALSE) {
   ## dyn.load("BayesLogit.so"); source("LogitWrapper.R"); source("FFBS.R");
   
   T = 500;
-  P = 4;
+  P = 1;
 
   beta = array(0, dim=c(P, T+1));
-  ## X = matrix(1, T, P);
-  X.dyn = matrix(rnorm(T*P), nrow=T, ncol=P)
+  X.dyn = matrix(1, T, P);
+  ## X.dyn = matrix(rnorm(T*P), nrow=T, ncol=P)
   ## X.stc = matrix(1, nrow=T, ncol=1)
 
   ## Parameters
   W = rep(0.05, P)
   phi = rep(0.95, P)
-  mu = rep(0.0, P)
+  mu = rep(0.5, P)
   d = 4
 
   ## Prior

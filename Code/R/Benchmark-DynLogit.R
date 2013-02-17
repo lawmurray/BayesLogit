@@ -74,7 +74,7 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
       gb$a.rate = 1
     } else if (method=="CUBS") {
       gb <- cubs.mh(y=y, X.dyn=X.dyn, n=rep(n,T), m0=m.0, C0=C.0,
-                    samp=samp, burn=samp, verbose=verbose,
+                    samp=samp, burn=burn, verbose=verbose,
                     mu.m0=mu.m0, mu.P0=mu.P0,
                     phi.m0=phi.m0, phi.P0=phi.P0,
                     W.a0=W.a0, W.b0=W.b0, X.stc=X.stc,
@@ -82,8 +82,8 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
                     obs="binom")
       gb$a.rate = gb$a.rate[samp]
     } else if (method=="FS2010") {
-      gb <- dyn.logit.FS(y, X.dyn=X.dyn, n=n[1], X.stc=NULL, ## assume n[i] = n[1].
-                         samp=1000, burn=100, verbose=100,
+      gb <- dyn.logit.FS(y, X.dyn=X.dyn, n=n[1], X.stc=X.tc, ## assume n[i] = n[1].
+                         samp=samp, burn=burn, verbose=verbose,
                          m.0=m.0, C.0=C.0,
                          mu.m0=mu.m0, mu.P0=mu.P0,
                          phi.m0=phi.m0, phi.P0=phi.P0,
@@ -143,7 +143,7 @@ if (run$tokyo) {
     ## source("Benchmark-DynLogit.R")
     nm = methods[i];
     bench.tokyo[[nm]] <- benchmark.dyn.logit(y, X.dyn=X, n=n, X.stc=NULL, 
-                                     samp=samp, burn=burn, ntrials=1, verbose=100,
+                                     samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                      method=nm, var.names="beta", dset.name="Tokyo",
                                      m.0=b.m0, C.0=b.C0,
                                      W.a0=W.a0, W.b0=W.b0,

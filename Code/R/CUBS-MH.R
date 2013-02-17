@@ -165,7 +165,7 @@ cubs.mh <- function(y, X.dyn, n, m0, C0,
     
     ## Draw beta
     W.mat = diag(W, N.b)
-    ## draw = CUBS.R(y, X, n, mu, phi, W.mat, m0, C0);
+    ## draw = CUBS.R(y, X, n, mu, phi, W.mat, m0, C0, obs=obs);
     draw = CUBS.C(y, X, n, mu, phi, W.mat, m0, C0, obs=obs);
     ppsl.b  = draw$beta
     if (N.a > 0) ppsl.a = draw$alpha
@@ -407,7 +407,7 @@ if (FALSE) {
   verbose = 100
   
   ## source("CUBS-MH.R")
-  one.R <- CUBS.R(y, X, sig2, mu, phi, W, m0, C0);
+  one.R <- CUBS.R(y, X, sig2, mu, phi, diag(W, P), m0, C0, obs="norm");
   one.C <- CUBS.C(y, X, sig2, mu, phi, diag(W, P), m0, C0, obs="norm");
 
   ## source("CUBS-MH.R")
@@ -521,7 +521,7 @@ if (FALSE) {
 if (FALSE) {
 
   T = 100;
-  P = 1;
+  P = 3;
 
   beta = array(0, dim=c(P, T+1));
   X = matrix(1, nrow=T, ncol=P);
@@ -529,18 +529,20 @@ if (FALSE) {
   N = nrow(X);
 
   ## Parameters
-  iota = 0;
-  W   = 0.1;
-  mu  = 0.5;
-  phi = 0.95
+  iota = 0
+  W   = rep(0.1, P);
+  mu  = rep(0.5, P);
+  phi = rep(0.95, P)
   d = 4
 
   ## Prior
-  b.m0 = 0.0;
-  b.C0 = 2.0;
-  phi.m0 = 0.9
-  phi.V0 = 0.1;
-  W.a0   = 10;
+  b.m0 = rep(0.0, P);
+  b.C0 = diag(2.0, P);
+  mu.m0 = mu
+  mu.V0 = rep(1.0, P);
+  phi.m0 = rep(0.9, P)
+  phi.V0 = rep(0.1, P)
+  W.a0   = rep(10, P);
   W.b0   = W.a0 * W;
 
   ## Synthetic
@@ -556,14 +558,15 @@ if (FALSE) {
   y = rnbinom(T, n, 1-p);
   w = rpg.devroye(T, y+n, psi);
 
-  m0 = mu
-  C0 = diag(b.C0, P);
+  m0 = b.m0
+  C0 = b.C0
   M = 1000
   verbose = 100
 
   ## source("CUBS-MH.R")
-  one.draw <- CUBS.R(y, X, n, mu, phi, W, m0, C0);
-
+  one.R <- CUBS.R(y, X, sig2, mu, phi, diag(W, P), m0, C0, obs="nbinom");
+  one.C <- CUBS.C(y, X, sig2, mu, phi, diag(W, P), m0, C0, obs="nbinom");
+  
   ## source("CUBS-MH.R")
   out.cubs <- cubs.mh(y, X.dyn=X, n, m0, C0,
                       samp=M, verbose=verbose,
@@ -580,8 +583,8 @@ if (FALSE) {
   out.pg <- dyn.NB.PG(y, X.dyn=X, X.stc=NULL,
                       samp=samp, burn=burn, verbose=50,
                       m.0=m0, C.0=C0,
-                      mu.m0=NULL, mu.V0=NULL,
-                      phi.m0=NULL, phi.V0=NULL,
+                      mu.m0=NULL, mu.P0=NULL,
+                      phi.m0=NULL, phi.P0=NULL,
                       W.a0=NULL, W.b0=NULL,
                       d.true=n[1], w.true=NULL,
                       beta.true=NULL, iota.true=NULL,

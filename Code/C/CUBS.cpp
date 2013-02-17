@@ -42,8 +42,9 @@ void cubs_norm(double *alpha_, double *beta_,
   Map<VectorXd> m0   (m0_   , N       );
   Map<MatrixXd> C0   (C0_   , N  , N  );
 
-  NormUpdate norm;
-  cubs(alpha, beta, z, X, V, mu, phi, W, m0, C0, log_dens, norm, *eps_rel_, *max_iter_, r);
+  // NormUpdate norm;
+  // cubs(alpha, beta, z, X, V, mu, phi, W, m0, C0, log_dens, norm, *eps_rel_, *max_iter_, r);
+  cubs(alpha, beta, z, X, V, mu, phi, W, m0, C0, log_dens, &norm_post, *eps_rel_, *max_iter_, r);
 }
 
 void cubs_binom(double *alpha_, double *beta_,
@@ -76,8 +77,9 @@ void cubs_binom(double *alpha_, double *beta_,
   Map<VectorXd> m0   (m0_   , N       );
   Map<MatrixXd> C0   (C0_   , N  , N  );
 
-  BinomUpdate binom;
-  cubs(alpha, beta, z, X, n, mu, phi, W, m0, C0, log_dens, binom, *eps_rel_, *max_iter_, r);
+  // BinomUpdate binom;
+  // cubs(alpha, beta, z, X, n, mu, phi, W, m0, C0, log_dens, binom, *eps_rel_, *max_iter_, r);
+  cubs(alpha, beta, z, X, n, mu, phi, W, m0, C0, log_dens, &binom_post, *eps_rel_, *max_iter_, r);
 }
 
 void cubs_nbinom(double *alpha_, double *beta_,
@@ -110,6 +112,12 @@ void cubs_nbinom(double *alpha_, double *beta_,
   Map<VectorXd> m0   (m0_   , N       );
   Map<MatrixXd> C0   (C0_   , N  , N  );
 
-  NBinomUpdate nbinom;
-  cubs(alpha, beta, z, X, n, mu, phi, W, m0, C0, log_dens, nbinom, *eps_rel_, *max_iter_, r);
+  try {
+    // NBinomUpdate nbinom;
+    // cubs(alpha, beta, z, X, n, mu, phi, W, m0, C0, log_dens, nbinom, *eps_rel_, *max_iter_, r);
+    cubs(alpha, beta, z, X, n, mu, phi, W, m0, C0, log_dens, &nbinom_post, *eps_rel_, *max_iter_, r);
+  }
+  catch (std::exception& e) {
+    fprintf(stderr, "%s", e.what());
+  }
 }

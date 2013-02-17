@@ -72,6 +72,7 @@ dyn.NB.CUBS <- function(y, X.dyn, m0, C0,
               "mu"   = array(0, dim=c(M, N.b)),
               "phi"  = array(0, dim=c(M, N.b)),
               "W"    = array(0, dim=c(M,N.b)),
+              "d"    = array(0, dim=c(M)),
               ## "ppsl.b"=array(0, dim=c(M, N.b, T+1)),
               "l.fdivq" = rep(0, M),
               "l.ratio" = rep(0, M),
@@ -122,7 +123,7 @@ dyn.NB.CUBS <- function(y, X.dyn, m0, C0,
     
     ## Draw beta
     W.mat = diag(W, N.b)
-    ## draw = CUBS.R(y, X, n, mu, phi, W.mat, m0, C0);
+    ## draw = CUBS.R(y, X, n, mu, phi, W.mat, m0, C0, obs="nbinom");
     draw = CUBS.C(y, X, n, mu, phi, W.mat, m0, C0, obs="nbinom");
     ppsl.b  = draw$beta
     if (N.a > 0) ppsl.a = draw$alpha
@@ -163,6 +164,7 @@ dyn.NB.CUBS <- function(y, X.dyn, m0, C0,
       out$mu[i-burn,]      = mu
       out$phi[i-burn,]     = phi
       out$W[i-burn,]       = W;
+      out$d[i-burn]        = d;
       out$l.fdivq[i-burn]  = l.fdivq
       out$l.ratio[i-burn]  = l.ratio
       out$lf.ppsl[i-burn]  = lf.ppsl
@@ -173,6 +175,8 @@ dyn.NB.CUBS <- function(y, X.dyn, m0, C0,
     if (i %% verbose == 0) cat("CUBS: iteration", i, "a.rate:", naccept / i, "\n");
     
   }
+
+  if(!is.null(draw$rs)) out$rs = draw$rs
 
   end.time = proc.time()
   out$total.time = end.time - start.time
@@ -189,27 +193,29 @@ dyn.NB.CUBS <- function(y, X.dyn, m0, C0,
 
 if (FALSE) {
 
-  T = 100;
-  P = 1;
+  T = 1000;
+  P = 3;
 
   beta = array(0, dim=c(P, T+1));
-  X = matrix(1, nrow=T, ncol=P);
+  X = matrix(rnorm(T*P), nrow=T, ncol=P);
 
   N = nrow(X);
 
   ## Parameters
-  iota = 0;
-  W   = 0.1;
-  mu  = 0.5;
-  phi = 0.95
+  iota = 0
+  W   = rep(0.1, P);
+  mu  = rep(0.5, P);
+  phi = rep(0.95, P)
   d = 4
 
   ## Prior
-  b.m0 = 0.0;
-  b.C0 = 2.0;
-  phi.m0 = 0.9
-  phi.V0 = 0.1;
-  W.a0   = 10;
+  b.m0 = rep(0.0, P);
+  b.C0 = diag(2.0, P);
+  mu.m0 = mu
+  mu.V0 = rep(1.0, P);
+  phi.m0 = rep(0.9, P)
+  phi.V0 = rep(0.1, P)
+  W.a0   = rep(10, P);
   W.b0   = W.a0 * W;
 
   ## Synthetic
@@ -226,35 +232,42 @@ if (FALSE) {
   w = rpg.devroye(T, y+n, psi);
 
   m0 = mu
-  C0 = diag(b.C0, P);
-  M = 1000
-  verbose = 100
+  C0 = b.C0
+  scale.up = 1
+  samp = 1000 * scale.up
+  burn = 200 * scale.up
+  verbose = 100 * scale.up
 
   ## source("DynNBCUBS.R")
-  one.draw <- CUBS.R(y, X, n, mu, phi, W, m0, C0);
+  one.draw <- CUBS.R(y, X, n, mu, phi, diag(W, P), m0, C0, obs="nbinom");
 
   ## source("DynNBCUBS.R")
   out.cubs <- dyn.NB.CUBS(y, X.dyn=X, m0, C0,
-                          samp=M, verbose=verbose,
-                          mu.true=mu, phi.true=phi, W.true=W,
-                          d.true=d)
+                          samp=samp, verbose=verbose,
+                          mu.true=NULL, phi.true=NULL, W.true=NULL,
+                          d.true=NULL)
   
 }
 
 if (FALSE) {
 
   source("DynNBPG.R")
-  samp = 1000
-  burn = 0
+  ## samp = 1000; burn = 0
   out.pg <- dyn.NB.PG(y, X.dyn=X, X.stc=NULL,
-                      samp=samp, burn=burn, verbose=50,
+                      samp=samp, burn=burn, verbose=verbose,
                       m.0=m0, C.0=C0,
-                      mu.m0=NULL, mu.V0=NULL,
-                      phi.m0=NULL, phi.V0=NULL,
+                      mu.m0=NULL, mu.P0=NULL,
+                      phi.m0=NULL, phi.P0=NULL,
                       W.a0=NULL, W.b0=NULL,
-                      d.true=n[1], w.true=NULL,
+                      d.true=NULL, w.true=NULL,
                       beta.true=NULL, iota.true=NULL,
-                      mu.true=mu, phi.true=phi, W.true=W)
+                      mu.true=NULL, phi.true=NULL, W.true=NULL)
+
+  beta.cubs = apply(out.cubs$beta, c(2,3), mean)
+  beta.pg   = apply(out.pg$beta, c(2,3), mean)
+
+  plot(beta.cubs[1,], type="l");
+  lines(beta.pg[1,], col=2)
   
 }
 

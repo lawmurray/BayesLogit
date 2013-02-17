@@ -19,13 +19,13 @@
                                ## POLYAGAMMA ##
 ################################################################################
 
-## Draw PG(a, b)
+## Draw PG(n, z)
 ##------------------------------------------------------------------------------
 rpg.gamma <- function(num=1, n=1, z=0.0, trunc=200)
 {
     ## Check Parameters.
-    if (sum(n<=0)!=0) {
-        print("a must be greater than zero.");
+    if (sum(n<0)!=0) {
+        print("b must be greater than zero.");
         return(NA);
     }
     if (trunc < 1) {
@@ -48,7 +48,7 @@ rpg.gamma <- function(num=1, n=1, z=0.0, trunc=200)
 rpg.devroye <- function(num=1, n=1, z=0.0)
 {
     ## Check Parameters.
-    if (sum(n<=0)!=0) {
+    if (sum(n<0)!=0) {
         print("n must be greater than zero.");
         return(NA);
     }
@@ -61,6 +61,21 @@ rpg.devroye <- function(num=1, n=1, z=0.0)
     OUT = .C("rpg_devroye", x, as.integer(n), z, as.integer(num), PACKAGE="BayesLogit");
 
     OUT[[1]]
+}
+
+## Draw PG(n, z)
+##------------------------------------------------------------------------------
+rpg <- function(num=1, n=1, z=0.0, trunc=200)
+{
+  n.int = floor(n)
+  n.rem = n - n.int
+  
+  x.int = rpg.devroye(num, n.int, z)
+  x.rem = rpg.gamma(num, n.rem, z)
+
+  out = x.int + x.rem
+
+  out
 }
 
 ################################################################################
