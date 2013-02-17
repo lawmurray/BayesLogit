@@ -1,4 +1,4 @@
-\documentclass[draft]{article}
+\documentclass[]{article}
 
 \input{commands}
 
@@ -917,7 +917,7 @@ if $i$ is odd (with the convention that $S_{-1} = 0$) and that $Y
 \in (S_i, S_{i-2}]$ if $i$ is even.  Given $X$, this probability is just the
 length of that interval divided by $S_0 = a_0$ as seen in the figure below.
 \begin{center}
-\includegraphics[scale=0.75]{expected_iterations.png}
+\includegraphics[scale=0.75]{Images/expected_iterations.png}
 \end{center}
 Further more
 \[
@@ -990,7 +990,7 @@ which becomes
 % \]
 \[
 2 \cosh(z) \exp(-z(2n+1))
-\Big(\frac{\lambda}{2 \pi x^3}\Big)^{1/2} 
+\Big(\frac{\lambda_n}{2 \pi x^3}\Big)^{1/2} 
 \exp \Big\{ -\frac{\lambda_n}{2x\mu_n^2}(x-\mu_n)^2 \Big\}.
 \]
 Closed form antiderivatives exists for both components.  We can use that to
@@ -1025,6 +1025,141 @@ integrals above we can calculate this via
 Doing this I found the first 4 probabilties to be (rouding to the 10th decimal
 place) 0.9991977085, 0.0008022898, 0.0000000017, 0.0000000000.  This is kind
 of absurd.
+
+\subsection{Acceptance constant}
+
+The kernel for the right portion of the proposal is
+\[
+\cosh(z) \frac{\pi}{2} \exp \Big( - (\pi^2 / 8 + z^2 / 2) x \Big).
+\]
+Thus after integrating $t$ to $\infty$ we have
+\[
+p(z,t) = \cosh(z) \frac{\pi}{2} \frac{1}{\pi^2 / 8 + z^2 / 2} \exp \Big( - (\pi^2 / 8 +
+z^2 / 2) t \Big).
+\]
+The kernel for the left portion of the proposal is
+\[
+\cosh(z) \Big(\frac{2}{\pi x}\Big)^{3/2} \exp \Big(-\frac{z^2x}{2} -
+\frac{1}{2x} \Big).
+\]
+An inverse Gaussian density looks like
+\[
+\Big( \frac{\lambda}{2 \pi x^3} \Big)^{1/2} \exp \Big( - \frac{\lambda
+  (x-\mu)^2}{2 \mu^2 x} \Big).
+\]
+Completing the square we have
+\[
+- \frac{z^2}{2 x} (x^2 + 1/z^2) = - \frac{z^2}{2 x} (x^2 - 2x/z + 2x/z + 1/z^2)
+= -z - \frac{z^2}{2 x}(x-1/z)^2.
+\]
+Thus we can rewrite the left portion as
+\[
+\cosh(z) e^{-z} (2/\pi)^{3/2} (2\pi)^{1/2} (2\pi)^{-1/2} x^{-3/2} \exp \Big( -
+\frac{z^2}{2x} (x-1/z)^2 \Big).
+\]
+Simplifying we have
+\[
+(1+e^{-2z}) (2/\pi) p_{IG}(x | 1/z, 1).
+\]
+Thus integrating from $0$ to $t$ we have
+\[
+(1+e^{-2z}) (2/\pi) IG(t | 1/z, 1).
+\]
+Consider for the density $p_{IG}$.  Suppose we do a change of variables from $x
+\sim IG(1/z,\lambda)$ to $y = x/t$.  Then $dx = t dy$ and
+\begin{align*}
+\Big( \frac{\lambda}{2 \pi x^3} \Big)^{1/2} \exp \Big( - \frac{\lambda
+  (x-\mu)^2}{2 \mu^2 x} \Big) dx
+& = \Big( \frac{\lambda}{2 \pi (yt)^3} \Big)^{1/2} \exp \Big( - \frac{\lambda
+  z^2 (yt-1/z)^2}{2 (yt)} \Big) t dy \\
+& = \Big( \frac{\lambda t}{2 \pi y^3} \Big)^{1/2} \exp \Big( - \frac{\lambda
+  t (zt)^2 (yt-1/(zt))^2}{2 y} \Big)  dy 
+\end{align*}
+Thus we have $x \sim IG(1/z, \lambda)$ and $y \sim IG(1/(zt), t \lambda)$.  So,
+the left integral is
+\[
+\int_0^t \ldots = \int_0^1 p_{IG}(y | 1/(zt), 1/t) dy.
+\]
+Thus we have that 
+\[
+q(z,t) = (1+e^{-2z}) (2/\pi) IG(1, 1/(zt), 1).
+\]
+
+We want to show that $p(z,t)$ is decreasing to $0$ and $q(z,t)$ in increasing to
+$1$.  I can show the latter.  The former, I think, depends upon the value of
+$t$.  Thus we can only show that it is decreasing for sufficiently large $z$.
+
+For the former, the derivative in $z$ of
+\[
+\cosh(z) \exp(-(\pi^2/8 + z^2/2)t)
+\]
+is
+\[
+(\sinh (z) - \cosh(z) z t) \exp(-(\pi^2/8 + z^2/2)t).
+\]
+The derivative of
+\[
+\frac{1}{\frac{z^2}{2} + \frac{\pi^2}{8}}
+\]
+is
+\[
+\frac{-z}{\Big( \frac{z^2}{2} + \frac{\pi^2}{8} \Big)^2}
+\]
+Thus
+\[
+\del_z p(z,t) = p(z,t) \Big( \sinh (z) - \cosh(z) z t - 
+\frac{z}{\frac{z^2}{2} + \frac{\pi^2}{8}} \Big).
+\]
+Thus for sufficiently large $z$ the quantity on the right is negative.  It
+appears that it is always negative for $t^*$.
+
+For the latter term, consdier the probability space $(\Omega, \mcF, \bbP)$, the
+brownian motion $(W_t)$, and the brownian motion with drift $X_s^{\nu} = \nu s +
+W_s$.  The stopping time
+\[
+T^{\nu} = \inf \{ s > 0 | X_s^{\nu} \geq 1 \}.
+\]
+is distributed as $IG(1/\nu, 1)$ and has
+\[
+\{ T^{\nu} < t \} = \{ \sup_{s \in [0,t)} X_s \geq 1 \}.
+\]
+Thus, if $\nu_1 < \nu_2$ and $T^{\nu_1}$ and $T^{\nu_2}$ are defined using the
+same Brownian motion, then
+\[
+\bbP \{ T^{\nu_1} < t \} = \bbP \{ \sup_{s \in [0,t)} X_s^{\nu_1} \geq 1 \} <
+\bbP \{ \sup_{s \in [0,t)} X_s^{\nu_2} \geq 1 \} = \bbP \{ T^{\nu_2} < t \}.
+\]
+This tells us that $q(z,t)$ converges to $1$ as $z$ goes to $\infty$.
+
+To examine how $q(z,t)$ goes to zero it is instructive to examine its
+derivative.  We have
+\[
+\del_z \Big[ (1+e^{-2z}) IG(t | 1/z, 1) ].
+\]
+Informlly bringing the derivative inside the integral (can we always do that
+with exponential families?), we have
+\[
+\int_0^t \del_z \frac{1}{\sqrt{2 \pi} x^{3/2}} \exp \Big( - \frac{z^2}{2
+  x}(x-1/z)^2 \Big).
+\]
+Taking the derivative of the exponent we have
+\begin{align*}
+-\frac{z}{x} (x-1/z)^2 + - \frac{z^2}{2x} \frac{1}{z^2} 2 (x-1/z)
+& = -\frac{z}{x}(x^2 - \frac{2x}{z} + \frac{1}{z^2} \Big) - 1 + 1 / (zx) \\
+& = 1 - zx.
+\end{align*}
+Thus 
+\[
+\del_z IG(t|1/z,1) = IG(t|1/z,1) - z \int_{0}^t x p_{IG}(x|1/z,1) dx.
+\]
+So the derivative is
+\begin{align*}
+-2 e^{-2z} IG(t|1/z,1) & + (1+e^{-2z}) \del_z IG(t|1/z,1) \\
+& = (1 + e^{-2z} - 2 e^{-2z}) IG(t|1/z,1) - (1 + e^{-2z}) z \int_{0}^t x
+p_{IG}(x|1/z,1) dx \\
+& = (1 - e^{-2z}) IG(t|1/z,1) - (1 + e^{-2z}) z \int_{0}^t x
+p_{IG}(x|1/z,1) dx.
+\end{align*}
 
 % (I think) We could also let $\psi$ map $(X,Y)$ to the probability mass
 % function of $Z$ given $X$.  I need to think more about that.
@@ -1229,7 +1364,7 @@ sample that is uniform over $\{(x,u) : 0 \leq u \leq cg(x) \}$, which is
 precisly what we are looking for.  Save the sample as $y$ only if $u < f(x)$ and
 you will have a uniform draw from $A$.
 
-\includegraphics[scale=0.75]{accept-reject.png}
+\includegraphics[scale=0.75]{Images/accept-reject.png}
 
 Suppose for the moment one is doing accept/reject sampling with target density
 $f(x)$ and proposal $g(x)$, that $k_f(x)$ and $k_g(x)$ are the kernels of the
