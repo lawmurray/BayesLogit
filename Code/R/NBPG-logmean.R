@@ -79,9 +79,12 @@ NB.PG.gibbs <- function(y, X,
     phi = drop(X%*%beta)
     mu  = exp(phi)
     d = draw.df(d, mu, G, ymax);
+    ## d = draw.df.real.mean(y, d, mu);
     ## draw (w | d, beta)
     psi = phi - log(d);
     w = rpg.devroye(N, y+d, psi);
+    ## w = rpg(N, y+d, psi)
+    ## w = rpg.gamma(N, y+d, psi, trunc=200);
 
     ## draw beta
     kappa = 0.5 * (y-d)
@@ -108,7 +111,8 @@ NB.PG.gibbs <- function(y, X,
 
 if (FALSE) {
 
-  library("BayesLogit")
+  ## library("BayesLogit")
+  ## source("NBPG-logmean.R")
   
   N = 500
   X = cbind(1, rnorm(N))
@@ -127,10 +131,12 @@ if (FALSE) {
   samp = 1000
   burn = 500
   verbose = 500
-  
-  out <- logit.PG.gibbs(y, X,
-                        samp=samp, burn=burn, verbose=verbose,
-                        beta.true = NULL, w.true = NULL, d.true=NULL)
+
+  start.time = proc.time()
+  out <- NB.PG.gibbs(y, X,
+                     samp=samp, burn=burn, verbose=verbose,
+                     beta.true = NULL, w.true = NULL, d.true=NULL)
+  diff.time = proc.time() - start.time
   
 }
 

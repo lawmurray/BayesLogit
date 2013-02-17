@@ -32,6 +32,18 @@ draw.df <- function(d.prev, psi, G, ymax)
   d.new
 }
 
+draw.df.real <- function(Y, r, Pr) {
+  ## r = d
+  if(r > 1) rstar = runif(1,r-1,r+1)
+  else rstar = runif(1,0,2)
+  ll = sum(dnbinom(Y, r, Pr, log=TRUE))
+  llstar = sum(dnbinom(Y, rstar, Pr, log=TRUE))
+  lalpha = llstar - ll
+  lu = log(runif(1))
+  if(lu < lalpha) r = rstar
+  r
+}
+
 ################################################################################
 
 draw.beta <- function(X, kappa, w, b.0=NULL, B.0=NULL, P.0=NULL)
@@ -57,10 +69,10 @@ draw.beta <- function(X, kappa, w, b.0=NULL, B.0=NULL, P.0=NULL)
 
 } ## draw.beta
 
-logit.PG.gibbs <- function(y, X,
-                           b.0=NULL, B.0 = NULL, P.0 = NULL,
-                           samp=1000, burn=500, verbose=500,
-                           beta.true = NULL, w.true = NULL, d.true=NULL)
+NB.PG.gibbs <- function(y, X,
+                        b.0=NULL, B.0 = NULL, P.0 = NULL,
+                        samp=1000, burn=500, verbose=500,
+                        beta.true = NULL, w.true = NULL, d.true=NULL)
 {
   ## X: n by p matrix
   ## y: n by 1 vector, counts.
@@ -88,7 +100,7 @@ logit.PG.gibbs <- function(y, X,
 
   ## Preprocess
   ymax = max(y);
-  F = cumsum(hist(y, breaks=0:(ymax+1)-0.5)$counts)
+  F = cumsum(hist(y, breaks=0:(ymax+1)-0.5, plot=FALSE)$counts)
   G = N - F;
   
   output <- list(w = matrix(nrow=samp, ncol=N),
@@ -103,7 +115,9 @@ logit.PG.gibbs <- function(y, X,
     ## draw (d, w | beta)
     ## draw (d | beta)
     psi = drop(X%*%beta)
+    pr  = 1 / (1 + exp(-psi))
     d = draw.df(d, psi, G, ymax);
+    ## d = draw.df.real(y, d, pr)
     ## draw (w | d, beta)
     w = rpg.devroye(N, y+d, psi);
 
@@ -129,6 +143,7 @@ logit.PG.gibbs <- function(y, X,
 if (FALSE) {
 
   library("BayesLogit")
+  ## source("NBPG-logodds.R")
   
   N = 500
   X = cbind(1, rnorm(N))
@@ -146,9 +161,9 @@ if (FALSE) {
   burn = 500
   verbose = 500
   
-  out <- logit.PG.gibbs(y, X,
-                        samp=samp, burn=burn, verbose=verbose,
-                        beta.true=NULL, w.true=NULL, d.true=NULL)
+  out <- NB.PG.gibbs(y, X,
+                     samp=samp, burn=burn, verbose=verbose,
+                     beta.true=NULL, w.true=NULL, d.true=NULL)
   
 }
 

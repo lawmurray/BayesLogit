@@ -89,6 +89,8 @@ NB.FS.gibbs <- function(y, X,
     phi = drop(X%*%beta)
     mu  = exp(phi)
     d = draw.df(d, mu, G, ymax);
+    ## compute.mixture(d) needs integral d for d < 20.
+    ## d = draw.df.real.mean(y, d, mu)
     ## draw (lambda | d, beta)
     psi = phi - log(d);
     p = 1 / (1 + exp(-psi))
@@ -123,7 +125,9 @@ NB.FS.gibbs <- function(y, X,
 
 if (FALSE) {
 
-  dyn.load("../C/FSF_nmix.so")
+  ## dyn.load("../C/FSF_nmix.so")
+
+  ## source("NBFS-logmean.R")
   
   N = 500
   X = cbind(1, rnorm(N))
@@ -148,9 +152,9 @@ if (FALSE) {
   burn = 500
   verbose = 500
   
-  out <- logit.FS.gibbs(y, X,
-                        samp=samp, burn=burn, verbose=verbose,
-                        beta.true = NULL, d.true=NULL, lambda.true=NULL, r.true=NULL)
+  out <- NB.FS.gibbs(y, X,
+                     samp=samp, burn=burn, verbose=verbose,
+                     beta.true = NULL, d.true=NULL, lambda.true=NULL, r.true=NULL)
   
 }
 
