@@ -13,19 +13,20 @@ source("DynNBCUBS.R")
 
 run <- list("flu"   =FALSE,
             "synth1"=FALSE,
-            "synth2"=FALSE)
+            "synth2"=FALSE,
+            "synth3"=TRUE)
 
 methods = c("PG", "FS", "CUBS")
 
-write.dir = ""
+write.dir = "."
 
-write.it = FALSE
+write.it = TRUE
 plot.it  = FALSE
 
-samp = 1000
-burn  = 100
-verbose = 100
-ntrials = 1
+samp = 10000
+burn  = 2000
+verbose = 1000
+ntrials = 10
 
 ################################################################################
                              ## Dyn NB Benchmark ##
@@ -223,6 +224,8 @@ if (run$synth1) {
 }
 
 ##------------------------------------------------------------------------------
+                                 ## SYNTH 2 ##
+##------------------------------------------------------------------------------
 
 if (run$synth2) {
 
@@ -256,6 +259,48 @@ if (run$synth2) {
  
   if (plot.it)  { plot.bench(pg, fs); plot.check.NB(y, X.dyn, bmark1=pg, bmark2=fs); }
   if (write.it) save(bench.synth2, synth2.table, file=file.path(write.dir, "bmark-synth2.RData"))
+
+}
+
+##------------------------------------------------------------------------------
+                                 ## SYNTH 3 ##
+##------------------------------------------------------------------------------
+
+if (run$synth3) {
+
+  load("Benchmark-DataSets/nb.synth3.RData")
+
+  y = y;
+  X.dyn = X.dyn;
+
+  ## Prior
+  b.m0 = 0.0;
+  b.C0 = 3.0;
+  W    = 0.1;
+  W.a0   = 10;
+  W.b0   = W.a0 * W;
+  mu.m0 = 0.0
+  mu.P0 = 1.0
+  phi.m0 = 0.95
+  phi.P0 = 100
+
+  bench.synth3 = list();
+  
+  ## source("Benchmark-DynNB.R")
+  for (i in 1:3) {
+    ## source("Benchmark-DynNB.R")
+    nm = methods[i];
+    bench.synth3[[nm]] <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=NULL, 
+                                     samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
+                                     method=nm, var.names="beta", dset.name="Synth3",
+                                     m.0=b.m0, C.0=b.C0,
+                                     W.a0=W.a0, W.b0=W.b0,
+                                     mu.true=0.0, phi.true=1.0);
+  }
+  
+  synth3.table = setup.table.dyn(bench.synth3, "beta")
+ 
+  if (write.it) save(bench.synth3, synth3.table, file=file.path(write.dir, "bmark-synth3.RData"))
 
 }
 
