@@ -53,6 +53,9 @@ test_pgpar : test_pgpar.cpp PolyaGamma.hpp PolyaGammaPar.hpp
 test_logit : test_logit.cpp Logit.hpp MatRNG.so
 	g++ -o test_logit MatRNG.so test_logit.cpp $(OPTS) $(INC) $(LNK)
 
+test_cubs : CUBS_update.cpp CUBS_update.h 
+	g++ -DCUBS_UPDATE_MAIN -o test_cubs CUBS_update.cpp $(OPTS) $(INC) $(LNK)
+
 ################################################################################
 
 MatRNG.so : Matrix.o RNG.o

@@ -56,7 +56,8 @@ void cubs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
 	  MatrixBase<dV> &z, MatrixBase<dM> &X, MatrixBase<dV> &n,
 	  MatrixBase<dV> &mu, MatrixBase<dV> &phi, MatrixBase<dM> &W, 
 	  MatrixBase<dV> &m0, MatrixBase<dM> &C0, double* log_dens, 
-	  CUBSUpdate& obs, 
+	  // CUBSUpdate& obs, 
+	  CUBS_update post,
 	  double epsrel, int max_iter, RNG& r)
 {
   // When tracking (alpha, beta_t).  It may be the case that there is no alpha.
@@ -126,8 +127,9 @@ void cubs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
     // Conjugate update.
     Matrix<double, 2, 1> fq_prior, fq_post; 
     fq_prior(0) = f; fq_prior(1) = Q(0);
-    // (*post)(&fq_prior(0), &fq_post(0), z(i_l), n(i_l), epsrel, max_iter);
-    obs.update(&fq_prior(0), &fq_post(0), z(i_l), n(i_l), epsrel, max_iter);
+    double ival[2] = {0.01, 0.01};
+    (*post)(&fq_prior(0), &fq_post(0), z(i_l), n(i_l), ival, epsrel, max_iter);
+    // obs.update(&fq_prior(0), &fq_post(0), z(i_l), n(i_l), epsrel, max_iter);
 
     m[i] = a[i] + A * ( fq_post(0) - fq_prior(0) );
     C[i] = R[i] + RF * RF.transpose() * ( (fq_post(1) / fq_prior(1) - 1.0) / fq_prior(1) );
