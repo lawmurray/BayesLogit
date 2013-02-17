@@ -462,7 +462,7 @@ if (run$ortho) {
   dset.name = "Ortho"
   file.name = "bench-ortho.RData"
 
-  y = as.matrix(read.csv("Benchmark-DataSets/orthoy.csv"))
+  y = as.matrix(read.csv("Benchmark-DataSets/orthoY.csv"))
   X = as.matrix(read.csv("Benchmark-DataSets/orthoX.csv"))
   ## X = cbind(1, X)
   
@@ -490,7 +490,7 @@ if (run$factor) {
   dset.name = "Factor"
   file.name = "bench-factor.RData"
 
-  y = as.matrix(read.csv("Benchmark-DataSets/factory.csv"))
+  y = as.matrix(read.csv("Benchmark-DataSets/factorY.csv"))
   X = as.matrix(read.csv("Benchmark-DataSets/factorX.csv"))
 
   y.factor = y

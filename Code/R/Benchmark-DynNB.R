@@ -79,7 +79,7 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
                         mu.m0=mu.m0, mu.P0=mu.P0,
                         phi.m0=phi.m0, phi.P0=phi.P0,
                         W.a0=W.a0, W.b0=W.b0, X.stc=X.stc,
-                        mu.true = mu.true, phi.true=phi.true, W.true=W.true)
+                        mu.true = mu.true, phi.true=phi.true, W.true=W.true, d.true=d.true)
       gb$a.rate = gb$a.rate[samp]
     } else {
       print("Unknown method.")
@@ -174,7 +174,7 @@ if (run$flu) {
                                         m.0=m0, C.0=C0,
                                         mu.m0=mu.m0, mu.P0=mu.P0,
                                         phi.m0=phi.m0, phi.P0=phi.P0,
-                                        W.a0=W.a0, W.b0=W.b0, d.true=1);
+                                        W.a0=W.a0, W.b0=W.b0, d.true=NULL);
     ## mu.true=rep(0.0, N.b), phi.true=rep(1, N.b)
   }
   
@@ -212,7 +212,7 @@ if (run$synth1) {
                                      method=nm, var.names="beta", dset.name="Synth1",
                                      m.0=b.m0, C.0=b.C0,
                                      W.a0=W.a0, W.b0=W.b0,
-                                     mu.true=0.0, phi.true=1.0);
+                                     mu.true=0.0, phi.true=1.0, d.true=NULL);
   }
   
   synth1.table = setup.table.dyn(bench.synth1, "beta")
