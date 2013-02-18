@@ -21,7 +21,16 @@ a.coef <- function(n, x, h)
   d.n = (2 * n + h)
   l.out = h * log(2) - lgamma(h) + lgamma(n+h) - lgamma(n+1) + log(d.n) -
     0.5 * log(2 * pi * x^3) - 0.5 * d.n^2 / x;
-  exp(l.out)
+  out = exp(l.out)
+  out
+}
+
+c.2.coef <- function(n, x)
+{
+  c.n = (n+1/2) * pi
+  out = (1 - 1/(x*c.n^2)) * c.n^2 * x * exp(-c.n^2 * x / 2)
+  if (n > 0) out = 2 * out
+  out
 }
 
 ##------------------------------------------------------------------------------
@@ -80,4 +89,36 @@ rch.1 <- function(h)
 
   ## 0.25 * X
   list("x"=0.25 * X, "n"=num.trials, "total.iter"=total.iter)
+}
+
+
+################################################################################
+## 
+################################################################################
+
+if (FALSE)
+{
+
+  ## a_n is absolutely summable.  When h = 2 sum |a_n| = 0.5 as x -> infty.
+  
+  ## source("Ch.R")
+  dx    = 0.1
+  xgrid = seq(dx, 10, dx)
+  y1    = xgrid
+  y2    = xgrid
+  n     = length(xgrid)
+
+  for (i in 1:n) {
+    y1[i] = 0
+    y2[i] = 0
+    for (j in 0:200) {
+      y1[i] = y1[i] + (-1)^j * a.coef(j,xgrid[i],2)
+      y2[i] = y2[i] + c.2.coef(j,xgrid[i])
+    }
+    
+  }
+
+  plot(xgrid, y1)
+  points(xgrid, y2, col=2)
+  
 }
