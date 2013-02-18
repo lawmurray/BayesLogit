@@ -1756,6 +1756,7 @@ logit.PG.mm <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1,
     PP = t(X) %*% (X * w);
     PP[b.idc, b.idc] = PP[b.idc,b.idc] + P0
     PP[a.idc, a.idc] = PP[a.idc, a.idc] + diag(phi, P.a);
+    
     ## U = chol(PP);
     ## m = backsolve(U, Z, transpose=TRUE);
     ## m = backsolve(U, m);
@@ -1841,7 +1842,7 @@ logit.PG.mm.2 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1, k
   if (!is.null(seed$phi)) { phi = seed$phi; }
 
   out <- list(w = matrix(nrow=samp, ncol=N),
-              abm = matrix(nrow=samp, ncol=P.ab+inc.m),
+              abm = matrix(nrow=samp, ncol=P.ab+1),
               phi = rep(0, samp)
               )
 
@@ -1891,6 +1892,14 @@ logit.PG.mm.2 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1, k
     if (j %% verbose == 0) { print(paste("LogitPG MM 2: Iteration", j)); }
   }
 
+  if (inc.m) out$fe = out$abm[,c(m.idc, b.idc)]
+  else out$fe = cbind(0, out$abm[,b.idc])
+  out$re = out$abm[,a.idc] - out$fe[,1]
+  out$delta = out$re
+  out$alpha = out$abm[,a.idc]
+
+  colnames(out$fe) = c("Intercept", colnames(X.fe))
+  
   end.time = proc.time()
   out$total.time = end.time - start.time
   out$ess.time   = end.time - start.ess
@@ -2005,5 +2014,84 @@ if (FALSE) {
   sstat.ind.1 = sum.stat(out.ind$ab, out.ind$ess.time[3]);
   sstat.ind.2 = sum.stat(out.ind.2$ab, out.ind$ess.time[3]);
   sstat.pg.mm = sum.stat(out.pg.mm$ab, out.pg.mm$ess.time[3]);
+  
+}
+
+################################################################################
+                           ## MIXED MODEL EXAMPLE ##
+################################################################################
+
+if (FALSE)
+{
+
+  library(mlmRev)
+  library(lme4)
+  data(Contraception)
+  summary(Contraception)
+  fm1 <- glmer(use ~ urban+age+livch+(1|district), Contraception, binomial)
+  summary(fm1)
+  ranef(fm1)
+
+  y    = as.numeric(Contraception$use=="Y")
+  X.fe = model.matrix(use ~ urban + age + livch, data=Contraception)
+  X.fe = X.fe[,-1]
+  ## District 54 is missing.
+  X.re = model.matrix(use ~ factor(district) + 0, data=Contraception)
+  ## Add it back?
+  ## X.re = cbind(X.re[,1:35], 0, X.re[,55:61])
+  X = cbind(X.re, X.fe)
+  
+  N = nrow(X.fe)
+  P = ncol(X.fe)
+  n = rep(1, N)
+  P.PG = ncol(X)
+  
+  shape = 2
+  rate =  2
+  kappa = Inf
+  inc.m = as.numeric(kappa!=0)
+  m.0 = rep(0, P)
+  P.0 = diag(0.01, P)
+  
+  m0.PG = rep(0, P.PG)
+  P0.PG = diag(0.01, P.PG)
+  
+  samp = 2000
+  burn = 2000
+  verbose = 1000
+
+  ## source("Logit-MixedModel.R")
+  out.0 = logit.R(y, X, m0=m0.PG, P0=P0.PG, samp=samp, burn=burn, verbose=verbose);
+  out.1 = logit.PG.mm(y, X.re, X.fe, n, shape, rate, m.0, P.0, samp=samp, burn=burn, verbose=verbose);
+  out.2 = logit.PG.mm.2(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, samp=samp, burn=burn, verbose=verbose);
+  colnames(out.2$re) = paste("D", c(1:53, 55:61), sep="")
+  
+  colMeans(out.2$re)
+  ranef(fm1)$district[,1]
+  colMeans(out.2$fe)
+  summary(fm1)
+
+  ## png(filename="ranef.png", width=800, height=200)
+  par(mfrow=c(1,1))
+  par(mar=c(4,4,3,3))
+  boxplot(out.0$beta[,1:60], xlab="District", ylab="Random Effect", main="Random Intercept by District", names=colnames(out.2$re))
+  dev.off()
+  
+  ## png(filename="mm-ranef.png", width=800, height=200)
+  par(mfrow=c(1,1))
+  par(mar=c(4,4,3,3))
+  boxplot(out.2$alpha, xlab="District", ylab="Random Int.", main="Random Intercept by District", names=colnames(out.2$re))
+  dev.off()
+
+  id = matrix(c(1:53, 55:61), nrow=samp, ncol=60, byrow=TRUE)
+  plot(id, out.2$re, col="#11111111", pch=19)
+
+  par(mfrow=c(2,3))
+  for(i in 1:ncol(out.2$fe)) {
+    the.name = colnames(out.2$fe)[i]
+    hist(out.2$fe[,i], main=the.name, ylab="", xlab=the.name, prob=TRUE)
+  }
+
+  
   
 }
