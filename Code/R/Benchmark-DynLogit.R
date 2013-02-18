@@ -14,17 +14,21 @@ source("DynLogitCUBS.R")
                                   ## SETUP ##
 ################################################################################
 
-run <- list("tokyo"=FALSE)
+run <- list("tokyo"=FALSE,
+            "low.2"=TRUE,
+            "low.4"=TRUE,
+            "high.2"=TRUE,
+            "high.4"=TRUE)
 
 write.dir = ""
 
-write.it = FALSE
+write.it = TRUE
 plot.it  = FALSE
 print.it = FALSE
 
 methods = c("PG", "dRUM", "CUBS", "FS2010");
 
-samp = 1000
+samp = 100
 burn  = 100
 ntrials = 1
 
@@ -198,11 +202,11 @@ if (FALSE) {
                             ## P = 2, Low Corr X ##
 ##------------------------------------------------------------------------------
 
-if (FALSE)
+if (run$low.2)
 {
 
   ## source("Benchmark-DynLogit.R")
-  load("Benchmark-Datasets/DynLogit-synth-2-low-cor-X.RData")
+  load("Benchmark-DataSets/DynLogit-synth-2-low-cor-X.RData")
 
   T = length(y)
   X.dyn = X
@@ -253,11 +257,11 @@ if (FALSE)
                             ## P = 4, Low Corr X ##
 ##------------------------------------------------------------------------------
 
-if (FALSE)
+if (run$low.4)
 {
 
   ## source("Benchmark-DynLogit.R")
-  load("Benchmark-Datasets/DynLogit-synth-4-low-cor-X.RData")
+  load("Benchmark-DataSets/DynLogit-synth-4-low-cor-X.RData")
 
   T = length(y)
   X.dyn = X
@@ -301,11 +305,11 @@ if (FALSE)
                             ## P = 2, High Corr X ##
 ##------------------------------------------------------------------------------
 
-if (FALSE)
+if (run$high.2)
 {
 
   ## source("Benchmark-DynLogit.R")
-  load("Benchmark-Datasets/DynLogit-synth-2-high-cor-X.RData")
+  load("Benchmark-DataSets/DynLogit-synth-2-high-cor-X.RData")
 
   T = length(y)
   X.dyn = X
@@ -349,11 +353,11 @@ if (FALSE)
                             ## P = 4, High Corr X ##
 ##------------------------------------------------------------------------------
 
-if (FALSE)
+if (run$high.4)
 {
 
   ## source("Benchmark-DynLogit.R")
-  load("Benchmark-Datasets/DynLogit-synth-4-high-cor-X.RData")
+  load("Benchmark-DataSets/DynLogit-synth-4-high-cor-X.RData")
 
   T = length(y)
   X.dyn = X
