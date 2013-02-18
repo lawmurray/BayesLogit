@@ -375,3 +375,48 @@ if (FALSE) {
 }
 
 ################################################################################
+                                ## GEN SYNTH ##
+################################################################################
+
+if (FALSE)
+{
+
+  T = 400
+  P = 4
+
+  c  = 0.5
+  psi.mean = 1.4
+  marg.V   = 5 / sqrt(P) * c
+  phi.true = 0.95
+  ntrial = 1
+
+  W.true = marg.V * (1 - phi.true^2)
+
+  beta = matrix(0, nrow=P, ncol=T+1)
+  beta[,1] = 0
+  for (i in 2:(T+1))
+    beta[,i] = phi.true * (beta[,i-1]) + rnorm(P, 0, sqrt(W.true))
+  
+  xgrid = seq(-1, 1, length.out=T)
+  
+  tX = matrix(0, nrow=P, ncol=T);
+  freq = c(1, 2, 3, 4)
+  ## freq = c(1, 1.1, 1.2, 1.3)
+  for (i in 1:P)
+    tX[i,] = cos(freq[i] * pi * xgrid);
+
+  tX = tX / sqrt(P) * (1-c)
+  X  = t(tX)
+
+  n = rep(ntrial, T)
+  
+  psi = psi.mean + colSums(beta[,-1] * tX)
+  p   = 1 / (1 + exp(-psi))
+  y   = rbinom(T, n, p)
+
+  if (TRUE) {
+    save(T, P, psi.mean, marg.V, phi.true, W.true, beta, xgrid, X, n, psi, p, y, freq, c,
+         file="DynLogit-synth-4-low-cor-X.RData", compress=TRUE)
+  }
+  
+}

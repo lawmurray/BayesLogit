@@ -7,7 +7,8 @@ source("Benchmark-Utilities.R");
 
 source("DynLogitPG.R")
 source("DynLogitdRUM.R")
-source("CUBS-MH.R")
+source("DynLogitCUBS.R")
+## source("CUBS-MH.R")
 
 ################################################################################
                                   ## SETUP ##
@@ -73,13 +74,12 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
                          mu.true=mu.true, phi.true=phi.true, W.true=W.true)
       gb$a.rate = 1
     } else if (method=="CUBS") {
-      gb <- cubs.mh(y=y, X.dyn=X.dyn, n=rep(n,T), m0=m.0, C0=C.0,
-                    samp=samp, burn=burn, verbose=verbose,
-                    mu.m0=mu.m0, mu.P0=mu.P0,
-                    phi.m0=phi.m0, phi.P0=phi.P0,
-                    W.a0=W.a0, W.b0=W.b0, X.stc=X.stc,
-                    mu.true = mu.true, phi.true=phi.true, W.true=W.true,
-                    obs="binom")
+      gb <- dyn.logit.CUBS(y=y, X.dyn=X.dyn, n=rep(n,T), m0=m.0, C0=C.0,
+                           samp=samp, burn=burn, verbose=verbose,
+                           mu.m0=mu.m0, mu.P0=mu.P0,
+                           phi.m0=phi.m0, phi.P0=phi.P0,
+                           W.a0=W.a0, W.b0=W.b0, X.stc=X.stc,
+                           mu.true = mu.true, phi.true=phi.true, W.true=W.true)
       gb$a.rate = gb$a.rate[samp]
     } else if (method=="FS2010") {
       gb <- dyn.logit.FS(y, X.dyn=X.dyn, n=n[1], X.stc=X.tc, ## assume n[i] = n[1].
@@ -195,5 +195,202 @@ if (FALSE) {
 }
 
 ##------------------------------------------------------------------------------
+                            ## P = 2, Low Corr X ##
+##------------------------------------------------------------------------------
+
+if (FALSE)
+{
+
+  ## source("Benchmark-DynLogit.R")
+  load("Benchmark-Datasets/DynLogit-synth-2-low-cor-X.RData")
+
+  T = length(y)
+  X.dyn = X
+  X.stc = matrix(1, nrow=T, ncol=1)
+  P = ncol(X.dyn)
+  
+  ## Prior
+  b.m0 = rep(0, P+1)
+  b.C0 = diag(100, P+1)
+
+  phi.m0 = rep(0.95, P);
+  phi.V0 = rep(0.1,  P);
+  W.guess = 0.1
+  W.a0   = rep(300, P)
+  W.b0   = W.a0 * W.guess
+  mu.true = rep(0.0, P)
+  
+  bench.low.2 = list();
+
+  out <- dyn.logit.PG(y, X.dyn=X.dyn, n=n, X.stc=X.stc,
+                      samp=samp, burn=burn, verbose=100,
+                      m.0=b.m0, C.0=b.C0,
+                      phi.m0=phi.m0, phi.P0=1/phi.V0,
+                      W.a0=W.a0, W.b0=W.b0,
+                      mu.true=mu.true, phi.true=NULL, W.true=NULL)
+  
+  ## source("Benchmark-DynLogit.R")
+  for (i in 1:3) {
+    ## source("Benchmark-DynLogit.R")
+    nm = methods[i];
+    bench.low.2[[nm]] <- benchmark.dyn.logit(y, X.dyn=X.dyn, n=n[1], X.stc=X.stc, 
+                                             samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
+                                             method=nm, var.names="beta", dset.name="Low-2",
+                                             m.0=b.m0, C.0=b.C0,
+                                             phi.m0=phi.m0, phi.P0=1/phi.V0,
+                                             W.a0=W.a0, W.b0=W.b0,
+                                             mu.true=mu.true, phi.true=NULL, W.true=NULL);
+  }
+  
+  low.2.table = setup.table.dyn(bench.low.2, "beta")
+
+  ## if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X, n=n, bmark1=pg, bmark2=fs); }
+  if (write.it) save(bench.low.2, low.2.table, file=file.path(write.dir, "DynLogit-low-2.RData"))
+  
+}
+
+##------------------------------------------------------------------------------
+                            ## P = 4, Low Corr X ##
+##------------------------------------------------------------------------------
+
+if (FALSE)
+{
+
+  ## source("Benchmark-DynLogit.R")
+  load("Benchmark-Datasets/DynLogit-synth-4-low-cor-X.RData")
+
+  T = length(y)
+  X.dyn = X
+  X.stc = matrix(1, nrow=T, ncol=1)
+  P = ncol(X.dyn)
+  
+  ## Prior
+  b.m0 = rep(0, P+1)
+  b.C0 = diag(100, P+1)
+
+  phi.m0 = rep(0.95, P);
+  phi.V0 = rep(0.1,  P);
+  W.guess = 0.1
+  W.a0   = rep(300, P)
+  W.b0   = W.a0 * W.guess
+  mu.true = rep(0.0, P)
+  
+  bench.low.4 = list();
+  
+  ## source("Benchmark-DynLogit.R")
+  for (i in 1:3) {
+    ## source("Benchmark-DynLogit.R")
+    nm = methods[i];
+    bench.low.4[[nm]] <- benchmark.dyn.logit(y, X.dyn=X.dyn, n=n[1], X.stc=X.stc, 
+                                             samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
+                                             method=nm, var.names="beta", dset.name="Low-4",
+                                             m.0=b.m0, C.0=b.C0,
+                                             phi.m0=phi.m0, phi.P0=1/phi.V0,
+                                             W.a0=W.a0, W.b0=W.b0,
+                                             mu.true=mu.true, phi.true=NULL, W.true=NULL);
+  }
+  
+  low.4.table = setup.table.dyn(bench.low.4, "beta")
+
+  ## if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X, n=n, bmark1=pg, bmark2=fs); }
+  if (write.it) save(bench.low.4, low.4.table, file=file.path(write.dir, "DynLogit-low-4.RData"))
+  
+}
+
+##------------------------------------------------------------------------------
+                            ## P = 2, High Corr X ##
+##------------------------------------------------------------------------------
+
+if (FALSE)
+{
+
+  ## source("Benchmark-DynLogit.R")
+  load("Benchmark-Datasets/DynLogit-synth-2-high-cor-X.RData")
+
+  T = length(y)
+  X.dyn = X
+  X.stc = matrix(1, nrow=T, ncol=1)
+  P = ncol(X.dyn)
+  
+  ## Prior
+  b.m0 = rep(0, P+1)
+  b.C0 = diag(100, P+1)
+
+  phi.m0 = rep(0.95, P);
+  phi.V0 = rep(0.1,  P);
+  W.guess = 0.1
+  W.a0   = rep(300, P)
+  W.b0   = W.a0 * W.guess
+  mu.true = rep(0.0, P)
+  
+  bench.high.2 = list();
+  
+  ## source("Benchmark-DynLogit.R")
+  for (i in 1:3) {
+    ## source("Benchmark-DynLogit.R")
+    nm = methods[i];
+    bench.high.2[[nm]] <- benchmark.dyn.logit(y, X.dyn=X.dyn, n=n[1], X.stc=X.stc, 
+                                             samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
+                                             method=nm, var.names="beta", dset.name="High-2",
+                                             m.0=b.m0, C.0=b.C0,
+                                             phi.m0=phi.m0, phi.P0=1/phi.V0,
+                                             W.a0=W.a0, W.b0=W.b0,
+                                             mu.true=mu.true, phi.true=NULL, W.true=NULL);
+  }
+  
+  high.2.table = setup.table.dyn(bench.high.2, "beta")
+
+  ## if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X, n=n, bmark1=pg, bmark2=fs); }
+  if (write.it) save(bench.high.2, high.2.table, file=file.path(write.dir, "DynLogit-high-2.RData"))
+  
+}
+
+##------------------------------------------------------------------------------
+                            ## P = 4, High Corr X ##
+##------------------------------------------------------------------------------
+
+if (FALSE)
+{
+
+  ## source("Benchmark-DynLogit.R")
+  load("Benchmark-Datasets/DynLogit-synth-4-high-cor-X.RData")
+
+  T = length(y)
+  X.dyn = X
+  X.stc = matrix(1, nrow=T, ncol=1)
+  P = ncol(X.dyn)
+  
+  ## Prior
+  b.m0 = rep(0, P+1)
+  b.C0 = diag(100, P+1)
+
+  phi.m0 = rep(0.95, P);
+  phi.V0 = rep(0.1,  P);
+  W.guess = 0.1
+  W.a0   = rep(300, P)
+  W.b0   = W.a0 * W.guess
+  mu.true = rep(0.0, P)
+  
+  bench.high.4 = list();
+  
+  ## source("Benchmark-DynLogit.R")
+  for (i in 1:3) {
+    ## source("Benchmark-DynLogit.R")
+    nm = methods[i];
+    bench.high.4[[nm]] <- benchmark.dyn.logit(y, X.dyn=X.dyn, n=n[1], X.stc=X.stc, 
+                                             samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
+                                             method=nm, var.names="beta", dset.name="High-4",
+                                             m.0=b.m0, C.0=b.C0,
+                                             phi.m0=phi.m0, phi.P0=1/phi.V0,
+                                             W.a0=W.a0, W.b0=W.b0,
+                                             mu.true=mu.true, phi.true=NULL, W.true=NULL);
+  }
+  
+  high.4.table = setup.table.dyn(bench.high.4, "beta")
+
+  ## if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X, n=n, bmark1=pg, bmark2=fs); }
+  if (write.it) save(bench.high.4, high.4.table, file=file.path(write.dir, "DynLogit-high-4.RData"))
+  
+}
 
 ##------------------------------------------------------------------------------

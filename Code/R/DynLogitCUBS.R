@@ -85,6 +85,10 @@ dyn.logit.CUBS <- function(y, X.dyn, n, m0, C0,
   l.fdivq = -Inf;
   naccept = 0
   if (N.a > 0) ppsl.a = NULL else ppsl.a = rep(0, N.a);
+  mu   = mu.m0
+  phi  = phi.m0
+  W    = W.b0 / W.a0;
+  om   = rep(0, T);
 
   ## Check if known.
   know.phi <- know.mu <- know.W <- FALSE

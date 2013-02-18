@@ -166,23 +166,23 @@ CUBS.C <- function(z, X, n, mu, phi, W, m0, C0,
   ## Check
   not.ok = rep(6);
   if (not.ok[1] <- length(mu)  != N.b)
-    { print("length(mu)!=N.b") ; }
+    { cat("length(mu)!=N.b", N.b, "\n") ; }
   if (not.ok[2] <- length(phi) != N.b)
-    { print("length(phi)!=N.b"); }
+    { cat("length(phi)!=N.b", N.b, "\n"); }
   if (not.ok[3] <- (ncol(W) != N.b || nrow(W) != N.b))
-    { print("W is not N.b x N.b"); }
+    { cat("W is not N.b x N.b", N.b, "\n"); }
   if (not.ok[4] <- (nrow(X) != T || ncol(X) != N))
-    { print("X is not T x N"); }
+    { cat("X is not T x N", T, N, "\n"); }
   if (not.ok[5] <- length(m0) != N)
-    { print("length(m0) != N"); }
+    { cat("length(m0) != N", N, "\n"); }
   if (not.ok[6] <- (nrow(C0) != N || ncol(C0) != N))
-    { print("C0 is not N x N"); }
+    { cat("C0 is not N x N", N, "\n"); }
   if (not.ok[7] <- length(n) != T)
-    { print("length(n) != T"); }
+    { cat("length(n) != T", T, "\n"); }
   if (not.ok[8] <- length(z) != T)
-    { print("length(z) != T"); }
+    { cat("length(z) != T", T, "\n"); }
   if (not.ok[9] <- N.b > N)
-    { print("N.b > N"); }
+    { cat("N.b > N", N.b, N, "\n"); }
     
   if (!prod(!not.ok)) {
     cat("CUBS.C: problem.  Returning NA.\n");
