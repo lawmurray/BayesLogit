@@ -13,6 +13,7 @@
 *.toc
 *.synctex.gz
 *.bak
+*synth*.RData
 Code/BLPackage-0.0-1.tgz
 Code/BLPackage-0.0-2.tgz
 Code/BLPackage-0.0-3.tgz
