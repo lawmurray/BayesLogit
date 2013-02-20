@@ -383,6 +383,40 @@ Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR
    total number of observations and $y_i$ denotes the $i$th observation.}
 \end{table}
 
+The empirical results above come with one caveat: they hold when the over
+dispersion parameter is constrained to be a positive integer.  As discussed
+previously, our current $\PG(b,z)$ sampler is slow when $b$ is large or when $b$
+is not an integer.  The cost incurred when $b$ is not an integer is particularly
+high because one must sample many Gamma random variates to generate a single
+\Polya-Gamma random variate.  In this case, as seen in Table
+\ref{tab:nb-real-shape}, the random walk Metropolis sampler has a better
+effective sampling rate.  We did not include the method of
+Fr\"{u}hwirth-Schnatter in the table because their table of normal mixtures is
+constrained to distributions with integral parameters when the parameters are
+small.
+
+\begin{table}
+\label{tab:nb-real-shape}
+\centering
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Arbitrary shape parameter, less Counts: $\alpha = 2$, $\bar y = 8.11$, $\sum y_i = 3244$, $N=400$} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &   163.13 &     1.00 &  9071.88 &  9420.83 &  9497.89 &    55.61 &    57.75 &    58.22 \\ 
+             RAM  &    10.23 &    29.92 &   738.92 &   756.75 &   765.28 &    72.21 &    73.96 &    74.79
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Arbitrary shape parameter, More Counts: $\alpha = 3$, $\bar y = 23.98$, $\sum y_i = 9593$, $N=400$} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &   208.27 &     1.00 &  7443.61 &  8361.91 &  8991.31 &    35.74 &    40.15 &    43.17 \\ 
+             RAM  &     8.73 &    29.79 &   713.37 &   743.58 &   751.68 &    81.72 &    85.19 &    86.12
+ \end{tabular}
+\end{table}
+
 \appendix
 
 \section{Binary Logistic Regression: Data Sets and Methods}
@@ -607,6 +641,8 @@ tip of the triangle may posses the most likely posterior values, the rest of the
 posterior does not fall away quick enough to make that a likely posterior random
 variate.
 
+
+
 \begin{figure}
 \label{fig:phi-mm}
 \centering
@@ -623,7 +659,7 @@ variate.
   posterior mode.  The log posterior is very flat when moving along $\phi$.
   Bottom right: the marginal posterior distribution of $\phi$.  When
   marginalizing, one finds that few large values of $\phi$ are likely.  Bottom
-  right: a scatter plot of posterior samples of $(\phi, m)$. Again, one sees
+  right: a scatter plot of posterior samples for $(\phi, m)$. Again, one sees
   that upon marginalizing out the other coordinates the posterior mass is
   concentrated at relatively small values of $\phi$ compared to its value at the
   posterior mode.}

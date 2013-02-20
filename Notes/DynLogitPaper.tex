@@ -316,6 +316,45 @@ sample from $\PG$ distributions and implement this sampler in the \texttt{R}
 package \texttt{BayesLogit}.  To estimate $d$ in dynamic negative binomial
 regression one may use a Metropolis-Hastings step (Appendix \ref{sec:sample-d}).
 
+\subsection{AR(1) Example}
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=5.5in]{nb-ar1-tophalf.pdf}
+\caption{\label{fig:nb-ar1} Incidence of influenza-like illness in Texas,
+  2008--11, together with the estimated mean $\lambda_t$ from the
+  negative-binomial AR(1) model.  The blanks in weeks 21-41 correspond to
+  missing data.  The grey lines depict the upper and lower bounds of a 95$\%$
+  predictive interval.}
+\end{center}
+\end{figure}
+
+As an initial illustration of the point, we fit a negative-binomial AR(1) model
+to four years (2008--11) of weekly data on flu incidence in Texas, collected
+from the Texas Department of State Health Services.  Let $y_t$ denote the number
+of reported cases of influenza-like illness (ILI) in week $t$.  We assume that
+these counts follow a negative-binomial model, which will allow overdispersion
+relative to the Poisson:
+\begin{eqnarray*}
+y_t &\sim& \mbox{NB}(h, p_t) \; , \quad p_t= \frac{e^{\psi_t}}{1+e^{\psi_t}} \\
+\psi_t &=& \alpha + \gamma_t  \; , \quad \gamma_t = \phi \gamma_{t-1} + \epsilon_t \\
+\epsilon_t &\sim& N(0, \sigma^2) \, .
+\end{eqnarray*}
+Figure \ref{fig:nb-ar1} shows the results of the fit.  It is trivial to sample
+from this model by combining the \Polya-Gamma framework together with standard
+results on AR(1) models.  In our analysis, we assumed an improper uniform prior
+on the dispersion parameter $h$, and fixed $\phi$ and $\sigma^2$ to $0.98$ and
+1, respectively.  But it would be equally straightforward to place hyper-priors
+upon each parameter, and to sample them in a hierarchical fashion.  It would
+also be straightforward to incorporate fixed effects in the form of regressors.
+
+We emphasize that there are many ways to handle the overdispersion present in
+this data set, and that we do not intend our model to be taken as a definitive
+analysis.  We merely intend it as a proof of concept, showing how various
+aspects of Bayesian hierarchical modeling---in this case, a simple AR(1)
+model---can be combined routinely with binomial likelihoods using the
+\Polya-Gamma scheme.
+
 \section{Comparison}
 
 We compare methods by median effective sample size (ESS) and median effective
@@ -406,6 +445,67 @@ and that $G$ may be pre-processed.  Hence the log-likelihood is
 d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
 \]
 Preprocessing $G$ saves us from having to compute a doubly indexed summation.
+
+\appendix
+
+\section{Benchmarks}
+
+\begin{table}
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Tokyo Rainfall} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+            CUBS  &   233.98 &     1.00 &   652.86 &   761.98 &   910.62 &     2.79 &     3.26 &     3.89 \\ 
+              PG  &    21.72 &     1.00 &  4352.80 &  7735.08 & 10081.46 &   200.43 &   356.18 &   464.22 \\ 
+            dRUM  &    20.60 &     1.00 &  1627.61 &  3649.46 &  5428.93 &    79.03 &   177.19 &   263.60
+ \end{tabular}
+\end{table}
+
+\begin{table}
+\centering
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Low corr X: $P$=2, $T$=400.  Estimate $\alpha, \beta$.} \\
+\hline
+          Method  &    time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
+             PG  &    22.59 &     1.00 &   7367.68 &   9229.91 &  10189.37 &    326.10 &    408.52 &    450.97 \\ 
+           dRUM  &    23.19 &     1.00 &   2759.83 &   7260.46 &   9967.66 &    118.99 &    313.04 &    429.77
+         \end{tabular}
+
+\begin{tabular}{l r r r r r r r r }
+\hline
+\multicolumn{9}{c}{High corr X: $P$=2, $T$=400. Estimate $\alpha, \beta$.} \\
+\hline 
+          Method  &    time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
+             PG  &    22.52 &     1.00 &   8494.04 &   9662.06 &  10225.35 &    377.13 &    428.98 &    454.00 \\ 
+           dRUM  &    23.17 &     1.00 &   4963.68 &   8105.02 &   9936.46 &    214.26 &    349.86 &    428.91
+\end{tabular}
+
+\end{table}
+
+
+\begin{table}
+\centering
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Low corr X: $P$=2, $T$=400.  Estimate $\alpha, \beta, \phi, W$.} \\
+\hline
+          Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
+            PG  &    25.04 &     1.00 &    643.23 &   6531.34 &  10420.88 &     25.69 &    260.82 &    416.13 \\ 
+          dRUM  &    25.73 &     1.00 &    430.79 &   4490.34 &  10124.47 &     16.74 &    174.55 &    393.48
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{High corr X: $P$=2, $T$=400. Estimate $\alpha, \beta, \phi, W$.} \\
+\hline
+          Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
+            PG  &    25.16 &     1.00 &    988.83 &   5654.23 &  10337.07 &     39.31 &    224.75 &    410.87 \\ 
+          dRUM  &    25.84 &     1.00 &   1040.12 &   5496.94 &   9760.64 &     40.25 &    212.74 &    377.75
+ \end{tabular}
+\end{table}
+
 
 
 % If you have a bibliography.
