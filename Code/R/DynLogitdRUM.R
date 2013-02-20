@@ -107,7 +107,7 @@ dyn.logit.dRUM <- function(y, X.dyn, n=1, X.stc=NULL,
   if (!is.null(z.true))    { z    = z.true;    know.z    = TRUE; }
   if (!is.null(r.true))    { r    = r.true;    know.r    = TRUE; }
   if (!is.null(phi.true))  { phi  = phi.true;  know.phi  = TRUE;
-                             if (phi==1) {mu.true = rep(0, P.b);}}
+                             if (any(phi==1)) {mu.true = rep(0, P.b);}}
   if (!is.null(mu.true))   { mu   = mu.true;   know.mu   = TRUE; }
   if (!is.null(W.true))    { W    = W.true;    know.W    = TRUE; }
   if (!is.null(iota.true)) { iota = iota.true; know.iota = TRUE; }

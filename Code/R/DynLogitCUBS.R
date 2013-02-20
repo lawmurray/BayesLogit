@@ -30,11 +30,13 @@ target.dens <- function(y, X, n, beta, mu, phi, W, m0, C0, log.sc=FALSE, alpha=N
   ## obs.llh = sum(neg.binom.obs.dens(y, n, psi, log.sc=TRUE))
   
   ar1.llh <- ar1.llh.C(beta, mu, phi, W, m0, C0, alpha);
+  if (is.na(ar1.llh)) cat("ar1.llh is na.\n");
   ## Using a switch statement slowed things down by 3.5%.
   obs.llh <- switch(obs,
                     binom  = sum(binom.obs.dens(y, n, psi, log.sc=TRUE)),
                     nbinom = sum(nbinom.obs.dens(y, n, psi, log.sc=TRUE)),
                     norm   = sum(gauss.obs.dens(y, n, psi, log.sc=TRUE)))
+  if (is.na(obs.llh)) cat("obs.llh is na.\n");
 
   ## obs.llh = do.call("binom.obs.dens", list(y, n, psi, log.sc=TRUE))
 
@@ -93,7 +95,7 @@ dyn.logit.CUBS <- function(y, X.dyn, n, m0, C0,
   ## Check if known.
   know.phi <- know.mu <- know.W <- FALSE
   if (!is.null(phi.true))  { phi  = phi.true;  know.phi  = TRUE;
-                             if (phi[1]==1) {  mu.true   = rep(0, N.b); } }
+                             if (any(phi==1)) {  mu.true   = rep(0, N.b); } }
   if (!is.null(mu.true))   { mu   = mu.true ;  know.mu   = TRUE; }
   if (!is.null(W.true))    { W    = W.true  ;  know.W    = TRUE; }
   ## if (!is.null(iota.true)) { iota = iota.true; know.iota = TRUE; }
@@ -115,6 +117,13 @@ dyn.logit.CUBS <- function(y, X.dyn, n, m0, C0,
     l.fdivq.ppsl = lf.ppsl - lq.ppsl
     l.ratio = l.fdivq.ppsl - l.fdivq
     ## l.fdivq.ppsl = 0; l.ratio = 0; lf.ppsl = 0; lq.ppsl = 0
+
+    if (is.na(l.ratio) || is.nan(l.ratio)) {
+      ## PROBLEM: YOU CAN HAVE SINGULAR MATRICES IN CUBS.C.
+      ## THIS LEADS TO lq.ppsl=NaN.
+      cat("l.ratio", l.ratio, "l.fdivq", l.fdivq, "lf.ppsl", lf.ppsl, "lq.ppsl", lq.ppsl, "\n");
+      l.ratio = -Inf; ## Force rejection.
+    }
     
     a.prob = min(1, exp(l.ratio))
 

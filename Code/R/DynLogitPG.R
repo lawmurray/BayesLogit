@@ -90,7 +90,7 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
   if (!is.null(beta.true)) { beta = beta.true; know.beta = TRUE; }
   if (!is.null(w.true))    { om   = w.true;    know.w    = TRUE; }
   if (!is.null(phi.true))  { phi  = phi.true;  know.phi  = TRUE;
-                             if (phi[1]==1) {mu.true = rep(0, P.b);}}
+                             if (any(phi==1)) {mu.true = rep(0, P.b);}}
   if (!is.null(mu.true))   { mu   = mu.true;   know.mu   = TRUE; }
   if (!is.null(W.true))    { W    = W.true;    know.W    = TRUE; }
   if (!is.null(iota.true)) { iota = iota.true; know.iota = TRUE; }
@@ -381,14 +381,19 @@ if (FALSE) {
 if (FALSE)
 {
 
-  T = 400
-  P = 4
+  T = 500
+  P = 2
+  corr.type = "low"
+  ntrial = 100
+
+  ## for (P in c(2,4)) {
+  ##   for (corr.type in c("low", "high")) {
+  ##     for (ntrial in c(1, 10, 100)) {
 
   c  = 0.5
   psi.mean = 1.4
   marg.V   = 5 / sqrt(P) * c
-  phi.true = 0.95
-  ntrial = 1
+  phi.true = rep(0.95, P)
 
   W.true = marg.V * (1 - phi.true^2)
 
@@ -400,8 +405,8 @@ if (FALSE)
   xgrid = seq(-1, 1, length.out=T)
   
   tX = matrix(0, nrow=P, ncol=T);
-  freq = c(1, 2, 3, 4)
-  ## freq = c(1, 1.1, 1.2, 1.3)
+  if (corr.type=="low")  freq = c(1, 2, 3, 4)
+  if (corr.type=="high") freq = c(1, 1.1, 1.2, 1.3)
   for (i in 1:P)
     tX[i,] = cos(freq[i] * pi * xgrid);
 
@@ -414,9 +419,11 @@ if (FALSE)
   p   = 1 / (1 + exp(-psi))
   y   = rbinom(T, n, p)
 
-  if (TRUE) {
+  filename = paste("DynLogit-synth-", corr.type, "-", P, "-n-", ntrial, ".RData", sep="")
+  
+  if (FALSE) {
     save(T, P, psi.mean, marg.V, phi.true, W.true, beta, xgrid, X, n, psi, p, y, freq, c,
-         file="DynLogit-synth-4-low-cor-X.RData", compress=TRUE)
+         file=filename, compress=TRUE)
   }
   
 }
