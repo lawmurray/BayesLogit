@@ -33,6 +33,11 @@ c.2.coef <- function(n, x)
   out
 }
 
+pg.a.coef <- function(n, x, h, z=0)
+{
+  cosh(z/2)^h * exp(-0.5 * z^2 * x) * 4 * a.coef(n, 4 * x, h)
+}
+
 ##------------------------------------------------------------------------------
 
 rch.1 <- function(h)
@@ -93,7 +98,7 @@ rch.1 <- function(h)
 
 
 ################################################################################
-## 
+                            ## PLOTTING DENSITIES ##
 ################################################################################
 
 if (FALSE)
@@ -120,5 +125,72 @@ if (FALSE)
 
   plot(xgrid, y1)
   points(xgrid, y2, col=2)
+  
+}
+
+##------------------------------------------------------------------------------
+                           ## PLOTTING PG DENSITY ##
+##------------------------------------------------------------------------------
+
+if (FALSE)
+{
+  ## source("Ch.R")
+  dx    = 0.01
+  xgrid = seq(dx, 3, dx)
+  y1    = xgrid
+  y2    = xgrid
+  y3    = xgrid
+  y4    = xgrid
+  y5    = xgrid
+  n     = length(xgrid)
+
+  for (i in 1:n) {
+    y1[i] = 0
+    y2[i] = 0
+    y3[i] = 0
+    y4[i] = 0
+    y5[i] = 0
+    for (j in 0:200) {
+      y1[i] = y1[i] + (-1)^j * pg.a.coef(j,xgrid[i],1)
+      y2[i] = y2[i] + (-1)^j * pg.a.coef(j,xgrid[i],2)
+      y3[i] = y3[i] + (-1)^j * pg.a.coef(j,xgrid[i],3)
+      y4[i] = y4[i] + (-1)^j * pg.a.coef(j,xgrid[i],1, 2.0)
+      y5[i] = y5[i] + (-1)^j * pg.a.coef(j,xgrid[i],1, 4.0)
+    }
+    
+  }
+
+  ## png(filename="pg-dens.png", width=800, height=400)
+  
+  par(mfrow=c(1,2))
+  ymax = max(c(y1,y2,y3))
+  plot(xgrid, y1, type="l", ylim=c(0,ymax), main="Density of PG(b,0)", xlab="x", ylab="f(x|b,0)")
+  lines(xgrid, y2, type="l", col=2, lty=2)
+  lines(xgrid, y3, type="l", col=4, lty=4)
+
+  legend("topright", legend=c("b=1", "b=2", "b=3"), col=c(1,2,4), lty=c(1,2,4))
+
+  ## hist(rpg.devroye(10000, 1, 0), add=TRUE, prob=TRUE, breaks=100,
+  ##      col=rgb(0, 0, 0, 16, maxColorValue=255))
+  ## hist(rpg.devroye(10000, 2, 0), add=TRUE, prob=TRUE, breaks=100,
+  ##      col=rgb(255, 0, 0, 16, maxColorValue=255))
+  ## hist(rpg.devroye(10000, 3, 0), add=TRUE, prob=TRUE, breaks=100,
+  ##      col=rgb(0, 0, 255, 16, maxColorValue=255))
+
+  ymax = max(c(y1,y4,y5))
+  plot(xgrid, y1, type="l", ylim=c(0,ymax), xlim=c(0,1), main="Density of PG(1,c)", xlab="x", ylab="f(x|1,c)")
+  lines(xgrid, y4, type="l", col=2, lty=2)
+  lines(xgrid, y5, type="l", col=4, lty=4)
+
+  legend("topright", legend=c("c=0", "c=2", "c=4"), col=c(1,2,4), lty=c(1,2,4))
+
+  ## hist(rpg.devroye(10000, 1, 0), add=TRUE, prob=TRUE, breaks=100,
+  ##      col=rgb(0, 0, 0, 16, maxColorValue=255))
+  ## hist(rpg.devroye(10000, 1, 2), add=TRUE, prob=TRUE, breaks=100,
+  ##      col=rgb(255, 0, 0, 16, maxColorValue=255))
+  ## hist(rpg.devroye(10000, 1, 4), add=TRUE, prob=TRUE, breaks=100,
+  ##      col=rgb(0, 0, 255, 16, maxColorValue=255))
+
+  dev.off()
   
 }
