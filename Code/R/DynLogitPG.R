@@ -45,7 +45,7 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
   ## Structure.
   y = as.matrix(y)
   X = cbind(X.stc, X.dyn)
-  W = as.matrix(W);
+  ## W = as.matrix(W);
   C.0 = as.matrix(C.0);
   
   ## Dimension ##
