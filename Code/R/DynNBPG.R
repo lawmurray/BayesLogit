@@ -245,3 +245,48 @@ if (FALSE) {
   points(log(y), col="gray")
   
 }
+
+################################################################################
+                                 ## GEN DATA ##
+################################################################################
+
+if (FALSE)
+{
+
+  T = 400
+  P = 2
+
+  c  = 0.5
+  d.true  = 1000
+  nb.mean = 100
+  marg.V   = 5 / sqrt(P) * c
+  phi.true = 0.95
+
+  W.true = marg.V * (1 - phi.true^2)
+
+  beta = matrix(0, nrow=P, ncol=T+1)
+  beta[,1] = 0
+  for (i in 2:(T+1))
+    beta[,i] = phi.true * (beta[,i-1]) + rnorm(P, 0, sqrt(W.true))
+  
+  xgrid = seq(-1, 1, length.out=T)
+  
+  tX = matrix(0, nrow=P, ncol=T);
+  ## freq = c(1, 2, 3, 4)
+  freq = c(1, 1.1, 1.2, 1.3)
+  for (i in 1:P)
+    tX[i,] = cos(freq[i] * pi * xgrid);
+
+  tX = tX / sqrt(P) * (1-c)
+  X  = t(tX)
+  
+  log.mean = log(nb.mean) + colSums(beta[,-1] * tX)
+  psi = log.mean - log(d.true)
+  p   = 1 / (1 + exp(-psi))
+  y   = rnbinom(T, d.true, p)
+
+  ## save(d.true, nb.mean, marg.V, phi.true, W.true, beta, tX, X, log.mean, psi, p, y, freq, xgrid,
+  ##      file=name="DynNB-synth-2-high-cor-X.RData", compress=TRUE)
+  
+  
+}
