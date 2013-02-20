@@ -14,19 +14,23 @@ source("DynNBCUBS.R")
 run <- list("flu"   =FALSE,
             "synth1"=FALSE,
             "synth2"=FALSE,
-            "synth3"=TRUE)
+            "synth3"=FALSE,
+            "allsynth"=FALSE)
 
 methods = c("PG", "FS", "CUBS")
 
 write.dir = "."
 
-write.it = TRUE
+write.it = FALSE
 plot.it  = FALSE
+read.it = FALSE
 
-samp = 10000
-burn  = 2000
-verbose = 1000
-ntrials = 10
+run.idc = 1:3
+
+samp = 100
+burn  = 20
+verbose = 10
+ntrials = 1
 
 ################################################################################
                              ## Dyn NB Benchmark ##
@@ -305,3 +309,75 @@ if (run$synth3) {
 }
 
 ##------------------------------------------------------------------------------
+                              ## GENERIC SYNTH ##
+##------------------------------------------------------------------------------
+
+if (run$allsynth)
+{
+
+  ## source("Benchmark-DynNB.R")
+
+  P = 2
+  nb.mean = 10
+  corr.type = "low"
+  ## est.ar = "with.ar"
+  est.ar = "wout.ar"
+
+  for (P in c(2,4)) {
+    for (nb.mean in c(10,100)) {
+      for (corr.type in c("low", "high")) {
+        for (est.ar in c("wout.ar", "with.ar")) {
+
+  cat("AR:", est.ar, "\n");
+          
+  dset.name = paste(corr.type, "-", P, "-mu-", nb.mean, sep="");
+  source.file = paste("DynNB-synth-", dset.name, ".RData", sep="")
+  load(file.path("Benchmark-DataSets", source.file))
+
+  filename = paste("bench-dynnb-", dset.name, "-", est.ar, ".RData", sep="")
+  
+  T = length(y)
+  X.dyn = X
+  X.stc = matrix(1, nrow=T, ncol=1)
+  P = ncol(X.dyn)
+  
+  ## Prior
+  b.m0 = rep(0, P+1)
+  b.C0 = diag(100, P+1)
+
+  phi.m0 = rep(0.95, P);
+  phi.V0 = rep(0.1,  P);
+  W.guess = 0.1
+  W.a0   = rep(300, P)
+  W.b0   = W.a0 * W.guess
+  mu.true = rep(0.0, P)
+
+  if (est.ar=="with.ar") {
+    phi.true = NULL
+    W.true = NULL
+  }    
+  
+  bench.synth = list();
+  if (read.it) load(filename)
+  
+  ## source("Benchmark-DynNB.R")
+  for (i in run.idc) {
+    ## source("Benchmark-DynNB.R")
+    nm = methods[i];
+    bench.synth[[nm]] <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=X.stc, 
+                                          samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
+                                          method=nm, var.names="beta", dset.name=dset.name,
+                                          m.0=b.m0, C.0=b.C0,
+                                          phi.m0=phi.m0, phi.P0=1/phi.V0,
+                                          W.a0=W.a0, W.b0=W.b0,
+                                          mu.true=mu.true, phi.true=phi.true, W.true=W.true);
+  }
+  
+  synth.table = setup.table.dyn(bench.synth, "beta")
+
+  ## if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X, n=n, bmark1=pg, bmark2=fs); }
+  if (write.it) save(bench.synth, synth.table, dset.name, file=file.path(write.dir, filename))
+
+}}}}
+  
+}

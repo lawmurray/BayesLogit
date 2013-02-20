@@ -93,7 +93,7 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
   if (!is.null(beta.true)) { beta = beta.true; know.beta = TRUE; }
   if (!is.null(w.true))    { om   = w.true;    know.w    = TRUE; }
   if (!is.null(phi.true))  { phi  = phi.true;  know.phi  = TRUE;
-                             if (phi[1]==1) {mu.true = rep(0, P.b);}}
+                             if (any(phi==1)) {mu.true = rep(0, P.b);}}
   if (!is.null(mu.true))   { mu   = mu.true;   know.mu   = TRUE; }
   if (!is.null(W.true))    { W    = W.true;    know.W    = TRUE; }
   if (!is.null(iota.true)) { iota = iota.true; know.iota = TRUE; }
@@ -126,9 +126,11 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
     ## draw beta
     kappa = 0.5 * (y-d)
     z = kappa / w + log(d);
-    ffbs = FFBS.C(z, X, 1/w, mu, phi, diag(W, P.b), m.0, C.0)
-    iota = ffbs$alpha
-    beta = ffbs$beta
+    ## ffbs = FFBS.C(z, X, 1/w, mu, phi, diag(W, P.b), m.0, C.0)
+    ffbs = CUBS.C(z, X, 1/w, mu, phi, diag(W, P.b), m.0, C.0, obs="norm");
+    iota = ffbs$alpha;
+    beta = ffbs$beta;
+    
 
     ## AR(1) - phi, W assumed to be diagonal !!!
     if (!know.mu)  mu  = draw.mu.ar1.ind (beta, phi, W, mu.m0, mu.P0)
@@ -253,14 +255,19 @@ if (FALSE) {
 if (FALSE)
 {
 
-  T = 400
-  P = 2
+  T = 500
+  P = 4
+  corr.type = "low"
+  nb.mean = 1000  
 
+  ## for (P in c(2,4)) {
+  ##   for (corr.type in c("low", "high")) {
+  ##     for (nb.mean in c(10, 100)) {
+  
   c  = 0.5
-  d.true  = 1000
-  nb.mean = 100
+  d.true  = 4
   marg.V   = 5 / sqrt(P) * c
-  phi.true = 0.95
+  phi.true = rep(0.95, P)
 
   W.true = marg.V * (1 - phi.true^2)
 
@@ -272,8 +279,8 @@ if (FALSE)
   xgrid = seq(-1, 1, length.out=T)
   
   tX = matrix(0, nrow=P, ncol=T);
-  ## freq = c(1, 2, 3, 4)
-  freq = c(1, 1.1, 1.2, 1.3)
+  if (corr.type=="low")  freq = c(1, 2, 3, 4)
+  if (corr.type=="high") freq = c(1, 1.1, 1.2, 1.3)
   for (i in 1:P)
     tX[i,] = cos(freq[i] * pi * xgrid);
 
@@ -282,11 +289,14 @@ if (FALSE)
   
   log.mean = log(nb.mean) + colSums(beta[,-1] * tX)
   psi = log.mean - log(d.true)
-  p   = 1 / (1 + exp(-psi))
-  y   = rnbinom(T, d.true, p)
+  p.success  = 1 / (1 + exp(-psi))
+  y   = rnbinom(T, d.true, 1-p.success) ## p.success is prob of registering a single count.
 
-  ## save(d.true, nb.mean, marg.V, phi.true, W.true, beta, tX, X, log.mean, psi, p, y, freq, xgrid,
-  ##      file=name="DynNB-synth-2-high-cor-X.RData", compress=TRUE)
+  filename = paste("DynNB-synth-", corr.type, "-", P, "-mu-", nb.mean, ".RData", sep="")
   
+  if (FALSE) {
+    save(d.true, nb.mean, marg.V, phi.true, W.true, beta, tX, X, log.mean, psi, p.success, y, freq, xgrid,
+         file=filename, compress=TRUE)
+  }
   
 }

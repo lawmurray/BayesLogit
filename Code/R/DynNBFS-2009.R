@@ -105,7 +105,7 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
   if (!is.null(lambda.true)) { lambda = lambda.true; know.lambda = TRUE; }
   if (!is.null(r.true))    { r    = r.true;    know.r    = TRUE; }
   if (!is.null(phi.true))  { phi  = phi.true;  know.phi  = TRUE;
-                             if (phi==1) {mu.true = rep(0, P.b);}}
+                             if (any(phi==1)) {mu.true = rep(0, P.b);}}
   if (!is.null(mu.true))   { mu   = mu.true;   know.mu   = TRUE; }
   if (!is.null(W.true))    { W    = W.true;    know.W    = TRUE; }
   if (!is.null(iota.true)) { iota = iota.true; know.iota = TRUE; }
@@ -152,9 +152,10 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
 
     ## draw beta
     z = log(lambda) + log(d) + nmix$m[r]; ## So that we model the log mean.
-    ffbs = FFBS.C(z, X, nmix$v[r], mu, phi, diag(W,P.b), m.0, C.0)
-    iota = ffbs$alpha
-    beta = ffbs$beta
+    ## ffbs = FFBS.C(z, X, nmix$v[r], mu, phi, diag(W,P.b), m.0, C.0)
+    ffbs = CUBS.C(z, X, nmix$v[r], mu, phi, diag(W, P.b), m.0, C.0, obs="norm");
+    iota = ffbs$alpha;
+    beta = ffbs$beta;
 
     ## AR(1) - phi, W assumed to be diagonal !!!
     if (!know.mu)  mu  = draw.mu.ar1.ind (beta, phi, W, mu.m0, mu.P0)
