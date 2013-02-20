@@ -3,7 +3,74 @@ library("coda")
 ## Functions needed for benchmarking.
 
 ################################################################################
-                                 ## SUM STAT ##
+                          ## MY OWN ATTEMPT AT ESS ##
+################################################################################
+
+ESS <- function(x, method=c("monotone", "positive"))
+{
+  ## x is one dimensional.
+  ## Following Geyer 1992 and Holmes and Held 2006.
+  
+  acf.x = acf(x, lag.max=100, type="correlation", plot=FALSE)$acf;
+  if (is.na(acf.x[1])) return(NA); # If x is constant return NA.
+  
+  n = length(acf.x);
+  if (n %% 2 == 1) n = n - 1;
+  m = n / 2;
+  
+  ## find last positive.
+  Gamma.hat = acf.x[seq(1,n,2)] + acf.x[seq(2,n,2)];
+  stay.pos = Gamma.hat > 0;
+  m.pos = which.min(stay.pos) - 1;
+  if (all(stay.pos)) m.pos = m;
+  
+  ## find last monotone
+  ## d.Gamma_i = Gamma_{i+1} - Gamma_{i}, i=1..N
+  d.Gamma = diff(Gamma.hat);
+  stay.mon = d.Gamma < 0 ;  ## Check if decreasing.
+  m.mon = which.min(stay.mon)
+  if (all(stay.mon)) m.mon = m;
+
+  ## monotone sequence estimator cutoff
+  m.star = min(m.pos, m.mon);
+
+  if (method[1]=="positive") m.star = m.pos;
+
+  ## ## Bartlett cut-off for significant autocorrelations.
+  ## bartlett = acf.x >= sqrt(2/length(x));
+  ## stay.pos = bartlett > 0;
+  ## n.pos = which.min(stay.pos) - 1;
+  ## if (all(stay.pos)) n.pos = n;
+  ## n.star = min(2*m.star, n.pos);
+  
+  ## ESS
+  denom = 1 + 2 * sum(acf.x[2:(2*m.star)]);
+  ## denom = -acf.x[1] + 2 * sum(Gamma.hat[1:m.star]);
+  ## denom = 1 + 2 * sum(acf.x[2:n.star]);
+  ESS = length(x) / denom;
+  
+  ## ## To check
+  ## plot(Gamma.hat)
+  ## points(Gamma.hat[1:m.star], col=2);
+  ## plot(acf.x);
+  ## points(acf.x[1:n.star], col=2);
+  ## readline("ENTER")
+
+  ESS = min(ESS, length(x))
+  
+  ESS
+}
+
+ESS.alt <- function(x)
+{
+  require("coda");
+  ESS = effectiveSize(x)
+  ESS = min(ESS, length(x))
+  ESS
+}
+
+################################################################################
+                            ## SUMMARY STATISTICS ##
 ################################################################################
 
 ## Generates summary statistics for static coefficient.
@@ -18,10 +85,10 @@ sum.stat <- function(beta, runtime, thin=1)
 
   sstat[,1] = apply(beta, 2, mean);
   sstat[,2] = apply(beta, 2, sd);
-  sstat[,3] = apply(beta, 2, effectiveSize);
+  sstat[,3] = apply(beta, 2, ESS);
   sstat[,4] = sstat[,3] / runtime;
-  ## sstat[,5] = apply(beta, 2, ESS);
-  ## sstat[,6] = sstat[,5] / runtime;
+  ## sstat[,4] = apply(beta, 2, ESS);
+  ## sstat[,5] = sstat[,5] / runtime;
   sstat[,5] = sstat[,1] / sstat[,2];
   sstat[,6] = apply(beta, 2, function(x){quantile(x, 0.1)});
   sstat[,7] = apply(beta, 2, function(x){quantile(x, 0.9)});
@@ -49,7 +116,8 @@ sum.stat.dyn <- function(beta, runtime, thin=1)
 
   sstat[,,1] = apply(beta, c(2,3), mean);
   sstat[,,2] = apply(beta, c(2,3), sd);
-  sstat[,,3] = apply(beta, c(2,3), effectiveSize);
+  sstat[,,3] = apply(beta, c(2,3), ESS);
+  sstat[,,3] = ifelse(sstat[,,2]==0, 0, sstat[,,3])
   sstat[,,4] = sstat[,,3] / runtime;
   ## sstat[,5] = apply(beta, 2, ESS);
   ## sstat[,6] = sstat[,5] / gbs$runtime;
