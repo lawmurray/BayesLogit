@@ -73,7 +73,7 @@ ESS <- function(x, method=c("monotone", "positive"))
   ## monotone sequence estimator cutoff
   m.star = min(m.pos, m.mon);
 
-  if (method[1]=="positive") m.star = last.pos;
+  if (method[1]=="positive") m.star = m.pos;
 
   ## ## Bartlett cut-off for significant autocorrelations.
   ## bartlett = acf.x >= sqrt(2/length(x));
@@ -89,19 +89,23 @@ ESS <- function(x, method=c("monotone", "positive"))
   ESS = length(x) / denom;
   
   ## ## To check
-  ## plot(Gamma)
-  ## points(Gamma[1:m.star], col=2);
+  ## plot(Gamma.hat)
+  ## points(Gamma.hat[1:m.star], col=2);
   ## plot(acf.x);
   ## points(acf.x[1:n.star], col=2);
   ## readline("ENTER")
 
+  ESS = min(ESS, length(x))
+  
   ESS
 }
 
 ESS.alt <- function(x)
 {
   require("coda");
-  effectiveSize(x)
+  ESS = effectiveSize(x)
+  ESS = min(ESS, length(x))
+  ESS
 }
 
 convergence.heuristics <- function(samp, burn=1000)
