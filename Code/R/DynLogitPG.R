@@ -142,8 +142,10 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
   }
 
   end.time = proc.time();
+  
   out$total.time = end.time - start.time;
   out$ess.time   = end.time - start.ess;
+  out$alpha = out$iota
 
   out
 } ## logit.gibbs.R

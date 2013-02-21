@@ -160,6 +160,7 @@ dyn.logit.dRUM <- function(y, X.dyn, n=1, X.stc=NULL,
 
   out$total.time = end.time-start.time
   out$ess.time   = end.time-start.ess
+  out$alpha = out$iota
   
   out
 } ## dyn.logit.dRUM

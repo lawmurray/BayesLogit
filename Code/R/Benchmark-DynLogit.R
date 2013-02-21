@@ -105,7 +105,10 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
       return(NA);
     }
 
-    for (nm in var.names) { sstat[[nm]][[i]] = sum.stat.dyn(gb[[nm]], gb$ess.time[3], thin=1); }
+    for (nm in var.names) {
+      if (length(dim(gb[[nm]])) > 2) sstat[[nm]][[i]] = sum.stat.dyn(gb[[nm]], gb$ess.time[3], thin=1);
+      if (length(dim(gb[[nm]])) ==2) sstat[[nm]][[i]] = sum.stat(gb[[nm]], gb$ess.time[3], thin=1);
+    }
 
     arate[i]    = gb$a.rate
     ess.time[i] = gb$ess.time[3]
@@ -224,8 +227,8 @@ if (run$low.2)
   P = ncol(X.dyn)
   
   ## Prior
-  b.m0 = rep(0, P+1)
-  b.C0 = diag(100, P+1)
+  m0 = rep(0, P+1)
+  C0 = diag(100, P+1)
 
   phi.m0 = rep(0.95, P);
   phi.V0 = rep(0.1,  P);
@@ -246,7 +249,7 @@ if (run$low.2)
     bench.low.2[[nm]] <- benchmark.dyn.logit(y, X.dyn=X.dyn, n=n[1], X.stc=X.stc, 
                                              samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                              method=nm, var.names="beta", dset.name=dset.name,
-                                             m.0=b.m0, C.0=b.C0,
+                                             m.0=m0, C.0=C0,
                                              phi.m0=phi.m0, phi.P0=1/phi.V0,
                                              W.a0=W.a0, W.b0=W.b0,
                                              mu.true=mu.true, phi.true=phi.true, W.true=W.true);
@@ -444,7 +447,7 @@ if (run$allsynth)
       for (corr.type in c("low", "high")) {
         for (est.ar in c("wout.ar", "with.ar")) {
 
-  cat("AR:", est.ar, "\n");
+  cat("Dyn Logit.  AR:", est.ar, "\n");
           
   dset.name = paste(corr.type, "-", P, "-n-", nt, sep="");
   source.file = paste("DynLogit-synth-", dset.name, ".RData", sep="")
@@ -482,7 +485,9 @@ if (run$allsynth)
     nm = methods[i];
     bench.synth[[nm]] <- benchmark.dyn.logit(y, X.dyn=X.dyn, n=n[1], X.stc=X.stc, 
                                              samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
-                                             method=nm, var.names="beta", dset.name=dset.name,
+                                             method=nm,
+                                             var.names=c("beta", "alpha", "phi", "W"),
+                                             dset.name=dset.name,
                                              m.0=b.m0, C.0=b.C0,
                                              phi.m0=phi.m0, phi.P0=1/phi.V0,
                                              W.a0=W.a0, W.b0=W.b0,
