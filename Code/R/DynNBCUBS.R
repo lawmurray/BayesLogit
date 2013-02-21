@@ -78,7 +78,7 @@ dyn.NB.CUBS <- function(y, X.dyn, m0, C0,
               "l.ratio" = rep(0, M),
               "lf.ppsl" = rep(0, M),
               "lq.ppsl" = rep(0, M),
-              "a.rate"  = rep(0, M))
+              "ca.rate" = rep(0, M))
   if (N.a > 0) out$alpha=array(0, dim=c(M, N.a))
 
   ## Initialize
@@ -110,7 +110,10 @@ dyn.NB.CUBS <- function(y, X.dyn, m0, C0,
   
   ## MCMC
   for(i in 1:(samp+burn)) {
-    if (i==burn+1) start.ess = proc.time();
+    if (i==burn+1) {
+      start.ess = proc.time();
+      naccept = 0
+    }
 
     ## draw (d | beta)
     if (!know.d) {
@@ -176,10 +179,14 @@ dyn.NB.CUBS <- function(y, X.dyn, m0, C0,
       out$l.ratio[i-burn]  = l.ratio
       out$lf.ppsl[i-burn]  = lf.ppsl
       out$lq.ppsl[i-burn]  = lq.ppsl
-      out$a.rate[i-burn]   = naccept / i
+      out$ac.rate[i-burn]   = naccept / (i - burn)
     }
 
-    if (i %% verbose == 0) cat("CUBS: iteration", i, "a.rate:", naccept / i, "\n");
+    if (i %% verbose == 0) {
+      cat("DynLogitCUBS: ");
+      if (i > burn) cat("Accept rate:", naccept / (i-burn), ", ");
+      cat("Iteration:", i, "\n");
+    }
     
   }
 
@@ -188,7 +195,8 @@ dyn.NB.CUBS <- function(y, X.dyn, m0, C0,
   end.time = proc.time()
   out$total.time = end.time - start.time
   out$ess.time   = end.time - start.ess
-  out$last          = draw
+  out$last       = draw
+  out$a.rate     = naccept / (i - burn)
   
   out
   

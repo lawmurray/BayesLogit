@@ -91,8 +91,11 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
       return(NA);
     }
 
-    for (nm in var.names) { sstat[[nm]][[i]] = sum.stat.dyn(gb[[nm]], gb$ess.time[3], thin=1); }
-
+    for (nm in var.names) {
+      if (length(dim(gb[[nm]])) > 2) sstat[[nm]][[i]] = sum.stat.dyn(gb[[nm]], gb$ess.time[3], thin=1);
+      if (length(dim(gb[[nm]])) ==2) sstat[[nm]][[i]] = sum.stat(gb[[nm]], gb$ess.time[3], thin=1);
+    }
+    
     arate[i]    = gb$a.rate
     ess.time[i] = gb$ess.time[3]
 
@@ -366,7 +369,8 @@ if (run$allsynth)
     nm = methods[i];
     bench.synth[[nm]] <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=X.stc, 
                                           samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
-                                          method=nm, var.names="beta", dset.name=dset.name,
+                                          method=nm, var.names=c("beta", "alpha", "phi", "W"),
+                                          dset.name=dset.name,
                                           m.0=b.m0, C.0=b.C0,
                                           phi.m0=phi.m0, phi.P0=1/phi.V0,
                                           W.a0=W.a0, W.b0=W.b0,

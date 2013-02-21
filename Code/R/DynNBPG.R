@@ -152,6 +152,7 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
   }
 
   end.time  = proc.time();
+  
   out$total.time = end.time - start.time;
   out$ess.time   = end.time - start.ess;
   
