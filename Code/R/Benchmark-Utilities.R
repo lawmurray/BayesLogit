@@ -86,6 +86,7 @@ sum.stat <- function(beta, runtime, thin=1)
   sstat[,1] = apply(beta, 2, mean);
   sstat[,2] = apply(beta, 2, sd);
   sstat[,3] = apply(beta, 2, ESS);
+  sstat[,3] = ifelse(sstat[,2]==0, 0, sstat[,3])
   sstat[,4] = sstat[,3] / runtime;
   ## sstat[,4] = apply(beta, 2, ESS);
   ## sstat[,5] = sstat[,5] / runtime;
