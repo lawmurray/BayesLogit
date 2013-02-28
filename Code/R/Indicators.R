@@ -24,6 +24,9 @@ draw.indicators.C <- function(res, nmix)
 {
   n = length(res);
   r = rep(0, n);
+
+  if (any(!is.finite(res)))
+    cat("draw.indicators.C: Residuls have non-finite value.  Dump:\n", res, "\n");
   
   OUT <- .C("draw_indicators_generic",
             as.integer(r), as.double(res), as.integer(n),
