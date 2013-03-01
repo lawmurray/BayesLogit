@@ -140,7 +140,7 @@ dyn.NB.CUBS <- function(y, X.dyn, m0, C0,
     l.fdivq.ppsl = lf.ppsl - lq.ppsl
     l.ratio = l.fdivq.ppsl - l.fdivq
     ## l.fdivq.ppsl = 0; l.ratio = 0; lf.ppsl = 0; lq.ppsl = 0
-    
+
     if (is.na(l.ratio) || is.nan(l.ratio)) {
       ## PROBLEM: YOU CAN HAVE SINGULAR MATRICES IN CUBS.C.
       ## THIS LEADS TO lq.ppsl=NaN.
@@ -197,6 +197,7 @@ dyn.NB.CUBS <- function(y, X.dyn, m0, C0,
   out$ess.time   = end.time - start.ess
   out$last       = draw
   out$a.rate     = naccept / (i - burn)
+  out$error      = 0
   
   out
   
@@ -307,5 +308,63 @@ if (FALSE) {
   points(1:T, ly, cex=0.1);
   
   lines(0:T, out$beta[100,1,], col=3);
+  
+}
+
+################################################################################
+                               ## PROBLEM DATA ##
+################################################################################
+
+if (FALSE)
+{
+
+  P = 4
+  nb.mean = 100
+  corr.type = "high"
+  ## est.ar = "with.ar"
+  est.ar = "wout.ar"
+
+  cat("Dyn Logit.  AR:", est.ar, "\n");
+          
+  dset.name = paste(corr.type, "-", P, "-mu-", nb.mean, sep="");
+  source.file = paste("DynNB-synth-", dset.name, ".RData", sep="")
+  load(file.path("Benchmark-DataSets", source.file))
+
+  filename = paste("bench-dynlogit-", dset.name, "-", est.ar, ".RData", sep="")
+  
+  T = length(y)
+  X.dyn = X
+  X.stc = matrix(1, nrow=T, ncol=1)
+  P = ncol(X.dyn)
+  
+  ## Prior
+  m0 = rep(0, P+1)
+  C0 = diag(100, P+1)
+
+  phi.m0 = rep(0.95, P);
+  phi.V0 = rep(0.1,  P);
+  phi.P0 = 1/phi.V0
+  W.guess = 0.1
+  W.a0   = rep(300, P)
+  W.b0   = W.a0 * W.guess
+  mu.true = rep(0.0, P)
+
+  if (est.ar=="with.ar") {
+    phi.true = NULL
+    W.true = NULL
+  }    
+  
+  bench.synth = list();
+
+  samp = 100
+  burn = 20
+  verbose = 10
+  
+  ## source("DynNBCUBS.R")
+  gb <- dyn.NB.CUBS(y=y, X.dyn=X.dyn, m0=m0, C0=C0,
+                    samp=samp, burn=burn, verbose=verbose,
+                    phi.m0=phi.m0, phi.P0=phi.P0,
+                    W.a0=W.a0, W.b0=W.b0, X.stc=X.stc,
+                    mu.true = mu.true, phi.true=phi.true, W.true=W.true, d.true=NULL);
   
 }

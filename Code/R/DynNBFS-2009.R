@@ -2,9 +2,9 @@
 ## We model the log-mean here.
 
 ## if (exists("TESTING")) {
-source("ComputeMixture.R")
+## source("ComputeMixture.R")
 source("NB-Shape.R") ## Routine for sampling shape.
-source("AR1.R"); ## Independent AR(1)'s.  Maybe should change this.
+## source("AR1.R"); ## Independent AR(1)'s.  Maybe should change this.
 ## } ## TESTING
 
 ################################################################################
@@ -148,6 +148,7 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
     ## draw (r | d, lambda, beta)
     nmix = compute.mixture.lg(d);
     res  = psi - log(lambda)
+    if (any(!is.finite(res))) return(list("error"=1, "dump"=res));
     r    = draw.indicators.C(res, nmix);
 
     ## draw beta
@@ -182,6 +183,7 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
   
   out$total.time = end.time - start.time;
   out$ess.time   = end.time - start.ess;
+  out$error      = 0
   
   out
 } ## dyn.NB.mix

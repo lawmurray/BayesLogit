@@ -12,7 +12,7 @@ source("DynNBCUBS.R")
 ################################################################################
 
 run <- list("flu"   =FALSE,
-            "synth1"=FALSE,
+            "synth1"=TRUE,
             "synth2"=FALSE,
             "synth3"=FALSE,
             "allsynth"=FALSE)
@@ -25,7 +25,7 @@ write.it = FALSE
 plot.it  = FALSE
 read.it = FALSE
 
-run.idc = 1:3
+run.idc = 1:2
 
 samp = 100
 burn  = 20
@@ -53,19 +53,23 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
   sstat = list(); for (nm in var.names) sstat[[nm]] = list();
   arate    = rep(0, ntrials);
   ess.time = rep(0, ntrials);
+  gb = list();
+  i  = 0
+  num.errors = 0
   
-  for(i in 1:ntrials) {
-
+  while (i < ntrials) {
+    i = i + 1
+    
     if (method=="PG") {
       gb <- dyn.NB.PG(y=y, X.dyn=X.dyn, X.stc=X.stc,
                       samp=samp, burn=burn, verbose=verbose,
                       m.0=m.0, C.0=C.0,
                       mu.m0=mu.m0, mu.P0=mu.P0,
                       phi.m0=phi.m0, phi.P0=phi.P0,
-                      W.a0=W.a0, W.b0=W.b0,
+                        W.a0=W.a0, W.b0=W.b0,
                       d.true=d.true, w.true=NULL,
                       beta.true=beta.true, iota.true=iota.true,
-                      mu.true=mu.true, phi.true=phi.true, W.true=W.true)
+                      mu.true=mu.true, phi.true=phi.true, W.true=W.true);
       gb$a.rate = 1
     } else if (method=="FS") {
       gb <- dyn.NB.FS(y=y, X.dyn=X.dyn, X.stc=X.stc,
@@ -91,14 +95,24 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
       return(NA);
     }
 
-    for (nm in var.names) {
-      if (length(dim(gb[[nm]])) > 2) sstat[[nm]][[i]] = sum.stat.dyn(gb[[nm]], gb$ess.time[3], thin=1);
-      if (length(dim(gb[[nm]])) ==2) sstat[[nm]][[i]] = sum.stat(gb[[nm]], gb$ess.time[3], thin=1);
+    if (gb$error) {
+      num.errors = num.errors + 1
+      i = i-1
+      cat("Error.  Dump:\n", gb$dump, "\n");
     }
+    else {
     
-    arate[i]    = gb$a.rate
-    ess.time[i] = gb$ess.time[3]
+      for (nm in var.names) {
+        if (length(dim(gb[[nm]])) > 2) sstat[[nm]][[i]] = sum.stat.dyn(gb[[nm]], gb$ess.time[3], thin=1);
+        if (length(dim(gb[[nm]])) ==2) sstat[[nm]][[i]] = sum.stat(gb[[nm]], gb$ess.time[3], thin=1);
+      }
+      
+      arate[i]    = gb$a.rate
+      ess.time[i] = gb$ess.time[3]
+      
+    }
 
+    if (num.errors > 10) return(NA)
   }
 
   for (nm in var.names)
@@ -212,7 +226,7 @@ if (run$synth1) {
   bench.synth1 = list();
   
   ## source("Benchmark-DynNB.R")
-  for (i in 1:3) {
+  for (i in run.idc) {
     ## source("Benchmark-DynNB.R")
     nm = methods[i];
     bench.synth1[[nm]] <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=NULL, 
@@ -251,7 +265,7 @@ if (run$synth2) {
   bench.synth2 = list();
   
   ## source("Benchmark-DynNB.R")
-  for (i in 1:3) {
+  for (i in run.idc) {
     ## source("Benchmark-DynNB.R")
     nm = methods[i];
     bench.synth2[[nm]] <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=NULL, 
@@ -294,7 +308,7 @@ if (run$synth3) {
   bench.synth3 = list();
   
   ## source("Benchmark-DynNB.R")
-  for (i in 1:3) {
+  for (i in run.idc) {
     ## source("Benchmark-DynNB.R")
     nm = methods[i];
     bench.synth3[[nm]] <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=NULL, 
@@ -345,8 +359,8 @@ if (run$allsynth)
   P = ncol(X.dyn)
   
   ## Prior
-  b.m0 = rep(0, P+1)
-  b.C0 = diag(100, P+1)
+  m0 = rep(0, P+1)
+  C0 = diag(100, P+1)
 
   phi.m0 = rep(0.95, P);
   phi.V0 = rep(0.1,  P);
@@ -371,7 +385,7 @@ if (run$allsynth)
                                           samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                           method=nm, var.names=c("beta", "alpha", "phi", "W"),
                                           dset.name=dset.name,
-                                          m.0=b.m0, C.0=b.C0,
+                                          m.0=m0, C.0=C0,
                                           phi.m0=phi.m0, phi.P0=1/phi.V0,
                                           W.a0=W.a0, W.b0=W.b0,
                                           mu.true=mu.true, phi.true=phi.true, W.true=W.true);
