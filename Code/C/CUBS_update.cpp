@@ -93,6 +93,10 @@ int binom_transform_fdf(const gsl_vector * x, void *params, gsl_vector * f, gsl_
 int solver(const double* fq, double* rs, const double* ival, double epsabs, double epsrel, int max_iter,
 	   int (*gsl_transform) (const gsl_vector*, void*, gsl_vector*))
 {
+  #ifdef USE_R
+  gsl_set_error_handler_off ();
+  #endif
+
   double params[2]; memmove(params, fq, 2 * sizeof(double));
   // fq[0] = prior[0]; fq[1] = prior[1];
 
@@ -149,6 +153,10 @@ int solver(const double* fq, double* rs, const double* ival, double epsabs, doub
 
 int binom_solver(const double* fq, double* rs, const double* ival, double epsabs, double epsrel, int max_iter)
 {
+  #ifdef USE_R
+  gsl_set_error_handler_off ();
+  #endif
+
   double params[2]; memmove(params, fq, 2 * sizeof(double));
   // fq[0] = prior[0]; fq[1] = prior[1];
 
@@ -260,6 +268,10 @@ CUBSSolver::~CUBSSolver()
 
 void CUBSSolver::solve(const double* fq, double* rs, double epsabs, double epsrel, int max_iter)
 {
+  #ifdef USE_R
+  gsl_set_error_handler_off ();
+  #endif
+
   double params[2]; memmove(params, fq, 2 * sizeof(double));
   // fq[0] = prior[0]; fq[1] = prior[1];
 
