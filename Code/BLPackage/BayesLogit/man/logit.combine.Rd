@@ -18,7 +18,7 @@
   regression stipulates that the statistical model for observing a
   success=1 or failure=0 is governed by
 
-  \deqn{ P(y^* = 1 | x^*, \beta) = (1 + \exp(-x* \beta))^{-1}. }
+  \deqn{ P(y^* = 1 | x^*, \beta) = (1 + \exp(-x^* \beta))^{-1}. }
 
   Instead of representing data as a collection of binary outcomes, one
   may record the average response \eqn{y_i} at each unique \eqn{x_i}
@@ -65,15 +65,10 @@ sbase = spambase[seq(1,nrow(spambase),10),];
 X = model.matrix(is.spam ~ word.freq.free + word.freq.1999, data=sbase);
 y = sbase$is.spam;
 
+## Actually unnecessary as logit.EM automatically tries to compress.
 new.data = logit.combine(y, X)
-
-dim(X); dim(new.data$X)
-
-mode.old = logit.EM(y, X)
-mode.new = logit.EM(new.data$y, new.data$X, new.data$n)
-
-mode.old
-mode.new
+mode.spam = logit.EM(new.data$y, new.data$X, new.data$n)
+mode.spam
 
 }
 

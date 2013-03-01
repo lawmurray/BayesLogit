@@ -16,7 +16,7 @@
 \details{
 
   Suppose \eqn{e_i \sim N(m_{\gamma_i}, v_{\gamma_i})}.  Then, given
-  \eqn{e_i}, draw \eqn{gamma_i} from \deqn{P(\gamma_i = j | e_i)}
+  \eqn{e_i}, draw \eqn{\gamma_i} from \eqn{P(\gamma_i = j | e_i)}
   for each \eqn{i}.
 
 }
@@ -48,8 +48,8 @@ draw.indicators.R(res, nmix)
 \examples{
 
 ## Approximate - log[Ga] using mixture of normals.
-df = 9
-nm = compute.mixture(df, "log.gamma")
+sp = 9
+nm = compute.mixture(sp, "log.gamma")
 nc = length(nm$m)
 
 r  = sample.int(nc, 10, replace=TRUE, prob=nm$p)
@@ -58,8 +58,8 @@ e  = rnorm(10, nm$m[r], sqrt(nm$v[r]))
 r.post = draw.indicators(e, nm)
 
 ## Approximate type III logistic using mixture of normals.
-df = 9
-nm = compute.mixture(df, "logistic.iii")
+sp = 9
+nm = compute.mixture(sp, "logistic.iii")
 nc = length(nm$m)
 
 r  = sample.int(nc, 10, replace=TRUE, prob=nm$p)

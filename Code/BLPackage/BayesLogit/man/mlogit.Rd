@@ -80,6 +80,7 @@ mlogit(y, X, n=rep(1,nrow(as.matrix(y))),
 \examples{
 
 ## Use the iris dataset.
+data(iris)
 N = nrow(iris)
 P = ncol(iris)
 J = nlevels(iris$Species)

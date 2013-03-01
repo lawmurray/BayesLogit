@@ -19,7 +19,7 @@
   regression stipulates that the statistical model for observing a
   success=1 or failure=0 is governed by
 
-  \deqn{ P(y^* = 1 | x^*, \beta) = (1 + \exp(-x* \beta))^{-1}. }
+  \deqn{ P(y^* = 1 | x^*, \beta) = (1 + \exp(-x^* \beta))^{-1}. }
 
   Instead of representing data as a collection of binary outcomes, one
   may record the average response \eqn{y_i} at each unique \eqn{x_i}
