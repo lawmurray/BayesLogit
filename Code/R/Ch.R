@@ -39,6 +39,110 @@ pg.a.coef <- function(n, x, h, z=0)
 }
 
 ##------------------------------------------------------------------------------
+                          ## SAMPLE TRUNCATED GAMMA ##
+##------------------------------------------------------------------------------
+
+## A RELATIVELY EASY METHOD TO IMPLEMENT
+rltgamma.dagpunar.1 <- function(shape=1, rate=1, trunc=1)
+{
+  ## y ~ Ga(shape, rate, trunc)
+  ## x = y/t
+  ## x ~ Ga(shape, rate t, 1)
+  a = shape
+  b = rate * trunc
+
+  if (shape <  1) return(NA)
+  if (shape == 1) return(rexp(1) / rate + trunc);
+  
+  d1 = b-a
+  d3 = a-1
+  c0 = 0.5 * (d1 + sqrt(d1^2 + 4 * b)) / b
+
+  x = 0
+  accept = FALSE
+  
+  while (!accept) {
+    x  = b + rexp(1) / c0
+    u  = runif(1)
+
+    l.rho = d3 * log(x) - x * (1-c0);
+    l.M   = d3 * log(d3 / (1-c0)) - d3
+
+    accept = log(u) <= (l.rho - l.M)
+  }
+
+  x = x / b
+  y = trunc * x
+  y
+}
+
+rltgamma.dagpunar <- function(num=1, shape=1, rate=1, trunc=1)
+{
+  shape = array(shape, dim=num)
+  rate  = array(rate , dim=num)
+  trunc = array(trunc, dim=num)
+
+  y = rep(0, num)
+  for (i in 1:num) y[i] = rltgamma.dagpunar.1(shape[i], rate[i], trunc[i]);
+
+  y
+}
+
+##------------------------------------------------------------------------------
+                             ## TAKEN FROM PG.R ##
+##------------------------------------------------------------------------------
+
+## rtigauss - sample from truncated Inv-Gauss(1/abs(Z), 1.0) 1_{(0, TRUNC)}.
+##------------------------------------------------------------------------------
+rtigauss <- function(Z, h, R)
+{
+  Z = abs(Z);
+  mu = 1/Z;
+  X = R + 1;
+  if (mu > R) {
+    alpha = 0.0;
+    while (runif(1) > alpha) {
+      ## X = R + 1
+      ## while (X > R) {
+      ##     X = 1.0 / rgamma(1, 0.5, rate=0.5);
+      ## }
+      E = rexp(2)
+      while ( E[1]^2 > 2 * E[2] / R) {
+        E = rexp(2)
+      }
+      X = R / (1 + R*E[1])^2
+      alpha = exp(-0.5 * Z^2 * X);
+    }
+  }
+  else {
+    while (X > R) {
+      lambda = 1.0;
+      Y = rnorm(1)^2;
+      X = mu + 0.5 * mu^2 / lambda * Y -
+        0.5 * mu / lambda * sqrt(4 * mu * lambda * Y + (mu * Y)^2);
+      if ( runif(1) > mu / (mu + X) ) {
+        X = mu^2 / X;
+      }
+    }
+  }
+  X;
+}
+
+## rigauss - sample from Inv-Gauss(mu, lambda).
+##------------------------------------------------------------------------------
+rigauss <- function(mu, lambda)
+{
+  nu = rnorm(1);
+  y  = nu^2;
+  x  = mu + 0.5 * mu^2 * y / lambda -
+    0.5 * mu / lambda * sqrt(4 * mu * lambda * y + (mu*y)^2);
+  if (runif(1) > mu / (mu + x)) {
+    x = mu^2 / x;
+  }
+  x
+}
+
+##------------------------------------------------------------------------------
 
 rch.1 <- function(h)
 {
