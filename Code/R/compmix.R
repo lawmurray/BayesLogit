@@ -1,4 +1,4 @@
-## This R script is taken from the binomlogit package.
+## This R function is taken from the binomlogit package.
 
 # Approximation of the type III generalized logistic distribution by Gaussian mixtures
 # Computes mixture parameters, given degrees of freedom

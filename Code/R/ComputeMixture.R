@@ -5,6 +5,11 @@
 ## Version 1.0,  15/09/2006
 ## Adapted to R by Jesse Windle, UT Austin, 10/9/2012.
 
+## This file was original found in R. Fruhwirth's public bitbucket repository.
+## Version 2.0 of this file can be found in the bayesf MATLAB package found on
+## S. Fruhwirth-Schnatter's website
+## <http://statmath.wu.ac.at/~fruehwirth/monographie/>.
+
 range <- matrix(ncol=2, byrow=TRUE, data=
                 c(1,     4,     ## 10 components
                   5,     19,    ## 9 components
