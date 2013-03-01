@@ -21,7 +21,7 @@
 
   The density for X may be derived from Z and PG(n,0) as
 
-  \deqn{ p(x|n,z) \propto \exp(-z^2/2 x) p(x|n,0).}
+  \deqn{ p(x|n,z) \propto \exp(-x z^2/2) p(x|n,0).}
 
   Thus PG(n,z) is an exponentially tilted PG(n,0).
 
@@ -50,7 +50,7 @@ rpg.devroye(num=1, n=1, z=0.0)
   You may call rpg when n and z are vectors.
 
   \item{num}{The number of random variates to simulate.}
-  \item{n}{Degrees of freedom.}
+  \item{n}{Shape parameter.}
   \item{z}{Parameter associated with tilting.}
   \item{trunc}{The number of elements used in sum of gammas approximation.}
 }
