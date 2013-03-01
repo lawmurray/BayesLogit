@@ -48,9 +48,9 @@ rpg.gamma <- function(num=1, n=1, z=0.0, trunc=200)
 rpg.devroye <- function(num=1, n=1, z=0.0)
 {
     ## Check Parameters.
-    if (sum(n<0)!=0) {
-        print("n must be greater than zero.");
-        return(NA);
+    if (any(n<0)) {
+      print("n must be greater than zero.");
+      return(NA);
     }
 
     x = rep(0, num);
@@ -208,6 +208,12 @@ logit.EM <- function(y, X, n=rep(1, length(y)),
 
     ## In the event X is one dimensional.
     X = as.matrix(X);
+
+    ## Combine data.  May speed things up.
+    new.data = logit.combine(y, X, n);
+    y = new.data$y;
+    X = new.data$X;
+    n = new.data$n;
 
     ## Check that the data and priors are okay.
     N = dim(X)[1];

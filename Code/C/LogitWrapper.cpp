@@ -116,7 +116,7 @@ void gibbs(double *wp, double *betap,                            // Posterior
   try{
     Logit logit(y, tX, n);
     logit.set_prior(m0, P0);
-    logit.compress();
+    // logit.compress();
 
     // Set the correct dimensions after combining data.
     w.resize(logit.get_N(), 1, *samp);
@@ -169,7 +169,7 @@ void EM(double *betap,
   // Logit EM
   try{
     Logit logit(y, tX, n);
-    logit.compress();
+    // logit.compress();
     *max_iterp = logit.EM(beta, *tolp, *max_iterp);
 
     // Copy.
