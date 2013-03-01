@@ -88,7 +88,7 @@ NB.FS.gibbs <- function(y, X,
     ## draw (d | beta)
     phi = drop(X%*%beta)
     mu  = exp(phi)
-    d = draw.df(d, mu, G, ymax);
+    d = draw.df(y, d, mu, G, ymax);
     ## compute.mixture(d) needs integral d for d < 20.
     ## d = draw.df.real.mean(y, d, mu)
     ## draw (lambda | d, beta)
@@ -96,7 +96,7 @@ NB.FS.gibbs <- function(y, X,
     p = 1 / (1 + exp(-psi))
     lambda = rgamma(N, y+d, scale=p)
     ## draw (r | d, lambda, beta)
-    nmix = compute.mixture(d);
+    nmix = compute.mixture.lg(d);
     res  = psi - log(lambda)
     r    = draw.indicators.C(res, nmix);
 

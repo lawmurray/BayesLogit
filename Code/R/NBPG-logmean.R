@@ -78,7 +78,7 @@ NB.PG.gibbs <- function(y, X,
     ## draw (d | beta)
     phi = drop(X%*%beta)
     mu  = exp(phi)
-    d = draw.df(d, mu, G, ymax);
+    d = draw.df(y, d, mu, G, ymax);
     ## d = draw.df.real.mean(y, d, mu);
     ## draw (w | d, beta)
     psi = phi - log(d);
