@@ -340,10 +340,10 @@ if (run$allsynth)
   ## est.ar = "with.ar"
   est.ar = "wout.ar"
 
-  for (P in c(2,4)) {
-    for (nb.mean in c(10,100)) {
-      for (corr.type in c("low", "high")) {
-        for (est.ar in c("wout.ar", "with.ar")) {
+  for (est.ar in c("wout.ar", "with.ar")) {
+    for (P in c(2,4)) {
+      for (nb.mean in c(10,100)) {
+        for (corr.type in c("low", "high")) {
 
   cat("AR:", est.ar, "\n");
           
