@@ -128,3 +128,5 @@ compmix=function(k){
       return(mixcomp)
 }
 
+## So that the names look similar.
+compute.mixture.l3 = compmix

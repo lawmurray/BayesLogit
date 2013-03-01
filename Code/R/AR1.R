@@ -51,22 +51,22 @@ ar1.llh.C <- function(beta, mu, phi, W, m0, C0, alpha=NULL)
 
 ##------------------------------------------------------------------------------
 
-draw.W.ar1 <- function(x, mu, phi, nu.0, Psi.0)
-{
-  require("bayesm")
-  P = nrow(x)
-  T = ncol(x)
+## draw.W.ar1 <- function(x, mu, phi, nu.0, Psi.0)
+## {
+##   require("bayesm")
+##   P = nrow(x)
+##   T = ncol(x)
   
-  phi = as.numeric(phi)
-  x = x - as.numeric(mu)
-  e = x[,-1,drop=FALSE] - x[,-T,drop=FALSE] * phi;
+##   phi = as.numeric(phi)
+##   x = x - as.numeric(mu)
+##   e = x[,-1,drop=FALSE] - x[,-T,drop=FALSE] * phi;
 
-  Psi.T = Psi.0 + e %*% t(e);
-  nu.T  = nu.0 + (T-1);
+##   Psi.T = Psi.0 + e %*% t(e);
+##   nu.T  = nu.0 + (T-1);
 
-  W = rwishart(nu.T, solve(Psi.T))$IW
-  W
-}
+##   W = rwishart(nu.T, solve(Psi.T))$IW
+##   W
+## }
 
 draw.W.ar1.ind <- function(x, mu, phi, a.0, b.0)
 {

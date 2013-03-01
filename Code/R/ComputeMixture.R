@@ -211,7 +211,7 @@ ratval <- function(p, x)
   y
 }
 
-compute.mixture <- function(n)
+compute.mixture.lg <- function(n)
 {
   ## n: degrees of freedom.
 
@@ -311,3 +311,24 @@ if (FALSE) {
   sd(diff.sd)
   
 }
+
+################################################################################
+                         ## COMPUTE MIXTURE GENERAL ##
+################################################################################
+
+compute.mixture <- function(shape, type=c("log.gamma", "logistic.iii"))
+{
+  nm = NA
+  if (type[1]=="log.gamma") {
+    nm = compute.mixture.lg(shape)
+  } else
+  if (type[1]=="logistic.iii") {
+    nm = compmix(shape)
+    nm$m = rep(0, length(nm$v))
+  } else {
+    cat("compute.mixture: unrecognized type:", type[1], "\n");
+  }
+
+  nm
+}
+

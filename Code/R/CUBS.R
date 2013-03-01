@@ -21,14 +21,14 @@ poisson.solve <- function(rs, fq)
   out
 }
 
-CUBS.R <- function(y, X, n, mu, phi, W, m0, C0, obs=c("binom", "nbinom", "norm"), max.iter=100)
+CUBS.R <- function(z, X, n, mu, phi, W, m0, C0, obs=c("binom", "nbinom", "norm"), max.iter=100)
 {
   ## When tracking (beta_t, alpha).  It may be the case that there is no alpha.
   ## z_t = x_t (beta_t, alpha_t) + ep_t, ep_t \sim N(0, V_t).
   ## beta_t = mu + phi * (beta_t - mu) + omega_t, omega_t \sim N(0,W).
   ## alpha_t = alpha_{t-1}
   
-  ## y : vector of observations (T)
+  ## z : vector of observations (T)
   ## X : design matrix (T x N)
   ## mu : mu (K)
   ## phi : vector (K)
@@ -38,7 +38,7 @@ CUBS.R <- function(y, X, n, mu, phi, W, m0, C0, obs=c("binom", "nbinom", "norm")
 
   W = as.matrix(W)
   
-  T = length(y);
+  T = length(z);
   N.b = ncol(W);
   N   = ncol(X);
   N.a = N - N.b;
@@ -81,13 +81,13 @@ CUBS.R <- function(y, X, n, mu, phi, W, m0, C0, obs=c("binom", "nbinom", "norm")
       ## cat("f:", f.i, "q:", q.i, "iter:", rs.i$iter, "precis:",
       ##     rs.i$estim.precis, "r:", rs.i$root[1], "s:", rs.i$root[2], "\n");
       rs[,i.l] = rs.i$root
-      rstar.i = rs.i$root[1] + y[i.l];
-      sstar.i = n[i.l] - y[i.l] + rs.i$root[2];
+      rstar.i = rs.i$root[1] + z[i.l];
+      sstar.i = n[i.l] - z[i.l] + rs.i$root[2];
       fqstar.i = binom.solve(c(rstar.i, sstar.i), c(0, 0));
       ## ## cat("f,q:", f.i, q.i, "root:", rs.i$root, "f.root:", rs.i$f.root, "\n");
     } else if (obs=="norm") { # Gaussian
       qstar.i = (1 / (1 / q.i + 1 / n[i.l]))
-      fstar.i = (f.i / q.i + y[i.l] / n[i.l]) * qstar.i
+      fstar.i = (f.i / q.i + z[i.l] / n[i.l]) * qstar.i
       fqstar.i = c(fstar.i, qstar.i)
       ## cat(c(f.i, q.i), fqstar.i, "\n")
     } else if (obs=="pois") { # Poisson
@@ -95,14 +95,14 @@ CUBS.R <- function(y, X, n, mu, phi, W, m0, C0, obs=c("binom", "nbinom", "norm")
       s.i = exp(digamma(r.i$root[1]) - f.i)
       rs.i = list(root=c(r.i$root[1], s.i));
       rs[,i.l] = rs.i$root
-      fstar.i = digamma(rs.i$root[1] + y[i.l]) - log(rs.i$root[2] + 1)
-      qstar.i = trigamma(rs.i$root[1] + y[i.l])
+      fstar.i = digamma(rs.i$root[1] + z[i.l]) - log(rs.i$root[2] + 1)
+      qstar.i = trigamma(rs.i$root[1] + z[i.l])
       fqstar.i = c(fstar.i, qstar.i)
     } else if (obs=="nbinom") { # Neg. Binomial
       fhat.i = f.i - log(n[i.l])
       rs.i = multiroot(binom.solve, start=c(0.1,0.1), fq=c(fhat.i, q.i), maxiter=max.iter);
       rs[,i.l] = rs.i$root
-      rstar.i = rs.i$root[1] + y[i.l];
+      rstar.i = rs.i$root[1] + z[i.l];
       sstar.i = n[i.l] + rs.i$root[2];
       fqstar.i = binom.solve(c(rstar.i, sstar.i), c(0, 0));
       fqstar.i[1] = fqstar.i[1] + log(n[i.l])
@@ -138,6 +138,8 @@ CUBS.R <- function(y, X, n, mu, phi, W, m0, C0, obs=c("binom", "nbinom", "norm")
     V.bs = C[b.idc, b.idc, i-1] - A.bs %*% R[b.idc, b.idc, i] %*% t(A.bs);
     m.bs = m[b.idc, i-1] + A.bs %*% (beta[,i] - a[b.idc,i]);
 
+    print(V.bs)
+    
     L  = t(chol(V.bs));
     ep = rnorm(N.b)
     ## ep = rep(0, N.b);
@@ -162,6 +164,8 @@ CUBS.C <- function(z, X, n, mu, phi, W, m0, C0,
   N.b = length(mu);
   N   = ncol(X);
   N.a = N - N.b;
+
+  W = as.matrix(W)
 
   ## Check
   not.ok = rep(6);
@@ -197,7 +201,7 @@ CUBS.C <- function(z, X, n, mu, phi, W, m0, C0,
   
   OUT <- .C(call.name, alpha, beta,
             z, X, as.double(n), 
-            mu, phi, W,
+            mu, phi, as.double(W),
             m0, C0,
             as.integer(N.b), as.integer(N), as.integer(T),
             log.dens, eps.rel, as.integer(max.iter),

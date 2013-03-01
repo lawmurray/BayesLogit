@@ -24,14 +24,18 @@ draw.indicators.C <- function(res, nmix)
 {
   n = length(res);
   r = rep(0, n);
+  
+  nc = length(nmix$m)
 
   if (any(!is.finite(res)))
     cat("draw.indicators.C: Residuls have non-finite value.  Dump:\n", res, "\n");
   
   OUT <- .C("draw_indicators_generic",
             as.integer(r), as.double(res), as.integer(n),
-            as.double(nmix$p), as.double(nmix$m), as.double(sqrt(nmix$v)), as.integer(nmix$nc),
+            as.double(nmix$p), as.double(nmix$m), as.double(sqrt(nmix$v)), nc,
             PACKAGE="BayesLogit")
 
   OUT[[1]]
 } ## draw.indicators.C
+
+draw.indicators = draw.indicators.C
