@@ -3,10 +3,15 @@ useDynLib("BayesLogit")
 
 #Define which functions people can see.
 export(logit, logit.EM, mlogit, rpg.gamma, rpg.devroye, rks,
-       logit.combine, rpg)
+       logit.combine, rpg, 
+       draw.indicators, draw.indicators.C, draw.indicators.R, 
+       compute.mixture)
 
 #export(logit, logit.EM, mlogit, rpg.gamma, rpg.devroye, rks,
-#       logit.combine, draw.indicators.C, draw.indicators.logis.C,
+#       logit.combine, rpg,
+#       draw.indicators, draw.indicators.C, draw.indicators.R,
+#       compute.mixutre,
+#       draw.indicators.logis.C,
 #       FFBS.R, FFBS.C, CUBS.R, CUBS.C, ar1.llh.C,
 #       draw.W.ar1.ind, draw.phi.ar1.ind, draw.mu.ar1.ind);
 

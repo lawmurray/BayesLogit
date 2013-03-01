@@ -23,8 +23,8 @@ $rsyncit $CODE/C/MultLogit.hpp    $BLDIR/src/MultLogit.h
 $rsyncit $CODE/C/LogitWrapper.hpp $BLDIR/src/LogitWrapper.h
 $rsyncit $CODE/C/LogitWrapper.cpp $BLDIR/src/
 $rsyncit $CODE/C/PolyaGamma.hpp   $BLDIR/src/PolyaGamma.h
-$rsyncit $CODE/C/FFBS.h           $BLDIR/src/
-$rsyncit $CODE/C/FFBS.cpp         $BLDIR/src/
+## $rsyncit $CODE/C/FFBS.h           $BLDIR/src/
+## $rsyncit $CODE/C/FFBS.cpp         $BLDIR/src/
 $rsyncit $CODE/C/FSF_nmix.hpp     $BLDIR/src/FSF_nmix.h
 $rsyncit $CODE/C/FSF_nmix.cpp     $BLDIR/src/
 $rsyncit $CODE/C/CUBS.h           $BLDIR/src/
@@ -52,6 +52,8 @@ $rsyncit $CODE/R/FFBS.R             $BLDIR/R/
 $rsyncit $CODE/R/CUBS.R             $BLDIR/R/
 $rsyncit $CODE/R/KS.R               $BLDIR/R/
 $rsyncit $CODE/R/AR1.R              $BLDIR/R/
+$rsyncit $CODE/R/ComputeMixture.R   $BLDIR/R/
+$rsyncit $CODE/R/compmix.R          $BLDIR/R/
 ## The function calls in these files are not in the NAMESPACE.
 $rsyncit $CODE/R/LogitPG.R       $BLDIR/R/
 $rsyncit $CODE/R/logit-EM.R      $BLDIR/R/
@@ -60,7 +62,9 @@ $rsyncit $CODE/R/PG.R            $BLDIR/R/
 $rsyncit $CODE/R/MultLogitPG.R   $BLDIR/R/
 
 # Data files.
-$rsyncit $CODE/R/DataSets/spambase.RData      $BLDIR/data/
+$rsyncit $CODE/R/DataSets/spambase.RData   $BLDIR/data/
+$rsyncit $CODE/R/DataSets/rain.RData       $BLDIR/data/
+
 
 # Change to .h
 sed -i~ s/\.hpp/.h/g $BLDIR/src/*.[ch]
