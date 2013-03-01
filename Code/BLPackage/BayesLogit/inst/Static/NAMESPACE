@@ -5,7 +5,7 @@ useDynLib("BayesLogit")
 export(logit, logit.EM, mlogit, rpg.gamma, rpg.devroye, rks,
        logit.combine, rpg, 
        draw.indicators, draw.indicators.C, draw.indicators.R,
-       compute.mixture)
+       compute.mixture, compute.mixture.lg, compute.mixture.l3)
 
 #export(logit, logit.EM, mlogit, rpg.gamma, rpg.devroye, rks,
 #       logit.combine, rpg,
