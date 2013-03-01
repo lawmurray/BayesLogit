@@ -24,8 +24,14 @@ draw.indicators.C <- function(res, nmix)
 {
   n = length(res);
   r = rep(0, n);
-  
+
   nc = length(nmix$m)
+
+  if (nc != length(nmix$v) || nc != length(nmix$p) || nc==0) {
+    cat("draw.indicators.C: problem with dimensions of m,v,p =",
+        length(nc), length(nmix$v), length(nmix$p), "\n");
+    return(NA)
+  }
 
   ## if (any(!is.finite(res)))
   ##  cat("draw.indicators.C: Residuls have non-finite value.  Dump:\n", res, "\n");
