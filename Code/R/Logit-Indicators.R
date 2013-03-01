@@ -8,7 +8,7 @@ draw.indicators.logis.R <- function(z, lambda, nmix)
   ## lambda = X beta
 
   res = z - log(lambda)
-  log.wds = log(nmix$w) - log(nmix$s);
+  log.wds = log(nmix$p) - log(nmix$s);
 
   ## Safer to work on log scale.  Columns correspond to outcome index i!
   log.post = -0.5 * outer(1/nmix$s, res, "*")^2 + log.wds;
@@ -25,7 +25,7 @@ draw.indicators.logis.C <- function(z, lambda, nmix)
   
   OUT <- .C("draw_indicators_logistic",
             as.integer(r), as.double(z), as.double(lambda), as.integer(n),
-            as.double(nmix$w), as.double(nmix$s), as.integer(nmix$N), PACKAGE="BayesLogit")
+            as.double(nmix$p), as.double(nmix$s), as.integer(nmix$N), PACKAGE="BayesLogit")
 
   OUT[[1]]
 } ## draw.indicators.logis.C

@@ -146,7 +146,7 @@ dyn.NB.FS <- function(y, X.dyn, X.stc=NULL,
     lambda = rgamma(T, y+d, scale=p)
 
     ## draw (r | d, lambda, beta)
-    nmix = compute.mixture(d);
+    nmix = compute.mixture.lg(d);
     res  = psi - log(lambda)
     r    = draw.indicators.C(res, nmix);
 
