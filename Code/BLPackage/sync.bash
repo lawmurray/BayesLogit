@@ -49,7 +49,7 @@ $rsyncit $CODE/R/LogitWrapper.R     $BLDIR/R/
 $rsyncit $CODE/R/Indicators.R       $BLDIR/R/
 $rsyncit $CODE/R/Logit-Indicators.R $BLDIR/R/
 $rsyncit $CODE/R/FFBS.R             $BLDIR/R/
-$rsyncit $CODE/R/CUBS.R             $BLDIR/R/
+$rsyncit $CODE/R/CUBS.R             $BLDIR/inst/Dynamic/R/
 $rsyncit $CODE/R/KS.R               $BLDIR/R/
 $rsyncit $CODE/R/AR1.R              $BLDIR/R/
 $rsyncit $CODE/R/ComputeMixture.R   $BLDIR/R/
