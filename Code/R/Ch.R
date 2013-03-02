@@ -1,7 +1,7 @@
 
-h14 = read.table("h1to4.txt")
-t14 = read.table("t1to4.txt")
-d14 = read.table("d1to4.txt")
+h14 = scan("h1to4.txt")
+t14 = scan("t1to4.txt")
+d14 = scan("d1to4.txt")
 e14 = 1/d14
 
 p.left <- function(t, h)
@@ -43,16 +43,16 @@ pg.a.coef <- function(n, x, h, z=0)
 ##------------------------------------------------------------------------------
 
 ## A RELATIVELY EASY METHOD TO IMPLEMENT
-rltgamma.dagpunar.1 <- function(shape=1, rate=1, trunc=1)
+rltgamma.dagpunar.1 <- function(shape=1, rate=1, trnc=1)
 {
-  ## y ~ Ga(shape, rate, trunc)
+  ## y ~ Ga(shape, rate, trnc)
   ## x = y/t
   ## x ~ Ga(shape, rate t, 1)
   a = shape
-  b = rate * trunc
+  b = rate * trnc
 
   if (shape <  1) return(NA)
-  if (shape == 1) return(rexp(1) / rate + trunc);
+  if (shape == 1) return(rexp(1) / rate + trnc);
   
   d1 = b-a
   d3 = a-1
@@ -72,132 +72,149 @@ rltgamma.dagpunar.1 <- function(shape=1, rate=1, trunc=1)
   }
 
   x = x / b
-  y = trunc * x
+  y = trnc * x
   y
 }
 
-rltgamma.dagpunar <- function(num=1, shape=1, rate=1, trunc=1)
+rltgamma.dagpunar <- function(num=1, shape=1, rate=1, trnc=1)
 {
   shape = array(shape, dim=num)
   rate  = array(rate , dim=num)
-  trunc = array(trunc, dim=num)
+  trnc = array(trnc, dim=num)
 
   y = rep(0, num)
-  for (i in 1:num) y[i] = rltgamma.dagpunar.1(shape[i], rate[i], trunc[i]);
+  for (i in 1:num) y[i] = rltgamma.dagpunar.1(shape[i], rate[i], trnc[i]);
 
   y
 }
 
-##------------------------------------------------------------------------------
-                             ## TAKEN FROM PG.R ##
-##------------------------------------------------------------------------------
-
-## rtigauss - sample from truncated Inv-Gauss(1/abs(Z), 1.0) 1_{(0, TRUNC)}.
-##------------------------------------------------------------------------------
-rtigauss <- function(Z, h, R)
+rrtinvchi2.1 <- function(h, trnc)
 {
-  Z = abs(Z);
-  mu = 1/Z;
-  X = R + 1;
-  if (mu > R) {
-    alpha = 0.0;
-    while (runif(1) > alpha) {
-      ## X = R + 1
-      ## while (X > R) {
-      ##     X = 1.0 / rgamma(1, 0.5, rate=0.5);
-      ## }
+  R = trnc / h^2 
+  E = rexp(2)
+    while ( E[1]^2 > 2 * E[2] / R) {
       E = rexp(2)
-      while ( E[1]^2 > 2 * E[2] / R) {
-        E = rexp(2)
-      }
-      X = R / (1 + R*E[1])^2
-      alpha = exp(-0.5 * Z^2 * X);
     }
-  }
-  else {
-    while (X > R) {
-      lambda = 1.0;
-      Y = rnorm(1)^2;
-      X = mu + 0.5 * mu^2 / lambda * Y -
-        0.5 * mu / lambda * sqrt(4 * mu * lambda * Y + (mu * Y)^2);
-      if ( runif(1) > mu / (mu + X) ) {
-        X = mu^2 / X;
-      }
-    }
-  }
-  X;
+  ## W^2 = (1 + R*E[1])^2 / R is left truncated chi^2(1) I_{(R,\infty)}.
+  ## So X is right truncated inverse chi^2(1).
+  X = R / (1 + R*E[1])^2
+  X = h^2 * X
+  X
 }
 
-## rigauss - sample from Inv-Gauss(mu, lambda).
-##------------------------------------------------------------------------------
-rigauss <- function(mu, lambda)
+rrtinvchi2 <- function(num, h, trnc)
 {
-  nu = rnorm(1);
-  y  = nu^2;
-  x  = mu + 0.5 * mu^2 * y / lambda -
-    0.5 * mu / lambda * sqrt(4 * mu * lambda * y + (mu*y)^2);
-  if (runif(1) > mu / (mu + x)) {
-    x = mu^2 / x;
-  }
-  x
+  out = rep(0, num)
+  for (i in 1:num)
+    out[i] = rrtinvchi2.1(h, trnc)
+  out
 }
 
 ##------------------------------------------------------------------------------
+
+a.coef.1 <- function(n,x, trnc)
+{
+  if ( x>trnc )
+    pi * (n+0.5) * exp( -(n+0.5)^2*pi^2*x/2 )
+  else
+    (2/pi/x)^1.5 * pi * (n+0.5) * exp( -2*(n+0.5)^2/x )
+}
+
+g.tilde <- function(x, h, trnc)
+{
+  if (x > trnc)
+    (0.5 * pi)^h * x^(h-1) / gamma(h) * exp(-pi^2 / 8 * x)
+  else
+    2^h * h * (2 * pi * x^3)^(-0.5) * exp(-0.5 * h^2 / x)
+}
 
 rch.1 <- function(h)
 {
-  rate = pi^2 / 8
-  idx  = floor((h-1) * 100) + 1;
-  t    = t14[idx];
+  if (h < 1) return(NA);
+  
+  rate  = pi^2 / 8
+  idx   = floor((h-1) * 100) + 1;
+  trnc  = t14[idx];
   
   num.trials = 0;
   total.iter = 0;
 
+  p.l = p.left (trnc, h);
+  p.r = p.right(trnc, h);
+  p   = p.r / (p.l + p.r);
+
+  max.inner = 100
+      
   while (TRUE)
     {
       num.trials = num.trials + 1;
 
-      p.l = p.left (t, h);
-      p.r = p.right(t, h);
-      p   = p.l / (p.l + p.r);
-      
       if ( runif(1) < p ) {
-        ## Truncated Gamma
-        X = rgamma(1, shape=h, rate=rate)
+        ## Left truncated gamma
+        X = rltgamma.dagpunar.1(shape=h, rate=rate, trnc=trnc)
       }
       else {
-        ## Truncated Inverse Gamma
-        X = rtigauss(Z)
+        ## Right truncated inverse Chi^2
+        X = rrtinvchi2.1(h, trnc)
       }
 
       ## C = cosh(Z) * exp( -0.5 * Z^2 * X )
-
       ## Don't need to multiply everything by C, since it cancels in inequality.
-      S = a.coef(0,X)
-      Y = runif(1)*S
+
+      S = a.coef(0,X,h)
+      ## B = a.coef.1(0, X, trnc)
+      D = g.tilde(X, h, trnc)
+      Y = runif(1) * D
       n = 0
 
-      while (TRUE)
+      ## cat("B,C,left", B, C, X<trnc, "\n")
+
+      a.n = S
+      decreasing = FALSE
+
+      while (n < max.inner)
         {
           n = n + 1
           total.iter = total.iter + 1;
+          
+          a.prev = a.n
+          a.n = a.coef(n, X, h)
+          ## b.n = a.coef.1(n, X, trnc)
+          decreasing = a.n < a.prev
+          ## if (!decreasing) cat("n:", n, "; ");
+          
           if ( n %% 2 == 1 )
             {
-              S = S - a.coef(n,X)
-              if ( Y<=S ) break
+              S = S - a.n
+              ## B = B - b.n
+              if ( Y<=S && decreasing) break
             }
           else
             {
-              S = S + a.coef(n,X)
-              if ( Y>S ) break
+              S = S + a.n
+              ## B = B + b.n
+              if ( Y>S && decreasing) break
             }
         }
 
-      if ( Y<=S ) break
+      ## cat("S,B =", S, B, "\n")
+
+      if ( Y<=S ) break     
     }
 
-  ## 0.25 * X
-  list("x"=0.25 * X, "n"=num.trials, "total.iter"=total.iter)
+  out = list("x"=X, "n"=num.trials, "total.iter"=total.iter)
+  out
+}
+
+rch <- function(num, h)
+{
+  h = array(h, num)
+  x = rep(0, num)
+  for (i in 1:num) {
+    out = rch.1(h[i])
+    x[i] = out$x
+  }
+  x
 }
 
 
@@ -297,4 +314,61 @@ if (FALSE)
 
   dev.off()
   
+}
+
+
+################################################################################
+
+################################################################################
+                              ## For rrtiguess ##
+################################################################################
+
+##------------------------------------------------------------------------------
+rrtigauss.blah <- function(Z, h, trnc)
+{
+  R = h * trunc 
+  alpha = 0.0;
+  while (runif(1) > alpha) {
+    E = rexp(2)
+    while ( E[1]^2 > 2 * E[2] / R) {
+      E = rexp(2)
+    }
+    ## W^2 = (1 + R*E[1])^2 / R is left truncated chi^2(1) I_{(R,\infty)}.
+    X = R / (1 + R*E[1])^2
+    X = h * X
+    alpha = exp(-0.5 * Z^2 * X);
+  }
+  X
+}
+
+## rigauss - sample from Inv-Gauss(mu, lambda).
+##------------------------------------------------------------------------------
+rigauss <- function(mu, lambda)
+{
+  nu = rnorm(1);
+  y  = nu^2;
+  x  = mu + 0.5 * mu^2 * y / lambda -
+    0.5 * mu / lambda * sqrt(4 * mu * lambda * y + (mu*y)^2);
+  if (runif(1) > mu / (mu + x)) {
+    x = mu^2 / x;
+  }
+  x
+}
+
+## rtigauss - sample from truncated Inv-Gauss(1/abs(Z), 1.0) 1_{(0, TRUNC)}.
+##------------------------------------------------------------------------------
+rtigauss <- function(Z, h, R)
+{
+  Z = abs(Z);
+  mu = 1/Z;
+  X = R + 1;
+  if (1/R > Z) {
+    X = rrtinvchi2.1(Z, h, R)
+  }
+  else {
+    while (X > R) {
+      rigauss(mu, h/Z, h^2)
+    }
+  }
+  X;
 }
