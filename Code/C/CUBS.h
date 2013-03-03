@@ -160,13 +160,27 @@ void cubs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
   draw.resize(N_b);  // L.resize(N_b, N_b);
 
   for (int i=T; i>0; i--) {
-    MatrixXd Rsub = R[ i ].block(N_a, N_a, N_b, N_b); // Could use map.
-    MatrixXd Csub = C[i-1].block(N_a, N_a, N_b, N_b); // Could use map.
-    MatrixXd tA   = Rsub.llt().solve(Csub * phi.asDiagonal());
+    // MatrixXd Rsub = R[ i ].block(N_a, N_a, N_b, N_b); // Could use map.
+    // MatrixXd Csub = C[i-1].block(N_a, N_a, N_b, N_b); // Could use map.
+    // MatrixXd tA   = Rsub.llt().solve(Csub * phi.asDiagonal());
 
-    VectorXd e    = beta.col(i) - a[i].segment(N_a, N_b);
+    // VectorXd e    = beta.col(i) - a[i].segment(N_a, N_b);
+    // VectorXd m_bs = m[i-1].segment(N_a, N_b) + tA.transpose() * e;
+    // MatrixXd V_bs = Csub - tA.transpose() * Rsub * tA;
+
+    // MatrixXd Rsub = R[ i ].block(0, 0, N_a+N_b, N_a+N_b);
+    MatrixXd Sig12(N_a + N_b, N_b);
+    if (N_a > 0) 
+      Sig12.block(0, 0, N_a, N_b)   = C[i-1].block(0  , N_a, N_a, N_b);
+      Sig12.block(N_a, 0, N_b, N_b) = phi.asDiagonal() * C[i-1].block(N_a, N_a, N_b, N_b);
+    MatrixXd tA = R[i].llt().solve(Sig12);
+    
+    VectorXd e(N_a+N_b);
+    if (N_a > 0) 
+      e.segment(0  , N_a) = alpha       - a[i].segment(0  , N_a);
+      e.segment(N_a, N_b) = beta.col(i) - a[i].segment(N_a, N_b);
     VectorXd m_bs = m[i-1].segment(N_a, N_b) + tA.transpose() * e;
-    MatrixXd V_bs = Csub - tA.transpose() * Rsub * tA;
+    MatrixXd V_bs = C[i-1].block(N_a, N_a, N_b, N_b) - tA.transpose() * R[i] * tA;
 
     r.norm(draw, 1.0);
     // draw = VectorXd::Zero(N_b);
