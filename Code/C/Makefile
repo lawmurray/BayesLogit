@@ -56,6 +56,9 @@ test_logit : test_logit.cpp Logit.hpp MatRNG.so
 test_cubs : CUBS_update.cpp CUBS_update.h 
 	g++ -DCUBS_UPDATE_MAIN -o test_cubs CUBS_update.cpp $(OPTS) $(INC) $(LNK)
 
+test_pgalt : test_pgalt.c PolyaGammaAlt.hpp BayesLogit.so
+	g++ -o test_pgalt BayesLogit.so test_pgalt.c $(OPTS) $(INC) $(LNK)
+
 ################################################################################
 
 MatRNG.so : Matrix.o RNG.o
@@ -65,7 +68,7 @@ MatRNG.so : Matrix.o RNG.o
 BayesLogit.so : $(obj)
 	g++ -o BayesLogit.so $(obj) $(OPTS) -shared -fPIC $(LNK) $(GLIB) -lgsl
 
-LogitWrapper.o : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp
+LogitWrapper.o : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp PolyaGamma.hpp PolyaGammaAlt.hpp
 	g++ $(OPTS) $(INC) -o LogitWrapper.o -c LogitWrapper.cpp
 
 FSF_nmix.o : FSF_nmix.hpp FSF_nmix.cpp
