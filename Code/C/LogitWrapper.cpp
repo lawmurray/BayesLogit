@@ -27,6 +27,7 @@
 #include "MultLogit.hpp"
 #include "RNG.hpp"
 #include "PolyaGamma.hpp"
+#include "PolyaGammaAlt.hpp"
 #include <exception>
 #include <stdio.h>
 
@@ -81,6 +82,28 @@ void rpg_devroye(double *x, int *n, double *z, int *num)
   PutRNGstate();
   #endif
 } // rpg
+
+void rpg_alt(double *x, double *h, double *z, int* num)
+{
+  RNG r;
+  PolyaGammaAlt pg;
+
+  #ifdef USE_R
+  GetRNGstate();
+  #endif
+
+  for(int i=0; i < *num; ++i){
+    if (h[i]!=0)
+      x[i] = pg.draw(h[i], z[i], r);
+    else
+      x[i] = 0.0;
+  }
+
+  #ifdef USE_R
+  PutRNGstate();
+  #endif
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 			   // POSTERIOR INFERENCE //

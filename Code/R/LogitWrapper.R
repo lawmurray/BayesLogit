@@ -63,6 +63,26 @@ rpg.devroye <- function(num=1, n=1, z=0.0)
     OUT[[1]]
 }
 
+## Draw PG(n, z) where n is a natural number.
+##------------------------------------------------------------------------------
+rpg.alt <- function(num=1, h=1, z=0.0)
+{
+    ## Check Parameters.
+    if (any(h<1)) {
+      print("h must be >= 1.");
+      return(NA);
+    }
+
+    x = rep(0, num);
+
+    if (length(h) != num) { h = array(h, num); }
+    if (length(z) != num) { z = array(z, num); }
+
+    OUT = .C("rpg_alt", x, h, z, as.integer(num), PACKAGE="BayesLogit");
+
+    OUT[[1]]
+}
+
 ## Draw PG(n, z)
 ##------------------------------------------------------------------------------
 rpg <- function(num=1, n=1, z=0.0, trunc=200)
