@@ -28,6 +28,8 @@ extern "C" {
 
   void rpg_devroye(double *x, int *n, double *z, int *num);
 
+  void rpg_alt(double *x, double *h, double *z, int* num);
+
   // Default Logistic
 
   void gibbs(double *wp, double *betap,                            // Posterior

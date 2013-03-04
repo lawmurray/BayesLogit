@@ -4,12 +4,16 @@ t14 = scan("t1to4.txt")
 d14 = scan("d1to4.txt")
 e14 = 1/d14
 
-p.left <- function(t, h)
+################################################################################
+                                ##    J^*    ##
+################################################################################
+
+p.ch.left <- function(t, h)
 {
   2^h * pgamma(1/t, shape=0.5, rate=0.5*h^2, lower.tail=FALSE)
 }
 
-p.right <- function(t, h)
+p.ch.right <- function(t, h)
 {
   (4/pi)^h * pgamma(t, shape=h, rate=pi^2 * 0.125, lower.tail=FALSE)
 }
@@ -90,11 +94,13 @@ rltgamma.dagpunar <- function(num=1, shape=1, rate=1, trnc=1)
 
 rrtinvchi2.1 <- function(h, trnc)
 {
-  R = trnc / h^2 
+  R = trnc / h^2
   E = rexp(2)
-    while ( E[1]^2 > 2 * E[2] / R) {
-      E = rexp(2)
-    }
+  while ( (E[1]^2) > (2 * E[2] / R)) {
+    ## cat("E", E[1], E[2], E[1]^2, 2*E[2] / R, "\n")
+    E = rexp(2)
+  }
+  ## cat("E", E[1], E[2], "\n")
   ## W^2 = (1 + R*E[1])^2 / R is left truncated chi^2(1) I_{(R,\infty)}.
   ## So X is right truncated inverse chi^2(1).
   X = R / (1 + R*E[1])^2
@@ -139,8 +145,8 @@ rch.1 <- function(h)
   num.trials = 0;
   total.iter = 0;
 
-  p.l = p.left (trnc, h);
-  p.r = p.right(trnc, h);
+  p.l = p.ch.left (trnc, h);
+  p.r = p.ch.right(trnc, h);
   p   = p.r / (p.l + p.r);
 
   max.inner = 100
@@ -318,27 +324,39 @@ if (FALSE)
 
 
 ################################################################################
-
-################################################################################
-                              ## For rrtiguess ##
+                                ## TILTED J^* ##
 ################################################################################
 
+## pigauss - cumulative distribution function for Inv-Gauss(mu, lambda).
 ##------------------------------------------------------------------------------
-rrtigauss.blah <- function(Z, h, trnc)
+pigauss <- function(x, Z=1, lambda=1)
 {
-  R = h * trunc 
-  alpha = 0.0;
-  while (runif(1) > alpha) {
-    E = rexp(2)
-    while ( E[1]^2 > 2 * E[2] / R) {
-      E = rexp(2)
-    }
-    ## W^2 = (1 + R*E[1])^2 / R is left truncated chi^2(1) I_{(R,\infty)}.
-    X = R / (1 + R*E[1])^2
-    X = h * X
-    alpha = exp(-0.5 * Z^2 * X);
+  ## I believe this works when Z = 0
+  ## Z = 1/mu
+  b = sqrt(lambda / x) * (x * Z - 1);
+  a = sqrt(lambda / x) * (x * Z + 1) * -1.0;
+  y = exp(pnorm(b, log.p=TRUE)) + exp(2 * lambda * Z + pnorm(a, log.p=TRUE));
+                                        # y2 = 2 * pnorm(-1.0 / sqrt(x));
+  y
+}
+
+p.tilt.left <- function(trnc, h, z)
+{
+  out = 0
+  if (z == 0) {
+    out = p.ch.left(trnc, h)
   }
-  X
+  else {
+    out = (2^h * exp(-z*h)) * pigauss(trnc, Z=z/h, h^2)
+  }
+  out
+}
+
+p.tilt.right <- function(trcn, h, z)
+{
+  ## Note: this works when z=0
+  lambda.z = pi^2/8 + z^2/2
+  (pi/2/lambda.z)^h * pgamma(trcn, shape=h, rate=lambda.z, lower.tail=FALSE)
 }
 
 ## rigauss - sample from Inv-Gauss(mu, lambda).
@@ -355,20 +373,273 @@ rigauss <- function(mu, lambda)
   x
 }
 
-## rtigauss - sample from truncated Inv-Gauss(1/abs(Z), 1.0) 1_{(0, TRUNC)}.
-##------------------------------------------------------------------------------
-rtigauss <- function(Z, h, R)
+rrtigauss <- function(h, z, R)
 {
-  Z = abs(Z);
-  mu = 1/Z;
+  ## R is truncation point
+  z = abs(z);
+  mu = h/z;
   X = R + 1;
-  if (1/R > Z) {
-    X = rrtinvchi2.1(Z, h, R)
+  if (mu > R) {
+    alpha = 0.0;
+    while (runif(1) > alpha) {
+      X = rrtinvchi2.1(h, R)
+      alpha = exp(-0.5 * z^2 * X);
+    }
+    ## cat("rtigauss, part i:", X, "\n");
   }
   else {
     while (X > R) {
-      rigauss(mu, h/Z, h^2)
+      lambda = h^2;
+      Y = rnorm(1)^2;
+      X = mu + 0.5 * mu^2 / lambda * Y -
+        0.5 * mu / lambda * sqrt(4 * mu * lambda * Y + (mu * Y)^2);
+      if ( runif(1) > mu / (mu + X) ) {
+        X = mu^2 / X;
+      }
     }
+    ## cat("rtiguass, part ii:", X, "\n");
   }
   X;
+}
+
+rpg.1 <- function(h, z)
+{
+  z = z/2
+  if (h < 1 || h > 4) return(NA);
+  
+  rate  = pi^2 / 8 + z^2 / 2
+  idx   = floor((h-1) * 100) + 1;
+  trnc  = t14[idx];
+  
+  num.trials = 0;
+  total.iter = 0;
+
+  p.l = p.tilt.left (trnc, h, z);
+  p.r = p.tilt.right(trnc, h, z);
+  p   = p.r / (p.l + p.r);
+
+  ## cat("prob.right:", p, "\n")
+  
+  max.inner = 100
+      
+  while (num.trials < 10)
+    {
+      num.trials = num.trials + 1;
+
+      uu = runif(1)
+      if ( uu < p ) {
+        ## Left truncated gamma
+        X = rltgamma.dagpunar.1(shape=h, rate=rate, trnc=trnc)
+      }
+      else {
+        ## Right truncated inverse Chi^2
+        ## Note: this sampler works when z=0.
+        X = rrtigauss(h, z, trnc)
+      }
+
+      ## C = cosh(Z) * exp( -0.5 * Z^2 * X )
+      ## Don't need to multiply everything by C, since it cancels in inequality.
+
+      S = a.coef(0,X,h)
+      ## B = a.coef.1(0, X, trnc)
+      D = g.tilde(X, h, trnc)
+      Y = runif(1) * D
+      n = 0
+
+      ## cat("B,C,left", B, C, X<trnc, "\n")
+      ## cat("test gt:", g.tilde(trnc * 0.1, h, trnc), "\n");
+      ## cat("X, Y, S, gt:", X, Y, S, D,"\n");
+      
+      a.n = S
+      decreasing = FALSE
+
+      while (n < max.inner)
+        {
+          n = n + 1
+          total.iter = total.iter + 1;
+          
+          a.prev = a.n
+          a.n = a.coef(n, X, h)
+          ## b.n = a.coef.1(n, X, trnc)
+          decreasing = a.n < a.prev
+          ## if (!decreasing) cat("n:", n, "; ");
+          
+          if ( n %% 2 == 1 )
+            {
+              S = S - a.n
+              ## B = B - b.n
+              if ( Y<=S && decreasing) break
+            }
+          else
+            {
+              S = S + a.n
+              ## B = B + b.n
+              if ( Y>S && decreasing) break
+            }
+        }
+
+      ## cat("S,B =", S, B, "\n")
+
+      ## Need to check max.outer
+      if ( Y<=S ) break     
+    }
+
+  X = 0.25 * X
+  out = list("x"=X, "num.trials"=num.trials, "total.iter"=total.iter)
+  out
+}
+
+rpg.4 <- function(num, h, z)
+{
+  if (h < 1) return(NA)
+
+  z = array(z, num)
+  h = array(h, num)
+
+  out = list(
+    draw = rep(0, num),
+    num.trials = rep(0, num),
+    total.iter = rep(0, num)
+    )
+  
+  for (i in 1:num) {
+    draw = rpg.1(h[i], z[i])
+    out$draw[i] = draw$x
+    out$num.trials[i] = draw$num.trials
+    out$total.iter[i] = draw$total.iter
+  }
+
+  out
+}
+
+################################################################################
+                                ## CHECK rpg ##
+################################################################################
+
+if (FALSE)
+{
+
+  ## source("Ch.R")
+  h = 2.3
+  z = 1.1
+
+  num = 20000
+
+  samp.1 = rpg.4(num, h, z)
+  samp.2 = rpg.gamma(num, h, z)
+
+  mean(samp.1$draw)
+  mean(samp.2)
+
+  mean(samp.1$total.iter)
+
+  hist(samp.1$draw, prob=TRUE, breaks=100)
+  hist(samp.2, prob=TRUE, add=TRUE, col="#22000022", breaks=100)
+  
+}
+
+if (FALSE) {
+
+  ## source("Ch.R")
+  source("ManualLoad.R")
+
+  nsamp = 10000
+  n = 1
+  z = 0
+
+  seed = sample.int(10000, 1)
+  ## seed = 8922
+
+  set.seed(seed)
+  samp.a = rpg.alt(nsamp, n, z)
+  ## samp.d = rpg.devroye(nsamp, n, z)
+  set.seed(seed)
+  samp.4 = rpg.4(nsamp, n, z)
+  
+  mean(samp.a)
+  ## mean(samp.d)
+  mean(samp.4$draw)
+
+  hist(samp.a, prob=TRUE, breaks=100)
+  hist(samp.4$draw, prob=TRUE, breaks=100, col="#99000022", add=TRUE)
+  
+  h = 1.5
+  z = 0
+
+  set.seed(seed)
+  samp.a = rpg.alt(nsamp, h, z)
+  ## samp.g = rpg.gamma(nsamp, h, z)
+  set.seed(seed)
+  samp.4 = rpg.4(nsamp, h, z)
+
+  mean(samp.a)
+  ## mean(samp.g)
+  mean(samp.4$draw)
+
+  hist(samp.a, prob=TRUE, breaks=100)
+  hist(samp.4$draw, prob=TRUE, breaks=100, col="#99000022", add=TRUE)
+  
+}
+
+if (FALSE)
+{
+
+  ## source("Ch.R")
+  source("ManualLoad.R")
+
+  reps   = 100
+  nsamp = 10000
+  n = 4
+  z = 0
+
+  seed = sample.int(10000, 1)
+  ## seed = 8922
+
+  set.seed(seed)
+  start.a = proc.time()
+  for (i in 1:reps) {
+    samp.a = rpg.alt(nsamp, n, z)
+  }
+  end.a = proc.time();
+  diff.a = end.a - start.a
+
+  set.seed(seed)
+  start.d = proc.time()
+  for (i in 1:reps) {
+    samp.d = rpg.devroye(nsamp, n, z)
+  }
+  end.d = proc.time()
+  diff.d = end.d - start.d
+
+  mean(samp.a)
+  mean(samp.d)
+
+  ## hist(samp.a, prob=TRUE, breaks=100)
+  ## hist(samp.4$draw, prob=TRUE, breaks=100, col="#99000022", add=TRUE)
+  
+  h = 3.8
+  z = 0
+
+ set.seed(seed)
+  start.a = proc.time()
+  for (i in 1:reps) {
+    samp.a = rpg.alt(nsamp, h, z)
+  }
+  end.a = proc.time();
+  diff.a = end.a - start.a
+
+  set.seed(seed)
+  start.g = proc.time()
+  for (i in 1:reps) {
+    samp.g = rpg.gamma(nsamp, h, z)
+  }
+  end.g = proc.time()
+  diff.g = end.g - start.g
+
+  mean(samp.a)
+  mean(samp.g)
+
+  ## hist(samp.a, prob=TRUE, breaks=100)
+  ## hist(samp.4$draw, prob=TRUE, breaks=100, col="#99000022", add=TRUE)
+  
 }
