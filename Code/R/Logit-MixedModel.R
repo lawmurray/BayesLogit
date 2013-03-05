@@ -1864,12 +1864,12 @@ logit.PG.mm.2 <- function(y, X.re, X.fe, n=rep(1, length(y)), shape=1, rate=1, k
     ## Draw (delta = alpha - m, beta, m), then adjust.
     PP = t(X) %*% (X * w);
     PP[b.idc, b.idc] = PP[b.idc,b.idc] + P0
-    PP[a.idc, a.idc] = PP[a.idc, a.idc] + diag(phi, P.a);
+    PP[a.idc, a.idc] = PP[a.idc, a.idc] + diag(phi, P.a); ## Precision of delta.
     if (kappa != 0) PP[m.idc, m.idc] = PP[m.idc,m.idc] + phi / kappa^2;
     ## U = chol(PP);
     ## pm = backsolve(U, Z, transpose=TRUE);
     ## pm = backsolve(U, m);
-    ## abm = pm + backsolve(U, rnorm(P.ab))
+    ## DO NOT DO THIS: ## abm = pm + backsolve(U, rnorm(P.ab))
     S = chol2inv(chol(PP));
     pm = S %*% as.vector(Z);
     dbm = pm + t(chol(S)) %*% rnorm(P.all);
@@ -2056,7 +2056,7 @@ if (FALSE)
   m0.PG = rep(0, P.PG)
   P0.PG = diag(0.01, P.PG)
   
-  samp = 2000
+  samp = 10000
   burn = 2000
   verbose = 1000
 

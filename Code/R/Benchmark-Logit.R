@@ -22,7 +22,7 @@ run <- list("synth1"=FALSE,
             "diabetes"=FALSE,
             "australia"=FALSE,
             "heart"=FALSE,
-            "nodal"=FALSE,
+            "nodal"=TRUE,
             "ortho"=FALSE,
             "factor"=FALSE)
 
@@ -38,8 +38,8 @@ burn  = 2000
 verbose = 2000
 ntrials = 1
 
-logit.meth <- c("PG", "FS", "IndMH", "RAM", "OD",
-                "dRUMIndMH", "dRUMHAM", "dRUMAuxMix", "IndivdRUMIndMH", "GP")
+logit.meth <- c("PG", "IndMH", "RAM", "OD",
+                "dRUMIndMH", "dRUMHAM", "dRUMAuxMix", "IndivdRUMIndMH", "GP",  "FS")
 
 run.meth <- logit.meth
 
