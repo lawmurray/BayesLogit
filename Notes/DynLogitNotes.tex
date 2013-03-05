@@ -232,11 +232,19 @@ When there is no $\alpha$, then this just reduces to $\Phi = \phi$ and $W = w$.
 We can filter forward as normal using $\Phi$ and $W$.  To backwards sample we
 draw $\Theta_T | D_T$ and let $\alpha = \Theta_{0:P_a-1}$ if $P_a > 0$ (the
 dimension of $\alpha$) and we let $\beta_T = \theta[P_a:P_b-1,T]$ where $P_b$ is
-the dimension of $\beta_T$.  At this point, we may consider $\alpha$ a fixed
-quantity.  When backwards sampling we just need to look at the joint
-distribution of $(\beta_t, \beta_{t-1})$, which we can calculate using the
-submatrices of $a_t, R_t, m_t, C_t$ from when we filtered forward.  In
-particular, we just let (\texttt{il} stands for $i$ lag)
+the dimension of $\beta_T$.  Then proceed using $p(\theta_{t-1} | D_{t-1},
+\theta_t)$.  The joint distribution $p(\theta_t, \theta_{t-1}, D_{t-1})$ has a
+singular variance.  Thus, there is not even a density for us to work with when
+doing the regression.  However, it seems that we should be able to regress
+$\beta_{t-1}$ on $(\alpha_{t-1}, \beta_t)$ or on $(\alpha_t, \beta_t)$.
+
+
+
+When backwards
+sampling we just need to look at the joint distribution of $(\beta_t,
+\beta_{t-1})$, which we can calculate using the submatrices of $a_t, R_t, m_t,
+C_t$ from when we filtered forward.  In particular, we just let (\texttt{il}
+stands for $i$ lag)
 \begin{itemize}
 \item \texttt{a.i  = a[b.idc,i]}
 \item \texttt{m.il = m[b.idc,i-1]}
@@ -380,6 +388,20 @@ C_t = R_t = \Phi C_{t-1} \Phi' + W.
 \]
 This won't (I don't think) affect backwards sampling.  Whereas before you get a
 reduction in variance in $C_t$ compared to $R_t$, now you do not.
+
+\subsection{More models}
+
+I had made a mistake in how I went about jointly sampling $(\alpha,
+\{\beta_t\})$; in particular, my backwards sampling was incorrect I believe.
+But it may not matter in any event.  Suppose we have the following model:
+\[
+\begin{cases}
+y_t = x_t' \alpha + z_t' \beta_t + \nu_t, & \nu_t \sim N(0, V_t) \\
+\beta_t = \mu + \Phi (\beta_{t-1} - \mu) + \omega_t, & \omega_T \sim N(0, W).
+\end{cases}
+\]
+(Note: you cannot just marginalize $\alpha$.  That induces correlation of the
+form $\cov(y_t, y_{t-1} | \{\beta_t\})$.)  
 
 \section{Static Probit vs. Static Logit}
 

@@ -451,59 +451,185 @@ Preprocessing $G$ saves us from having to compute a doubly indexed summation.
 \section{Benchmarks}
 
 \begin{table}
+
 \begin{tabular}{l r r r r r r r r } 
 \hline
-\multicolumn{9}{c}{Tokyo Rainfall} \\
+\multicolumn{9}{c}{Tables/table.tokyo} \\
 \hline
           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-            CUBS  &   233.98 &     1.00 &   652.86 &   761.98 &   910.62 &     2.79 &     3.26 &     3.89 \\ 
               PG  &    21.72 &     1.00 &  4352.80 &  7735.08 & 10081.46 &   200.43 &   356.18 &   464.22 \\ 
-            dRUM  &    20.60 &     1.00 &  1627.61 &  3649.46 &  5428.93 &    79.03 &   177.19 &   263.60
+            dRUM  &    20.60 &     1.00 &  1627.61 &  3649.46 &  5428.93 &    79.03 &   177.19 &   263.60 \\ 
+            CUBS  &   233.98 &     0.47 &   652.86 &   761.98 &   910.62 &     2.79 &     3.26 &     3.89
+ \end{tabular}
+
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynlogit-low-2-n-1-wout.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    28.34 &     1.00 &  8309.00 &  9395.80 &  9894.45 &   293.16 &   331.50 &   349.09 \\ 
+            dRUM  &    29.08 &     1.00 &  5299.68 &  7646.07 &  9800.60 &   182.26 &   262.96 &   337.05 \\ 
+            CUBS  &   609.04 &     0.68 &  2424.95 &  3930.01 &  5168.38 &     3.98 &     6.45 &     8.49
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynlogit-high-2-n-1-wout.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    28.46 &     1.00 &  8611.53 &  9441.44 &  9894.56 &   302.60 &   331.76 &   347.68 \\ 
+            dRUM  &    29.19 &     1.00 &  6204.70 &  7879.60 &  9656.77 &   212.54 &   269.91 &   330.78 \\ 
+            CUBS  &   610.43 &     0.61 &  2562.38 &  4291.96 &  6932.42 &     4.20 &     7.03 &    11.36
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynlogit-low-2-n-10-wout.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    49.77 &     1.00 &  7116.22 &  9374.76 &  9911.13 &   142.98 &   188.36 &   199.13 \\ 
+            dRUM  &    28.98 &     1.00 &  3540.13 &  7482.71 &  9884.88 &   122.14 &   258.16 &   341.04 \\ 
+            CUBS  &   638.99 &     0.60 &  1233.54 &  3317.85 &  5278.43 &     1.93 &     5.19 &     8.26
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynlogit-high-2-n-10-wout.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    50.17 &     1.00 &  7327.10 &  9211.07 &  9826.71 &   146.05 &   183.61 &   195.88 \\ 
+            dRUM  &    28.97 &     1.00 &  3939.55 &  6967.89 &  9766.74 &   135.99 &   240.52 &   337.14 \\ 
+            CUBS  &   643.20 &     0.52 &  2370.69 &  4240.41 &  5878.98 &     3.69 &     6.59 &     9.14
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynlogit-low-2-n-1-with.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    31.19 &     1.00 &  1110.73 &  7062.17 &  9930.51 &    35.61 &   226.43 &   318.38 \\ 
+            dRUM  &    32.01 &     1.00 &   780.11 &  6088.64 &  9712.44 &    24.37 &   190.20 &   303.39 \\ 
+            CUBS  &   652.12 &     0.79 &   570.30 &  1873.22 &  4299.12 &     0.87 &     2.87 &     6.59
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynlogit-high-2-n-1-with.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    31.25 &     1.00 &   450.30 &  4953.18 &  9255.15 &    14.41 &   158.50 &   296.14 \\ 
+            dRUM  &    32.05 &     1.00 &   396.48 &  4451.72 &  8994.45 &    12.37 &   138.90 &   280.64 \\ 
+            CUBS  &   647.37 &     0.75 &   300.94 &  1587.59 &  4674.42 &     0.47 &     2.46 &     7.22
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynlogit-low-2-n-10-with.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    52.54 &     1.00 &   626.75 &  5161.88 &  9855.10 &    11.93 &    98.24 &   187.56 \\ 
+            dRUM  &    31.84 &     1.00 &   674.18 &  3477.35 &  9119.24 &    21.17 &   109.21 &   286.40 \\ 
+            CUBS  &   661.84 &     0.56 &   364.16 &  1443.76 &  3065.32 &     0.55 &     2.18 &     4.63
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynlogit-high-2-n-10-with.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    52.99 &     1.00 &   174.62 &  1001.65 &  8922.27 &     3.29 &    18.91 &   168.37 \\ 
+            dRUM  &    31.79 &     1.00 &   151.89 &   867.68 &  7060.28 &     4.78 &    27.30 &   222.06 \\ 
+            CUBS  &   651.22 &     0.47 &   192.77 &   772.78 &  2680.11 &     0.30 &     1.19 &     4.12
  \end{tabular}
 \end{table}
 
-\begin{table}
-\centering
-\begin{tabular}{l r r r r r r r r } 
-\hline
-\multicolumn{9}{c}{Low corr X: $P$=2, $T$=400.  Estimate $\alpha, \beta$.} \\
-\hline
-          Method  &    time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
-             PG  &    22.59 &     1.00 &   7367.68 &   9229.91 &  10189.37 &    326.10 &    408.52 &    450.97 \\ 
-           dRUM  &    23.19 &     1.00 &   2759.83 &   7260.46 &   9967.66 &    118.99 &    313.04 &    429.77
-         \end{tabular}
-
-\begin{tabular}{l r r r r r r r r }
-\hline
-\multicolumn{9}{c}{High corr X: $P$=2, $T$=400. Estimate $\alpha, \beta$.} \\
-\hline 
-          Method  &    time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
-             PG  &    22.52 &     1.00 &   8494.04 &   9662.06 &  10225.35 &    377.13 &    428.98 &    454.00 \\ 
-           dRUM  &    23.17 &     1.00 &   4963.68 &   8105.02 &   9936.46 &    214.26 &    349.86 &    428.91
-\end{tabular}
-
-\end{table}
-
+\newpage
 
 \begin{table}
-\centering
 \begin{tabular}{l r r r r r r r r } 
 \hline
-\multicolumn{9}{c}{Low corr X: $P$=2, $T$=400.  Estimate $\alpha, \beta, \phi, W$.} \\
+\multicolumn{9}{c}{./table.bench-dynnb-low-2-mu-10-wout.ar} \\
 \hline
-          Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
-            PG  &    25.04 &     1.00 &    643.23 &   6531.34 &  10420.88 &     25.69 &    260.82 &    416.13 \\ 
-          dRUM  &    25.73 &     1.00 &    430.79 &   4490.34 &  10124.47 &     16.74 &    174.55 &    393.48
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    63.86 &     1.00 &  8305.72 &  9668.71 & 10000.00 &   130.07 &   151.41 &   156.60 \\ 
+              FS  &    29.70 &     1.00 &  1755.48 &  6508.09 &  9870.64 &    59.11 &   219.11 &   332.32 \\ 
+            CUBS  &   648.25 &     0.60 &   384.08 &  3407.23 &  5894.51 &     0.59 &     5.26 &     9.09
  \end{tabular}
 
 \begin{tabular}{l r r r r r r r r } 
 \hline
-\multicolumn{9}{c}{High corr X: $P$=2, $T$=400. Estimate $\alpha, \beta, \phi, W$.} \\
+\multicolumn{9}{c}{./table.bench-dynnb-high-2-mu-10-wout.ar} \\
 \hline
-          Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
-            PG  &    25.16 &     1.00 &    988.83 &   5654.23 &  10337.07 &     39.31 &    224.75 &    410.87 \\ 
-          dRUM  &    25.84 &     1.00 &   1040.12 &   5496.94 &   9760.64 &     40.25 &    212.74 &    377.75
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    59.63 &     1.00 &  8967.77 &  9684.87 & 10000.00 &   150.39 &   162.42 &   167.70 \\ 
+              FS  &    29.65 &     1.00 &  2844.82 &  5812.03 &  9773.66 &    95.95 &   196.02 &   329.64 \\ 
+            CUBS  &   656.19 &     0.74 &  4605.04 &  7412.28 &  8063.25 &     7.02 &    11.30 &    12.29
  \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynnb-low-2-mu-100-wout.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &   393.08 &     1.00 &  1898.18 &  7298.22 &  9990.29 &     4.83 &    18.57 &    25.42 \\ 
+              FS  &    29.68 &     1.00 &  2386.51 &  7229.31 & 10000.00 &    80.40 &   243.58 &   336.93 \\ 
+            CUBS  &   661.62 &     0.37 &   198.71 &  1150.20 &  2867.16 &     0.30 &     1.74 &     4.33
+ \end{tabular}
+
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynnb-high-2-mu-100-wout.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &   292.81 &     1.00 &  4090.32 &  7283.70 &  9697.62 &    13.97 &    24.87 &    33.12 \\ 
+              FS  &    29.65 &     1.00 &  3417.13 &  6864.88 &  9566.54 &   115.26 &   231.58 &   322.68 \\ 
+            CUBS  &   660.24 &     0.39 &  1065.38 &  3124.58 &  4242.90 &     1.61 &     4.73 &     6.43
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynnb-low-2-mu-10-with.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    66.80 &     1.00 &   149.03 &  4880.10 &  9833.67 &     2.23 &    73.06 &   147.21 \\ 
+              FS  &    32.65 &     1.00 &   149.47 &  1793.39 &  7952.70 &     4.58 &    54.92 &   243.58 \\ 
+            CUBS  &   667.39 &     0.55 &   135.02 &  1249.47 &  2792.73 &     0.20 &     1.87 &     4.18
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynnb-high-2-mu-10-with.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &    62.28 &     1.00 &   244.92 &  2039.14 &  9767.92 &     3.93 &    32.73 &   156.83 \\ 
+              FS  &    32.51 &     1.00 &   284.53 &  1219.91 &  5614.48 &     8.75 &    37.52 &   172.66 \\ 
+            CUBS  &   669.68 &     0.62 &   363.77 &  1609.55 &  4586.74 &     0.54 &     2.40 &     6.85
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynnb-low-2-mu-100-with.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &   395.37 &     1.00 &  1766.07 &  4793.62 &  9445.17 &     4.47 &    12.12 &    23.89 \\ 
+              FS  &    32.61 &     1.00 &  2217.92 &  4814.16 &  9682.45 &    68.02 &   147.64 &   296.91 \\ 
+            CUBS  &   670.26 &     0.32 &   347.70 &   783.63 &  1561.49 &     0.52 &     1.17 &     2.33
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynnb-high-2-mu-100-with.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &   295.55 &     1.00 &  1170.90 &  3414.61 &  8363.79 &     3.96 &    11.55 &    28.30 \\ 
+              FS  &    32.48 &     1.00 &  1139.88 &  3228.07 &  7966.98 &    35.10 &    99.39 &   245.29 \\ 
+            CUBS  &   674.96 &     0.30 &   381.00 &   744.60 &  1115.24 &     0.56 &     1.10 &     1.65
+ \end{tabular}
+
+
+
 \end{table}
 
 
@@ -514,3 +640,57 @@ Preprocessing $G$ saves us from having to compute a doubly indexed summation.
 \bibliographystyle{abbrvnat}
 
 \end{document}
+
+% \begin{tabular}{l r r r r r r r r } 
+% \hline
+% \multicolumn{9}{c}{Tokyo Rainfall} \\
+% \hline
+%           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+%             CUBS  &   233.98 &     1.00 &   652.86 &   761.98 &   910.62 &     2.79 &     3.26 &     3.89 \\ 
+%               PG  &    21.72 &     1.00 &  4352.80 &  7735.08 & 10081.46 &   200.43 &   356.18 &   464.22 \\ 
+%             dRUM  &    20.60 &     1.00 &  1627.61 &  3649.46 &  5428.93 &    79.03 &   177.19 &   263.60
+%  \end{tabular}
+% \end{table}
+
+% \begin{table}
+% \centering
+% \begin{tabular}{l r r r r r r r r } 
+% \hline
+% \multicolumn{9}{c}{Low corr X: $P$=2, $T$=400.  Estimate $\alpha, \beta$.} \\
+% \hline
+%           Method  &    time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
+%              PG  &    22.59 &     1.00 &   7367.68 &   9229.91 &  10189.37 &    326.10 &    408.52 &    450.97 \\ 
+%            dRUM  &    23.19 &     1.00 &   2759.83 &   7260.46 &   9967.66 &    118.99 &    313.04 &    429.77
+%          \end{tabular}
+
+% \begin{tabular}{l r r r r r r r r }
+% \hline
+% \multicolumn{9}{c}{High corr X: $P$=2, $T$=400. Estimate $\alpha, \beta$.} \\
+% \hline 
+%           Method  &    time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
+%              PG  &    22.52 &     1.00 &   8494.04 &   9662.06 &  10225.35 &    377.13 &    428.98 &    454.00 \\ 
+%            dRUM  &    23.17 &     1.00 &   4963.68 &   8105.02 &   9936.46 &    214.26 &    349.86 &    428.91
+% \end{tabular}
+
+% \end{table}
+
+
+% \begin{table}
+% \centering
+% \begin{tabular}{l r r r r r r r r } 
+% \hline
+% \multicolumn{9}{c}{Low corr X: $P$=2, $T$=400.  Estimate $\alpha, \beta, \phi, W$.} \\
+% \hline
+%           Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
+%             PG  &    25.04 &     1.00 &    643.23 &   6531.34 &  10420.88 &     25.69 &    260.82 &    416.13 \\ 
+%           dRUM  &    25.73 &     1.00 &    430.79 &   4490.34 &  10124.47 &     16.74 &    174.55 &    393.48
+%  \end{tabular}
+
+% \begin{tabular}{l r r r r r r r r } 
+% \hline
+% \multicolumn{9}{c}{High corr X: $P$=2, $T$=400. Estimate $\alpha, \beta, \phi, W$.} \\
+% \hline
+%           Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
+%             PG  &    25.16 &     1.00 &    988.83 &   5654.23 &  10337.07 &     39.31 &    224.75 &    410.87 \\ 
+%           dRUM  &    25.84 &     1.00 &   1040.12 &   5496.94 &   9760.64 &     40.25 &    212.74 &    377.75
+%  \end{tabular}
