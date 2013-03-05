@@ -12,25 +12,25 @@ source("DynNBCUBS.R")
 ################################################################################
 
 run <- list("flu"   =FALSE,
-            "synth1"=TRUE,
+            "synth1"=FALSE,
             "synth2"=FALSE,
             "synth3"=FALSE,
-            "allsynth"=FALSE)
+            "allsynth"=TRUE)
 
 methods = c("PG", "FS", "CUBS")
 
 write.dir = "."
 
-write.it = FALSE
+write.it = TRUE
 plot.it  = FALSE
 read.it = FALSE
 
-run.idc = 1:2
+run.idc = 1:3
 
-samp = 100
-burn  = 20
-verbose = 10
-ntrials = 1
+samp = 10000
+burn  = 2000
+verbose = 1000
+ntrials = 2
 
 ################################################################################
                              ## Dyn NB Benchmark ##
@@ -89,7 +89,7 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
                         phi.m0=phi.m0, phi.P0=phi.P0,
                         W.a0=W.a0, W.b0=W.b0, X.stc=X.stc,
                         mu.true = mu.true, phi.true=phi.true, W.true=W.true, d.true=d.true)
-      gb$a.rate = gb$a.rate[samp]
+      gb$a.rate = gb$ac.rate[samp]
     } else {
       print("Unknown method.")
       return(NA);
@@ -335,13 +335,13 @@ if (run$allsynth)
   ## source("Benchmark-DynNB.R")
 
   P = 2
-  nb.mean = 10
-  corr.type = "low"
+  nb.mean = 100
+  corr.type = "high"
   ## est.ar = "with.ar"
-  est.ar = "wout.ar"
+  est.ar = "with.ar"
 
   for (est.ar in c("wout.ar", "with.ar")) {
-    for (P in c(2,4)) {
+    ## for (P in c(2,4)) {
       for (nb.mean in c(10,100)) {
         for (corr.type in c("low", "high")) {
 
@@ -388,7 +388,7 @@ if (run$allsynth)
                                           m.0=m0, C.0=C0,
                                           phi.m0=phi.m0, phi.P0=1/phi.V0,
                                           W.a0=W.a0, W.b0=W.b0,
-                                          mu.true=mu.true, phi.true=phi.true, W.true=W.true);
+                                          mu.true=mu.true, phi.true=phi.true, W.true=W.true, d.true=d.true);
   }
   
   synth.table = setup.table.dyn(bench.synth, "beta")
@@ -396,6 +396,52 @@ if (run$allsynth)
   ## if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X, n=n, bmark1=pg, bmark2=fs); }
   if (write.it) save(bench.synth, synth.table, dset.name, file=file.path(write.dir, filename))
 
-}}}}
+}}}#}
+  
+}
+
+if (FALSE) {
+
+  P = 2
+  nb.mean = 100
+  corr.type = "high"
+  ## est.ar = "with.ar"
+  est.ar = "with.ar"
+  
+  for (est.ar in c("wout.ar", "with.ar")) {
+    ## for (P in c(2,4)) {
+    for (nb.mean in c(10,100)) {
+      for (corr.type in c("low", "high")) {
+        
+        cat("AR:", est.ar, "\n");
+        
+        dset.name = paste(corr.type, "-", P, "-mu-", nb.mean, sep="");
+        source.file = paste("DynNB-synth-", dset.name, ".RData", sep="")
+        bench.base  = paste("bench-dynnb-", dset.name, "-", est.ar, sep="");
+        bench.data  = paste(bench.base, ".RData", sep="")
+        table.file  = paste("table.", bench.base, sep="");
+
+                  
+        load(file.path("Benchmark-DataSets", source.file))
+        load(file.path("Bench-Dyn-02", bench.data))
+
+        the.table = synth.table$table
+        the.table[3,2] = mean(bench.synth$CUBS$arate)
+        
+        write.table(the.table, file=table.file, row.names=TRUE, col.names=TRUE);
+
+        par(mfrow=c(P,1))
+        for (i in 1:P) {
+          plot(beta[i,], col=1, type="l")
+          ## plot(synth.table$ave.sstat[i,,1,1], type="l", col=2)
+          lines(synth.table$ave.sstat[i,,1,1], col=2)
+          lines(synth.table$ave.sstat[i,,1,2], col=3)
+          lines(synth.table$ave.sstat[i,,1,3], col=4)
+
+        }
+        ## readline("<ENTER>")
+        
+
+      }}}
   
 }

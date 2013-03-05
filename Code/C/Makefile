@@ -69,40 +69,40 @@ BayesLogit.so : $(obj)
 	g++ -o BayesLogit.so $(obj) $(OPTS) -shared -fPIC $(LNK) $(GLIB) -lgsl
 
 LogitWrapper.o : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp PolyaGamma.hpp PolyaGammaAlt.hpp
-	g++ $(OPTS) $(INC) -o LogitWrapper.o -c LogitWrapper.cpp
+	g++ $(OPTS) $(INC) -fPIC -o LogitWrapper.o -c LogitWrapper.cpp
 
 FSF_nmix.o : FSF_nmix.hpp FSF_nmix.cpp
-	g++ $(OPTS) $(INC) -o FSF_nmix.o -c FSF_nmix.cpp 
+	g++ $(OPTS) $(INC) -fPIC -o FSF_nmix.o -c FSF_nmix.cpp 
 
 AR1.o : AR1.h AR1.cpp
-	g++ $(OPTS) $(INC) -o AR1.o -c AR1.cpp
+	g++ $(OPTS) $(INC) $(GINC) -fPIC -o AR1.o -c AR1.cpp
 
 CUBS.o : CUBS.h CUBS.cpp
-	g++ $(OPTS) $(INC) $(GINC) -o CUBS.o -c CUBS.cpp
+	g++ $(OPTS) $(INC) $(GINC) -fPIC -o CUBS.o -c CUBS.cpp
 
 CUBS_update.o : CUBS_update.cpp CUBS_update.h
-	g++ $(OPTS) $(INC) $(GINC) -o CUBS_update.o -c CUBS_update.cpp
+	g++ $(OPTS) $(INC) $(GINC) -fPIC -o CUBS_update.o -c CUBS_update.cpp
 
 FFBS.o : FFBS.h FFBS.cpp
-	g++ $(OPTS) $(INC) -o FFBS.o -c FFBS.cpp 
+	g++ $(OPTS) $(INC) $(GINC) -fPIC -o FFBS.o -c FFBS.cpp 
 
 hh_lambda.o : HHWrapper.hpp HHWrapper.cpp
-	g++ $(OPTS) $(INC) -o hh_lambda.o -c HHWrapper.cpp 
+	g++ $(OPTS) $(INC) -fPIC -o hh_lambda.o -c HHWrapper.cpp 
 
 Matrix.o : MatrixFrame.o 
-	g++ $(OPTS) $(INC) -c include/Matrix/Matrix.cpp -o Matrix.o
+	g++ $(OPTS) $(INC) -fPIC -c include/Matrix/Matrix.cpp -o Matrix.o
 
 MatrixFrame.o :
-	g++ $(OPTS) $(INC) -c include/Matrix/MatrixFrame.cpp -o MatrixFrame.o
+	g++ $(OPTS) $(INC) -fPIC -c include/Matrix/MatrixFrame.cpp -o MatrixFrame.o
 
 RNG.o : $(DEP)
-	g++ $(OPTS) $(INC) -c include/RNG/RNG.cpp -o RNG.o 
+	g++ $(OPTS) $(INC) -fPIC -c include/RNG/RNG.cpp -o RNG.o 
 
 GRNG.o: 
-	g++ $(INC) $(OPTs) -c include/RNG/GRNG.cpp -o GRNG.o
+	g++ $(INC) $(OPTs) -fPIC -c include/RNG/GRNG.cpp -o GRNG.o
 
 RRNG.o: 
-	g++ $(INC) $(OPTs) -c include/RNG/RRNG.cpp -o RRNG.o
+	g++ $(INC) $(OPTs) -fPIC -c include/RNG/RRNG.cpp -o RRNG.o
 
 ## CLEAN
 

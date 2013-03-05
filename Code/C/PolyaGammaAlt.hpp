@@ -55,7 +55,7 @@ class PolyaGammaAlt
 
   // Draw.
   double draw(double h, double z, RNG& r, int max_inner=200);
-  double draw_abridged(double h, double h, RNG& r, int max_inner=200);
+  double draw_abridged(double h, double z, RNG& r, int max_inner=200);
 
   // Helper.
   double a_coef(int n, double x, double h);
