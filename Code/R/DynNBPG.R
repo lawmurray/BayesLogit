@@ -124,11 +124,14 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
     if (any(!is.finite(psi))) return(list("error"=1, "dump"=psi));
     w = rpg.devroye(T, y+d, psi);
 
+    winv = 1/w
+    if (any(!is.finite(winv))) return(list("error"=2, "dump"=winv));
+
     ## draw beta
     kappa = 0.5 * (y-d)
-    z = kappa / w + log(d);
+    z = kappa * winv + log(d);
     ## ffbs = FFBS.C(z, X, 1/w, mu, phi, diag(W, P.b), m.0, C.0)
-    ffbs = CUBS.C(z, X, 1/w, mu, phi, diag(W, P.b), m.0, C.0, obs="norm");
+    ffbs = CUBS.C(z, X, winv, mu, phi, diag(W, P.b), m.0, C.0, obs="norm");
     iota = ffbs$alpha;
     beta = ffbs$beta;
     
