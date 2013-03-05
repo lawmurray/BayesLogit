@@ -26,7 +26,7 @@ extern "C" {
   void ffbs(double *alpha_, double *beta_,
 	    double *z_, double *X_, double *V_,
 	    double *mu_, double *phi_, double *W_, 
-	    double *m0_, double *C0_, int *N_b_, int *N_, int *T_);
+	    double *m0_, double *C0_, int *N_b_, int *N_, int *T_, double* ldens);
   
 }
 
@@ -38,7 +38,7 @@ template <typename dM, typename dV>
 void ffbs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
 	  MatrixBase<dV> &z, MatrixBase<dM> &X, MatrixBase<dV> &V,
 	  MatrixBase<dV> &mu, MatrixBase<dV> &phi, MatrixBase<dM> &W, 
-	  MatrixBase<dV> &m0, MatrixBase<dM> &C0, RNG& r)
+	  MatrixBase<dV> &m0, MatrixBase<dM> &C0, RNG& r, double& ldens)
 {
   // When tracking (alpha, beta_t).  It may be the case that there is no alpha.
   // z_t = x_t (alpha_t, beta_t) + ep_t, ep_t \sim N(0, V_t).
@@ -117,24 +117,44 @@ void ffbs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
   // Backwards sample.
   VectorXd draw(N); r.norm(draw, 1.0);
 
-  VectorXd theta = m[T] + C[T].llt().matrixL() * draw;
+  MatrixXd L = C[T].llt().matrixL();
+  VectorXd theta = m[T] + L * draw;
 
   if (with_alpha) alpha = theta.segment(0, N_a);
   beta.col(T) = theta.segment(N_a, N_b);
 
+  // FF check
+  // if (with_alpha) alpha = m[T].segment(0, N_a);
+  // beta.col(T) = m[T].segment(N_a, N_b);
+
+  // keep track of log dens
+  ldens = -0.5 * draw.squaredNorm() - L.diagonal().array().log().sum();
+
+  // Resize for beta
   draw.resize(N_b);
 
   for (int i=T; i>0; i--) {
-    MatrixXd Rsub = R[ i ].block(N_a, N_a, N_b, N_b); // Could use map.
-    MatrixXd Csub = C[i-1].block(N_a, N_a, N_b, N_b); // Could use map.
-    MatrixXd tA   = Rsub.llt().solve(Csub * phi.asDiagonal());
 
-    VectorXd e    = beta.col(i) - a[i].segment(N_a, N_b);
+    MatrixXd Sig12(N_a + N_b, N_b);
+    if (N_a > 0) Sig12.block(0, 0, N_a, N_b) = C[i-1].block(0  , N_a, N_a, N_b);
+    Sig12.block(N_a, 0, N_b, N_b) = phi.asDiagonal() * C[i-1].block(N_a, N_a, N_b, N_b);
+    MatrixXd tA = R[i].llt().solve(Sig12);
+    
+    VectorXd e(N_a+N_b);
+    if (N_a > 0) e.segment(0, N_a) = alpha - a[i].segment(0, N_a);
+    e.segment(N_a, N_b) = beta.col(i) - a[i].segment(N_a, N_b);
     VectorXd m_bs = m[i-1].segment(N_a, N_b) + tA.transpose() * e;
-    MatrixXd V_bs = Csub - tA.transpose() * Rsub * tA;
+    MatrixXd V_bs = C[i-1].block(N_a, N_a, N_b, N_b) - tA.transpose() * R[i] * tA;
 
     r.norm(draw, 1.0);
-    beta.col(i-1) = m_bs + V_bs.llt().matrixL() * draw;
+    // draw = VectorXd::Zero(N_b);
+    L = V_bs.llt().matrixL();
+    beta.col(i-1) = m_bs + L * draw;
+
+    // FF check
+    // beta.col(i-1) = m[i-1].segment(N_a, N_b);
+
+    ldens += -0.5 * draw.squaredNorm() - L.diagonal().array().log().sum();
 
     #ifdef USE_R
     R_CheckUserInterrupt();

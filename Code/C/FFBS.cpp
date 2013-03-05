@@ -13,7 +13,7 @@ using Eigen::Map;
 void ffbs(double *alpha_, double *beta_,
 	  double *z_, double *X_,  double *V_,
 	  double *mu_, double *phi_, double *W_,
-	  double *m0_, double *C0_, int *N_b_, int *N_, int *T_)
+	  double *m0_, double *C0_, int *N_b_, int *N_, int *T_, double* ldens)
 
 {
   RNG r;
@@ -40,5 +40,5 @@ void ffbs(double *alpha_, double *beta_,
   Map<VectorXd> m0   (m0_   , N       );
   Map<MatrixXd> C0   (C0_   , N  , N  );
 
-  ffbs(alpha, beta, z, X, V, mu, phi, W, m0, C0, r);
+  ffbs(alpha, beta, z, X, V, mu, phi, W, m0, C0, r, *ldens);
 }

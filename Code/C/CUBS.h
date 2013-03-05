@@ -153,6 +153,10 @@ void cubs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
   if (with_alpha) alpha = theta.segment(0, N_a);
   beta.col(T) = theta.segment(N_a, N_b);
 
+  // Check ff.
+  // if (with_alpha) alpha = m[T].segment(0, N_a);
+  // beta.col(T) = m[T].segment(N_a, N_b);
+
   // keep track of log dens
   ldens += -0.5 * draw.squaredNorm() - L.diagonal().array().log().sum();
 
@@ -176,8 +180,7 @@ void cubs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
     MatrixXd tA = R[i].llt().solve(Sig12);
     
     VectorXd e(N_a+N_b);
-    if (N_a > 0) 
-      e.segment(0  , N_a) = alpha       - a[i].segment(0  , N_a);
+    if (N_a > 0) e.segment(0, N_a) = alpha - a[i].segment(0, N_a);
       e.segment(N_a, N_b) = beta.col(i) - a[i].segment(N_a, N_b);
     VectorXd m_bs = m[i-1].segment(N_a, N_b) + tA.transpose() * e;
     MatrixXd V_bs = C[i-1].block(N_a, N_a, N_b, N_b) - tA.transpose() * R[i] * tA;
@@ -186,6 +189,9 @@ void cubs(MatrixBase<dV> &alpha, MatrixBase<dM> &beta,
     // draw = VectorXd::Zero(N_b);
     L = V_bs.llt().matrixL();
     beta.col(i-1) = m_bs + L * draw;
+
+    // Check ff.
+    // beta.col(i-1) = m[i-1].segment(N_a, N_b);
 
     ldens += -0.5 * draw.squaredNorm() - L.diagonal().array().log().sum();
 
