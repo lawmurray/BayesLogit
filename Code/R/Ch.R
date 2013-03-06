@@ -587,7 +587,7 @@ if (FALSE)
   ## source("Ch.R")
   source("ManualLoad.R")
 
-  reps   = 100
+  reps   = 10
   nsamp = 10000
   n = 4
   z = 0
@@ -598,7 +598,7 @@ if (FALSE)
   set.seed(seed)
   start.a = proc.time()
   for (i in 1:reps) {
-    samp.a = rpg.alt(nsamp, n, z)
+    samp.a = rpg(nsamp, n, z)
   }
   end.a = proc.time();
   diff.a = end.a - start.a
@@ -614,16 +614,19 @@ if (FALSE)
   mean(samp.a)
   mean(samp.d)
 
+  diff.a
+  diff.d
+
   ## hist(samp.a, prob=TRUE, breaks=100)
   ## hist(samp.4$draw, prob=TRUE, breaks=100, col="#99000022", add=TRUE)
   
-  h = 3.8
+  h = 3.5
   z = 0
 
  set.seed(seed)
   start.a = proc.time()
   for (i in 1:reps) {
-    samp.a = rpg.alt(nsamp, h, z)
+    samp.a = rpg(nsamp, h, z)
   }
   end.a = proc.time();
   diff.a = end.a - start.a
@@ -638,6 +641,9 @@ if (FALSE)
 
   mean(samp.a)
   mean(samp.g)
+
+  diff.a
+  diff.g
 
   ## hist(samp.a, prob=TRUE, breaks=100)
   ## hist(samp.4$draw, prob=TRUE, breaks=100, col="#99000022", add=TRUE)

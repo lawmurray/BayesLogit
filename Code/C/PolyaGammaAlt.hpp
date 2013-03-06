@@ -59,6 +59,7 @@ class PolyaGammaAlt
 
   // Helper.
   double a_coef(int n, double x, double h);
+  double a_coef_recursive(double n, double x, double h, double coef_h, double& gamma_nh_over_n);
   double g_tilde(double x, double h, double trunc);
   double pigauss(double x, double Z, double lambda);
 
@@ -154,6 +155,20 @@ double PolyaGammaAlt::a_coef(int n, double x, double h)
   return out;
 }
 
+double PolyaGammaAlt::a_coef_recursive(double n, double x, double h, double coef_h, double& gnh_over_gn1_gh)
+{
+  double d_n = 2.0 * (double) n + h;
+  // gamma_nh_over_n *= (n + h - 1) / n;  // Can speed up further by separate function for a0 and an, n > 0.
+  if (n != 0)
+    gnh_over_gn1_gh *= (n + h - 1) / n;
+  else
+    gnh_over_gn1_gh  = 1.0;
+  double coef       = coef_h * gnh_over_gn1_gh;
+  double log_kernel = - 0.5 * (log(x * x * x) + d_n * d_n / x) + log(d_n);
+  return coef * exp(log_kernel);
+  // double out = exp(out) is a legal command.  Weird.
+}
+
 double PolyaGammaAlt::pigauss(double x, double z, double lambda)
 {
   // z = 1 / mean
@@ -238,15 +253,18 @@ double PolyaGammaAlt::draw_abridged(double h, double z, RNG& r, int max_inner)
 
   // printf("prob_right: %g\n", prob_right);
   
-  double X = 0.0;
-  double S = 1.0;
-  double Y = 0.0;
+  double coef1_h = exp(h * log(2) - 0.5 * log(2 * __PI));
+  // double gamma_nh_over_n = RNG::Gamma(h);
+  double gnh_over_gn1_gh = 1.0; // Will fill in value on first call to a_coef_recursive.
 
   int num_trials = 0;
   int total_iter = 0;
 
-  while (num_trials < 10) {
+  while (num_trials < 10000) {
     num_trials++;
+
+    double X = 0.0;
+    double Y = 0.0;
 
     // if (r.unif() < p/(p+q))
     double uu = r.unif();
@@ -255,14 +273,17 @@ double PolyaGammaAlt::draw_abridged(double h, double z, RNG& r, int max_inner)
     else
       X = rtigauss(h, z, trunc, r);
 
-    S = a_coef(0, X, h);
+    // double S  = a_coef(0, X, h);
+    double S = a_coef_recursive(0.0, X, h, coef1_h, gnh_over_gn1_gh);
+    double a_n = S;
+    // double a_n2 = S2;
+    // printf("a_n=%g, a_n2=%g\n", a_n, a_n2);
     double gt =  g_tilde(X, h, trunc);
     Y = r.unif() * gt;
 
     // printf("test gt: %g\n", g_tilde(trunc * 0.1, h, trunc));
     // printf("X, Y, S, gt: %g, %g, %g, %g\n", X, Y, S, gt);
 
-    double a_n = S;
     bool decreasing = false;
 
     int  n  = 0;
@@ -279,7 +300,9 @@ double PolyaGammaAlt::draw_abridged(double h, double z, RNG& r, int max_inner)
 
       ++n;
       double prev = a_n;
-      a_n  = a_coef(n, X, h);
+      // a_n  = a_coef(n, X, h);
+      a_n = a_coef_recursive((double)n, X, h, coef1_h, gnh_over_gn1_gh);
+      // printf("a_n=%g, a_n2=%g\n", a_n, a_n2);
       decreasing = a_n <= prev;
 
       if (n%2==1) {
@@ -295,6 +318,9 @@ double PolyaGammaAlt::draw_abridged(double h, double z, RNG& r, int max_inner)
     // Need Y <= S in event that Y = S, e.g. when X = 0.
 
   }
+  
+  // We should never get here.
+  return -1.0;
 } // draw
 
 double PolyaGammaAlt::draw(double h, double z, RNG& r, int max_inner)

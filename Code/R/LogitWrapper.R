@@ -19,13 +19,13 @@
                                ## POLYAGAMMA ##
 ################################################################################
 
-## Draw PG(n, z)
+## Draw PG(h, z)
 ##------------------------------------------------------------------------------
-rpg.gamma <- function(num=1, n=1, z=0.0, trunc=200)
+rpg.gamma <- function(num=1, h=1, z=0.0, trunc=200)
 {
     ## Check Parameters.
-    if (sum(n<0)!=0) {
-        print("b must be greater than zero.");
+    if (sum(h<0)!=0) {
+        print("h must be greater than zero.");
         return(NA);
     }
     if (trunc < 1) {
@@ -35,10 +35,10 @@ rpg.gamma <- function(num=1, n=1, z=0.0, trunc=200)
 
     x = rep(0, num);
 
-    if (length(n) != num) { n = array(n, num); }
+    if (length(h) != num) { h = array(h, num); }
     if (length(z) != num) { z = array(z, num); }
 
-    OUT = .C("rpg_gamma", x, n, z, as.integer(num), as.integer(trunc), PACKAGE="BayesLogit");
+    OUT = .C("rpg_gamma", x, h, z, as.integer(num), as.integer(trunc), PACKAGE="BayesLogit");
 
     OUT[[1]]
 }
@@ -63,7 +63,7 @@ rpg.devroye <- function(num=1, n=1, z=0.0)
     OUT[[1]]
 }
 
-## Draw PG(n, z) where n is a natural number.
+## Draw PG(h, z) where h is \geq 1.
 ##------------------------------------------------------------------------------
 rpg.alt <- function(num=1, h=1, z=0.0)
 {
@@ -85,18 +85,19 @@ rpg.alt <- function(num=1, h=1, z=0.0)
 
 ## Draw PG(n, z)
 ##------------------------------------------------------------------------------
-rpg <- function(num=1, n=1, z=0.0, trunc=200)
-{
-  n.int = floor(n)
-  n.rem = n - n.int
+## rpg <- function(num=1, n=1, z=0.0, trunc=200)
+## {
+##   n.int = floor(n)
+##   n.rem = n - n.int
   
-  x.int = rpg.devroye(num, n.int, z)
-  x.rem = rpg.gamma(num, n.rem, z)
+##   x.int = rpg.devroye(num, n.int, z)
+##   x.rem = rpg.gamma(num, n.rem, z, trunc)
 
-  out = x.int + x.rem
+##   out = x.int + x.rem
 
-  out
-}
+##   out
+## }
+rpg <- rpg.alt
 
 ################################################################################
                                  ## Utility ##
