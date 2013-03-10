@@ -1,0 +1,1137 @@
+\documentclass[12pt]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+% \usepackage{url}
+% \usepackage{graphicx}
+% \usepackage{natbib}
+% \usepackage{outlines}
+% \usepackage{parskip}
+\input{commands2}
+
+% Page Layout
+\setlength{\evensidemargin}{0.0in}
+\setlength{\oddsidemargin}{0.0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\textheight}{8in}
+
+\newcommand{\JJ}{\mbox{J}^*}
+\newcommand{\utanh}[1]{\frac{\tanh{\sqrt{#1}}}{\sqrt{#1}}}
+\newcommand{\utan}[1]{\frac{\tan{\sqrt{#1}}}{\sqrt{#1}}}
+
+% Set Fancy Style
+%\pagestyle{fancy}
+%\lhead{Left Header}
+%\rhead{Right Header}
+
+\newcommand{\la}{\leftarrow}
+\newcommand{\dd}[2]{\frac{d #1}{d #2}}
+
+\begin{document}
+
+%\tableofcontents
+
+\newpage
+
+% Set the counter
+% \setcounter{section}{0}
+
+\section{PG Sampler}
+
+From Biane et al. we know that the density of $C_h$ is
+\begin{equation}
+\label{eqn:igamma-rep}
+\frac{2^h}{\Gamma(h)} \sum_{n=0}^{\infty} (-1)^n \frac{\Gamma(n+h)}{\Gamma(n+1)} 
+\frac{(2n+h)}{\sqrt{2 \pi x^3}} \exp \Big( - \frac{(2n+h)^2}{2 x} \Big).
+\end{equation}
+
+\begin{fact}
+  Fix $x$.  The coefficients $a_n(x)$ in (\ref{eqn:igamma-rep}) are decreasing,
+  or they are increasing and then decreasing. We can monitor $a_n(x)$ to
+  determine when to start accepting/rejecting using the von Neumann alternating
+  sum criterion (once the coefficients are decreasing).
+\end{fact}
+
+\begin{proof}
+Fix $h > 0$ and $x > 0$; calculate $a_{n+1} / a_{n}$.  It is
+\begin{align*}
+\frac {\Gamma(n+1)}{\Gamma(n+2)} & \frac {\Gamma(n+1+h)}{\Gamma(n+h)}
+\frac {2n + 2 + h}{2n+h} \exp \Big\{ -\frac{1}{2x} \Big[ (2n+2+h)^2 - (2n+h)^2
+\Big] \Big\} \\
+& = \frac{n+h}{n+1} \frac{2n+h+2}{2n+h} \exp \Big\{ -\frac{1}{2x} \Big[ 4 (2n+h) +
+4 \Big] \Big\} \\
+& = \Big(1 + \frac{h-1}{n+1}\Big) \Big(1 + \frac{2}{2n+h}\Big) \exp \Big\{ -\frac{2}{x} \Big[ (2n+h) +
+1 \Big] \Big\}.
+\end{align*}
+There is smallest $n^*$ for which this quantity is less than 1; further, it
+is less than 1 for all such $n$ after.
+\end{proof}
+
+When $h=1$ there is a reciprical relation which says that we may also represent
+the density as
+\begin{equation}
+\label{eqn:exp-rep}
+\pi \sum_{n=0}^\infty (-1)^n (n+1/2) \exp \Big( -(n+1/2)^2 \pi^2 x / 2 \Big)
+\end{equation}
+Biane says that the reciprical relation for $C_1$ was noted by Ciesielski-Taylor
+and that a more general relationship exists and is discussed in section 6.1.
+But I don't follow their work.  However, I do think we can find a different
+density for integral $h \geq 1$.  This is Fact \ref{fact:sum-gamma-density} below.
+
+Biane et al. show that $C_2$ also has the density (I altered by a factor of 2)
+\[
+\sum_{n=-\infty}^{\infty} ((n+1/2)^2 \pi^2 x - 1) e^{-(n+1/2)^2
+  \pi^2 x / 2}.
+\]
+Factoring out $c_n^2 x$ where $c_n = (n+1/2) \pi$ we have
+\[
+\sum_{n=-\infty}^\infty \Big( 1 - \frac{1}{c_n^2 x} \Big) c_n^2 x
+e^{-c_n^2 x / 2}.
+\]
+Since $c_n^2$ grows like $n^2$, $1/c_n^2$ should decay quickly.  In that case,
+for sufficiently large $x$, the first term will dominate.  This suggests that a
+proposal for the right tail of $C_2$ should be
+\[
+c_0^2 x e^{-c_0^2 x / 2}.
+\]
+
+\begin{remark}
+  We could convolute the two known densities to come up with other densities
+  presumably.  I have experimented convoluting the two densities in
+  (\ref{eqn:exp-rep}).  This suggests using a gamma proposal above in the right
+  tail for $C_2$.  But overall this is a fairly inelegant approach.
+\end{remark}
+
+\begin{conjecture}
+  The tails of a $C_h$ random variable look like $Ga(h, \text{rate}=\pi^2 / 8)$.
+  This coincides with the proposal in the $h=1$ case and the suggested proposal
+  in the $h=2$ case.
+\end{conjecture}
+
+Playing around in R, it seems that a good right-hand proposal for $h \in (0,2)$
+is
+\[
+r(x) = \frac{(\pi/2)^h x^{h-1}}{\Gamma(h)} e^{-\pi^2 x / 8}.
+\]
+(Actually, I think this may work for all $h \geq 1$, but performance will decay
+as $h$ grows.)  For $h < 1$ this is greater than the density of $C_h$.  For $1 <
+h < 2$ this is less than the density of $C_h$.  In both cases, it seems to be
+reasonably close.  Thus I suggest the following proposal for $h \in (0,1)$.  Let
+$t$ be the truncation function.  Let $t^* = t(h=1)$.  Let $\ell(x)$ denote the
+first term from (\ref{eqn:igamma-rep}).  Try the proposal
+\[
+\propto
+\begin{cases}
+\ell(x), & x \in (0, t^*) \\
+r(x) \frac{f(t^*)}{r(t^*)}, & x > t^*.
+\end{cases}
+\]
+And for $h \in (1,2)$, I suggest trying the proposal
+\[
+\propto
+\begin{cases}
+\ell(x), & x \in (0, t(h)) \\
+r(x) , & x > t(h).
+\end{cases}
+\]
+We would need to prove the following.
+
+\begin{conjecture}
+  $f(x) / r(x) > 1$ and is decreasing for $x > t^*$ for $h \in (0,1)$.  $r(x) >
+  f(x)$ for $h \geq 1$.
+\end{conjecture}
+
+Plotting these proposals one sees that the envelope is not as perfect as it is
+in the $h=1$ case.  However, it still appears to be pretty good.  It seems like
+as $h$ gets larger the envelope gets worse, but that the envelope won't be more
+that 4/3 greater than the target density at $h=2$.
+
+Let us focus on the $h > 1$ case.  Using (\ref{eqn:igamma-rep}) and $n=0$ we
+have
+\[
+\ell(x) = \frac{2^h}{\Gamma(1)} \frac{d_0(h)}{\sqrt{2 \pi}} x^{-3/2} 
+\exp \Big( - \frac{d_0(h)^2}{2 x} \Big),
+\]
+where $d_n(h) = (2 n + h)$.  Notice that $\ell(x)$ is the kernel for an
+$IGa(1/2, d_0(h)^2 / 2)$ random variable.  This will form the basis of our left
+proposal.  Further, as noted above, $r(x)$ is the kernel of a $Ga(h, \pi^2 / 8)$
+random variable.  This will form the basis of the right proposal.  We will need
+the integrals of $\ell$ and $r$ in guiding our sampler.  To that end, we need
+\[
+p_\ell(t) = \int_0^t \ell(x) dx \text{ and } p_r(t) = \int_{t}^\infty r(x) dx.
+\]
+We can rewrite $\ell(x)$ as
+\(
+2^h IGa(x; 1/2, d_0(h)^2/2).
+\)
+and the cummulative distribution the $IGa$ density tells us that 
+\[
+p_\ell(t) = 2^h \frac{\Gamma(1/2, (d_0(h)^2/2) / t)}{\Gamma(1/2)}.
+\]
+Further, we can rewrite $r(x)$ as 
+\(
+r(x) = (4/\pi)^h Ga(x; h, \text{rate}=\pi^2/8)).
+\)
+Thus,
+\[
+p_r(t) = \Big(\frac{4}{\pi}\Big)^h \frac{\Gamma(h, (\pi^2/8) t)}{\Gamma(h)}.
+\]
+$\Gamma(a,b)$ here is the upper incomplete gamma function.
+
+We also need to find the truncation point $t(h)$.  We can find this numerically
+and then extrapolate.  I'm not sure how else to find it.
+
+\begin{conjecture}
+$t(h)$ is asympototically linear.
+\end{conjecture}
+
+We now are ready to sample $C_h$ from $h \in [1, \infty)$, though the acceptance
+rate will tank for large $h$.  Let $g_0$ be $\ell$ and let $g_1$ be $r$.
+\begin{enumerate}
+\item Sample $\gamma \sim \text{Bernoulli}(p_\ell / (p_\ell + p_r))$.
+\item Sample $x \sim g_\gamma$.
+\item Sample $u \sim \mcU(0, g_\gamma)$.
+\item If $u < f(x)$ accept.  Otherwise return to (1).
+\end{enumerate}
+
+\begin{fact}
+\label{fact:sum-gamma-density}
+  We can write the density of $C_h$, $h \in \bbN$ as an infinite sum of gamma
+  kernels.
+\end{fact}
+
+\begin{proof}
+  SKETCH: My guess is that there is something on this out there; it just employs
+  an idea in Kent (1980).
+%\cite{kent-1980}.  
+We know that the Laplace transform of $C_h$ takes the form
+\[
+L(t) = \cosh^{-h}(\sqrt{2 t}) = \prod_{i=1}^\infty \Big(1 +
+\frac{t}{\lambda_i}\Big)^{-h}.
+\]
+We can expand this infinite sum by partial fraction (check out Wikipedia).  It
+will be something like
+\[
+\sum_{i=1}^\infty \sum_{r=1}^h \frac{A_{ir}}{(t + \lambda_i)^r}.
+\]
+$A_{ir}$ can be calculated directly; it is related to residues.
+%  and will be something like
+% \[
+% A_{ir} = \frac{1}{(h-r)!} \lim_{t \ra -\lambda_i} \frac{d^{h-j}}{dt^{h-j}}
+% ((1+t/\lambda_i)^h L(t)).
+% \]
+We can then invert the Laplace transform term by term to get
+\[
+f(x) = \sum_{i=1}^\infty \sum_{r=1}^h A_{ir} \frac{x^{r-1} e^{-\lambda_i
+    x}}{(r-1)!}.
+\]
+\end{proof}
+
+Questions:
+\begin{enumerate}
+\item Can we generalize to arbitrary $h$?
+\item Can we prove that the proposal bounds the density for suffciently large
+  $x$?  I think it may be difficult to prove using the Biane density.  It seems
+  like it might be doable using Fact \ref{fact:sum-gamma-density}.
+\end{enumerate}
+
+\subsection{Truncation Point}
+
+As before, we have
+\[
+c(t) = p_\ell(t) + p_r(t).
+\]
+(Recall that we know $\tilde g(x) = c(t) g(x)$ for some unknown $c(t)$ and
+$g(x)$.  But we know that $g(x)$ is a density.  Thus, $c(t) = \int \tilde
+g(x)$.)  Further, We know that $f(x) < \ell(x)$ for $x < t$ and $f(x) < r(x)$
+for $x > t$.  We know $\bbP(U < f(X))$ is the probability of accepting.  We also
+know that
+\[
+\bbE[ \bbI \{U < f(X)\} | X=x] = f(x) / c g(x).
+\]
+Integrating over $x$ we have
+\[
+\bbE[ \bbI \{ U < f(X) \} ] = \int( f(x) / (c(t) g(x)) g(x) dx = \frac{1}{c(t)}.
+\]
+Again, finding the truncation point will boil down to solving
+\[
+\frac{dc}{dt} = 0 \iff \ell(t) - r(t) = 0 \, ,
+\]
+which is where $\ell$ and $r$ intersect.  This of course depends upon $h$, but
+we can numerically solve for this quantity and then interpolate, assuming it
+changes smoothing.
+
+Tilting should not change things, since, as before, it will change the
+derivative to
+\[
+e^{-z^2 t/ 2} [ \ell(t) - r(t) ].
+\]
+
+\section{$\JJ(b)$ Sampler}
+
+Here is a more detailed description of how we will sample.  For now we have
+\[
+p_\ell(t) = 2^h \frac{\Gamma(1/2, (h^2/2) / t)}{\Gamma(1/2)}
+\]
+and
+\[
+p_r(t) = \Big( \frac{4}{\pi} \Big)^h \frac{\Gamma(h, (\pi^2/8) t)}{\Gamma(h)}
+\]
+where
+\[
+\Gamma(a,bt) / \Gamma(a) = \texttt{pgamma}(t, a, \texttt{rate}=b,
+\texttt{left.tail=FALSE})
+\]
+Currently, we have a table of $t$ values as a function of $h$.  The right
+proposal is proportional to 
+\[
+r(x) = \frac{(\pi/2)^h x^{h-1}}{\Gamma(h)} e^{-\pi^2 x / 8}
+\]
+and the left proposal is proportional to
+\[
+\ell(x) = \frac{h 2^h}{\sqrt{2\pi}} x^{-3/2} \exp \Big( - \frac{h^2}{2x} \Big).
+\]
+Thus the proposal is proportional to
+\[
+\tilde g(x) = 
+\begin{cases}
+\ell(x), & x < t(h) \\
+r(x), & x \geq t(h)
+\end{cases}
+\]
+and has normalizing constant is
+\[
+c(t) = p_\ell(t) + p_r(t).
+\]
+The right kernel is 
+\[
+\text{Ga}(h, \text{rate}=-\pi^2/8) \bbI_{[t,\infty)}
+\]
+the left kernel is 
+\[
+\text{IGa}(1/2, \text{scale}=h^2/2) \bbI_{(0,t)}.
+\]
+Thus the left kernel is a scaled inverse $\chi^2$ distribution.  This is
+significant because simulating a truncated scaled $\chi^2$ distribution is
+relatively easy, which we discuss below.  In either case, we need to sample a
+left truncated gamma distribution.
+
+Thus the procedure is as follows.  Let $h \in (1,2)$ and let $a_n$ denote
+corresponding the inverse-Gamma coefficients.
+
+\begin{algorithm}
+\begin{algorithmic}
+\State Let $a_n$ be the coefficients from the inverse Gamma representation.
+\State $p \gets p_r(t) / (p_\ell(t) + p_r(t))$.
+\If {$\texttt{runif}(1) < p$}
+  \State $X \gets \text{Ga}(h, \text{rate}=\pi^2/8) \bbI_{(t,\infty)}$.
+\Else
+  \State $X \gets \text{IGa}(1/2, h^2/2) \bbI_{(0,t)}$.
+\EndIf
+\State $S \gets S_0(X)$.
+\State $Y \gets \texttt{runif}(0, \tilde g(X))$.
+\State $decreasing, done \gets\texttt{FALSE}$.
+\State $prev \gets S$.
+\State $n \gets 0$
+\While {$!done$}
+\State $a.n \gets a_n(X)$.
+\State $decreasing \gets a.n < prev$.
+\If {$n$ is odd}
+  \State $S \gets S - a_n(X)$.
+  \State $done \gets (Y \leq S)$ and $decreasing$
+\Else % {$n$ is even}
+  \State $S \gets S + a_n(X)$.
+  \State $done \gets (Y > S)$ and $decreasing$
+\EndIf
+\EndWhile
+\State Accept if $Y \leq S$.
+\end{algorithmic}
+\end{algorithm}
+
+It remains to show how to generate the truncated random variates.
+
+\subsection{Left truncated Gamma sampler}
+
+In general, note that under the transformation $y = sx$ transforms
+\[
+f(x) \one_{(a,b)}(x) dx \ra \frac{1}{s} f(y/s) \one_{(sa,sb)}(y) dy.
+\]
+Thus, the kernel is as is it is scaled by $s$.  Thus, given
+\[
+\frac{b^a x^{a-1}}{\Gamma(a) \Gamma(a,bt)} e^{-bx} \bbI_{(t,\infty)}(x) dx
+\]
+and the substitution $x = yt$ then the density of $y$ is
+\[
+\frac{(bt)^a y^{a-1}}{\Gamma(a) \Gamma(a,bt)} e^{-bt} \bbI_{(1,\infty)}(y) dy.
+\]
+Thus $x \sim Ga(a,b,t)$ goes to $y \sim Ga(a,bt,1)$.  So one may sample $y$ and
+then let $x \gets yt$.
+
+Furthermore, notice that 
+
+\subsubsection{$a \geq 1$}
+
+When $a=1$, then we have a truncated exponential distribution, which we know how
+to sample.
+
+When $a > 1$, we can follow Philippe (1997).  For now it may be easiest to
+implement the method of Dagpunar (1978), which she outlines in the paper.  Later
+we can go back an incorporate her more complicated sampler.
+
+\subsubsection{$a < 1/2$}
+
+We want to simulate something proportional to
+\[
+\tilde f(y) = y^{1/2} \exp \Big( -\frac{h^2}{2} y \Big) \bbI_{(1/t,\infty)}(y) dy.
+\]
+% Suppose we propose with a truncated exponential proportional to 
+% \[
+% \tilde g(y) = \exp \Big( -\frac{h^2}{2} y \Big) \bbI_{(1/t,\infty)}(y).
+% \]
+% Then $\tilde f / \tilde g = y^{-1/2}$, which is decreasing and hence bounded
+% above at $\sqrt{t}$ on the interval of interest.  Then we can do the following.
+% \begin{enumerate}
+% \item Generate $E \sim \mcE(1)$.  $E \la 1/t + 2 E / h$.
+% \item $U \sim \mcU(0,1)$.  Accept if $U < E^{1/2}/\sqrt{t}$.
+% \item Return $1/E$.
+% \end{enumerate}
+Devroye (2009) simulates a truncated $\chi^2$ distribution by using a truncated
+normal.  The same thing should work here.  Rescale $y$ above using $z = h^2y$,
+then the target is proportional to
+\[
+z^{1/2} \exp \Big( -\frac{1}{2} z \Big) \bbI_{(1/(h^2 t), \infty)}(z) dz.
+\]
+Now we have returned to Devroye's scheme.  
+\begin{enumerate}
+\item Sample $W \sim N(0,1) \bbI_{(1/\sqrt{ht},\infty)}$.  
+
+\item Then $W^2 / h^2$ is the truncated, scaled $\chi^2$ random variate we want.
+\end{enumerate}
+
+So $h^2 / W^2$ is the truncated inverse $\chi^2$ random variate we want.  In
+that case:
+\begin{enumerate}
+
+\item Let $R = 1/h^2 t$.  
+
+\item Repeatedly sample $e_i \sim \mcE$ until $e_1^2 > 2 * e_2 / R$.  Then
+  \[
+  W^2 = (1+R e_1)^2 / R.
+  \]
+  is left truncated $\chi^2$.
+
+\item Return $h^2 / W^2$ for the truncated, scaled inverse $\chi^2$.
+\end{enumerate}
+
+\section{Tilting and kernels}
+
+Recall,
+\[
+r(x) = \frac{(\pi/2)^h x^{h-1}}{\Gamma(h)} e^{-\pi^2 x / 8}.
+\]
+Exponentially tilting we have
+\[
+r(x|z) = \frac{(\pi/2)^h x^{h-1}}{\Gamma(h)} e^{- x\pi^2 / 8 - x z^2 / 2}.
+\]
+We can write this as
+\[
+r(x|z) = \Big(\frac{\pi/2}{\pi^2/8 + z^2 / 2}\Big)^{h} \; \frac{(\pi^2/8 + z^2 / 2)^h
+  x^{h-1}}{\Gamma(h)} \exp \Big( - (\pi^2/8 + z^2 / 2) x \Big) \, ,
+\]
+the latter two terms being the density of a $\mbox{Ga}(h,
+\mbox{rate}=\pi^2/8+z^2/2)$.
+
+For the left hand kernel, when $z=0$, we have
+% \[
+% \frac{2^h h}{\sqrt{2}} (h^2/2)^{-1/2} \frac{(h^2/2)^{1/2}}{\Gamma(1/2)=\sqrt{\pi}} x^{-3/2} \exp
+% \Big( - \frac{h^2}{2x} \Big) \, ,
+% \]
+\[
+\ell(x|z) = 2^h \frac{(h^2/2)^{1/2}}{\Gamma(1/2)=\sqrt{\pi}} x^{-3/2} \exp
+\Big( - \frac{h^2}{2x} \Big) \, ,
+\]
+where the last three terms of the density of a $\mbox{Ga}(1/2, h^2/2)$
+distribution.  Exponentially tilting, in the exponent we have
+\begin{align*}
+-\frac{z^2}{2x} \Big[ \big( \frac{h}{z} \big)^2 + x^2 \Big] .
+\end{align*}
+Completing the sqare with 
+\[
+\pm 2 (h / z) x
+\]
+we have
+\[
+- \frac{(z/h)^2 h^2}{2x} \Big[ (x - h / z)^2 \Big] - z h.
+\]
+So we have
+\[
+\ell(x|z) = (2^h e^{-z h} ) \frac{h}{\sqrt{2 \pi x^3}} \exp \Big( -
+\frac{(z/h)^2 h^2}{2x} \Big[ (x - h / z)^2 \Big] \Big).
+\]
+
+Thus, for the right hand conefficient we have that
+\[
+a_0^r(x|z) = \Big( \frac{\pi/2}{\lambda_z} \Big)^h Ga(x | h, \mbox{rate}=\lambda_z), \;
+\lambda_z = \pi^2/8 + z^2/2.
+\]
+So
+\[
+p_r(t,z) = \Big(\frac{\pi/2}{\lambda_z}\Big)^{h} \frac{\Gamma(h, \lambda_z t)}{\Gamma(h)}.
+\]
+For the left hand coefficient we have that
+\[
+a_0^\ell(x|z) = (2^h e^{-zh}) IGauss(x|\mu = h/z, h^2) \; \text{ for } z > 0
+\]
+and
+\[
+a_0^\ell(x|0) = 2^h IGamma(1/2, h^2/2) \; \text{ for } z = 0.
+\]
+Thus
+\[
+p_\ell(t,z) = (2^h e^{-zh}) \Phi_{IGauss}(t | h/z, h^2)
+\]
+and
+\[
+p_\ell(t,0) = 2^h \frac{\Gamma(1/2, (h^2/2) (1/t))}{\Gamma(1/2)}.
+\]
+
+The proposal in this case is
+\[
+\tilde g(x|z) = 
+\begin{cases}
+r(x|z), & x \geq t \\
+\ell(x|z), & x < t.
+\end{cases}
+\]
+
+A useful observation is that when checking to accept or reject we may use the
+\emph{original} coefficients, not the tilted coefficients.  This is because
+\[
+\tilde f(X) / \tilde g(x) = \tilde f(x|z) / \tilde g(x|z)
+\]
+and
+\[
+\tilde f(x) / S_n(x) = \tilde f(x|z) / S_n(x|z).
+\]
+
+We know how to sample a left truncated gamma from above.  We will proceed
+similar to the $b=1$ case for the right truncated inverse Gaussian.
+
+\subsection{Inverse Gaussian Acceptance Prob.}
+
+Things work out almost exactly has before.  Consider the kernel
+\[
+e^{-zh} x^{-3/2} \exp \Big( -\frac{z^2}{2x} (x - h/z)^2 \Big)
+= x^{-3/2} \exp \Big( -\frac{x z^2}{2} - \frac{h^2}{2x} \Big).
+\]
+For now, assume that $\tau(t,h)$ is a decreasing function of the truncation
+point $t$.  When $z$ is small, e.g., when $z < \tau(t)$ we have can propose
+using a truncated inverse Gamma.  In that case, for $U \sim \mcU(0, \tilde
+g(X))$,
+\[
+P(U < \tilde f(X) | X=x) = e^{-x z^2 / 2}.
+\]
+So, again, 
+\[
+\bbE[e^{-xz^2/2}] \geq e^{-t z^2 / 2} \geq e^{-t \tau(t,h)^2 / 2}.
+\]
+
+When $z$ is large, e.g. when $z > \tau(t)$, $\tau(t)$ maybe $1/t$, use rejection
+sampling.  In that case the probability of accepting is
+\[
+\Phi_{IG}(t | h/z, h^2) \leq \Phi_{IG}(t | h / \tau(t,h), h^2).
+\]
+When $\tau(t) = 1/t$, this will get worse as $h$ increases.
+
+\subsection{A more general sampler}
+
+We may sample more generally as follows.
+
+\begin{algorithm}
+\begin{algorithmic}
+\State Let $a_n$ be the coefficients from the inverse \textbf{gamma} representation.
+\State Everything here is conditional upon $z$ and $h$.
+\State $p \gets p_r(t,z,h) / (p_\ell(t,z,h) + p_r(t,z,h))$.
+\State $\lambda_z = \pi^2 / 8 + z^2 / 2$.
+\If {$\texttt{runif}(1) < p$}
+  \State $X \gets \text{Ga}(h, \text{rate}=\lambda_z) \bbI_{(t,\infty)}$.
+\Else
+  \State $X \gets \text{IGauss}(\mu=h/z, h^2) \bbI_{(0,t)}$.
+\EndIf
+\State $S \gets S_0(X)$.
+\State $Y \gets \texttt{runif}(0, \tilde g(X))$.
+\State $decreasing, done \gets\texttt{FALSE}$.
+\State $prev \gets S$.
+\State $n \gets 0$
+\While {$!done$}
+\State $a.n \gets a_n(X)$.
+\State $decreasing \gets a.n < prev$.
+\If {$n$ is odd}
+  \State $S \gets S - a_n(X)$.
+  \State $done \gets (Y \leq S)$ and $decreasing$
+\Else % {$n$ is even}
+  \State $S \gets S + a_n(X)$.
+  \State $done \gets (Y > S)$ and $decreasing$
+\EndIf
+\EndWhile
+\State Accept if $Y \leq S$.
+\end{algorithmic}
+\end{algorithm}
+
+\section{Saddlepoint Approximation}
+
+Some key papers here are Daniels (1954), which is quite well done, and
+Barndorff-Nielsen and Cox (1979).  Barndorff-Nielsen and Cox have a monograph
+devoted to asymptotic expansion, though it doesn't appear to be at UT.
+Asymptotic expansions is evidently a well-developed subject.  Nick suggested
+looking at McLeish (2010), which references Lugannani and Rice (1980).  What
+follows is based upon reading Daniels.  The saddlepoint approximation is similar
+to the Edgewirth expansion, but is more accurate (is my impression), and does
+not ever become negative (which is evidently a possibility with the Edgewirth
+expansion).
+
+Let $M(t)$ denote the moment generating function, let $K(t)$ denote the cumulant
+generating function.  Then $M(it)$ is the characteristic function.  I think the
+conditions that are put upon $K$ are ultimately related to it being analytic is
+a certain domain.  The def.\ is
+\[
+M(t) = e^{K(t)} = \int_{-\infty}^\infty e^{tx} f(x) dx.
+\]
+Given let $\bar x$ denote the sample mean of $n$ indpendent draws.  Let $\tilde
+x$ denote the sum of $n$ indpendent draws.  Then the mgf of $\tilde x$ is
+$M^n(t)$ and the $MGF$ of $\bar x$ is $M^n(t/n)$.  Thus the corresponding
+Fourier inversions are
+\[
+\tilde f(\tilde x) = \frac{1}{2\pi} \int_{-\infty}^{\infty} M^n(i t) e^{-i t
+  \tilde x} dt.
+\]
+and
+\[
+f_n(\bar x) = \frac{1}{2 \pi} \int_{-\infty}^{\infty} M^n(i t/n) e^{-i t \bar x}
+d t 
+=  \frac{n}{2 \pi} \int_{-\infty}^{\infty} M^n(i t) e^{-i n t \bar x}
+d t .
+\]
+One can do a change of variables $T = it$ so that
+\[
+f_n(\bar x) = \frac{n}{2 \pi i} \int_{-\infty i}^{\infty i} M^n(T) e^{-n T \bar x} dT.
+\]
+Imagine that $M(z)$ is analytic on some strip that includes the imaginary axis.
+Then this integral is equal to (use the cumulant generating function now)
+\[
+f_n(\bar x) = \frac{n}{2 \pi i} \int_{\tau -\infty i}^{\tau + \infty i} e^{n (
+  K(T) - T \bar x)} dT.
+\]
+where $\tau$ is a real number within our strip.  We could be integrating over
+any path in the strip, but let's just assume it is a straight line.  The key
+observation by Daniels is that we want to focus the mass of our integration on
+as small a region as possible and that we can do so by picking the path of the
+integral to go through a saddle point, in which case the integrand is small
+outside the neighborhood of the saddle point.  In particular, we want to minimize
+\[
+K(T) - T \bar x
+\]
+since this will be where the integrand is greatest.  This occurs when
+\begin{equation}
+\label{eqn:t0}
+K'(T) - \bar x = 0.
+\end{equation}
+Daniels goes on to provide conditions upon the distribution $F_n$ for which this
+holds.  Given the root $T_0$ that solves this equation the saddle point
+approximation is
+\[
+g_n(\bar x) = \Big( \frac{n}{2 \pi} \Big)^{1/2} K''(T_0)^{-1/2} e^{n K(T_0) - T_0
+  \bar x}
+\]
+WHERE $T_0 = T_0(\bar x)$ is defined by (\ref{eqn:t0}).
+
+\subsection{Saddle point approximation for $\JJ(h,z)$}
+
+For the $\JJ(h,z)$ distribution the Laplace transform is
+\[
+\mcL(t) = \frac{\cosh^{h}(z)}{\cosh^{h}(\sqrt{2t+z^2})}.
+\]
+I find it easier to work with the Laplace transform here, but we know that we
+can go between the lt and the mgf by $\mcL(t) = M(-t)$.  Furthermore, I will let
+$\mcK(t) = \log \mcL(t)$, 
+\[
+h \log \cosh (z) - h \log \cosh(\sqrt{2t + z^2}).
+\]
+Really, we want to think about summing $h$ independent $\JJ(1,z)$ variables to
+align with Daniels, in which case, let
+\[
+\mcK(t) = \log \cosh (z) - \log \cosh(\sqrt{2t + z^2}).
+\]
+Taking the derivative we have
+\begin{align*}
+\mcK'(t) & = - \cosh^{-1}(\sqrt{2t+z^2}) \sinh(\sqrt{2t + z^2}) ({2t +
+  z^2})^{-1/2} \\
+& = - \tanh(\sqrt{2t + z^2}) ({2t + z^2})^{-1/2}
+\end{align*}
+and
+\begin{align*}
+\mcK''(t) &  = - (1 - \tanh(\sqrt{2t + z^2}))  ({2t + z^2})^{-1} + \tanh(\sqrt{2t
+  + z^2}) ({2t + z^2})^{-3/2} \\
+& = \Big(  \utanh{2t+z^2} \Big)^2 -
+\frac{1}{2t+z^2} \Big( 1 - \utanh{2t+z^2} \Big).
+\end{align*}
+Clearly, $\tanh(\sqrt{u}) / \sqrt{u}$ is an important function.
+
+Recalling that $\sinh(ix) = i\sin(x)$ and $\cosh(ix) = \cos(ix)$ we see that
+\[
+\utanh{u} = 
+\begin{cases}
+\utanh{|u|}, & u \geq 0 \\
+\utan{|u|}, & u < 0.
+\end{cases}
+\]
+Similarly,
+\[
+\utan{u} = 
+\begin{cases}
+\utan{|u|}, & u \geq 0 \\
+\utanh{|u|}, & u < 0.
+\end{cases}
+\]
+And $\utanh{-u} = \utan{u}$.
+
+Thus reverting the cumulant generating fuction, we have
+\[
+K(t) = \log \cosh(z) - \log \cos(\sqrt{2t - z^2})
+\]
+\[
+K'(t) = \utan{2t - z^2}
+\]
+\[
+K''(t) = \Big(\utan{2t-z^2})^2 + \frac{1}{2t - z^2} \Big(1 - \utan{2t-z^2}).
+\]
+Define $u = 2t - z^2$.  Then $u$ is defined by
+\[
+h(u) = \utan{u} = K'(t) = \bar x.
+\]
+Thus we may go between $\bar x \leftrightarrow u \leftrightarrow t$.  Note that
+\begin{align*}
+  K''(t) & = \Big(\utan{u}\Big)^2 + \frac{1}{u} \Big( 1 - \utan{u} \Big) \\
+  & = K'^2 + \frac{1}{u} (1-K') = \bar x^2 + \frac{1}{u} (1 - \bar x).
+\end{align*}
+% and
+% \[
+% \del_t (h(u)) = h'(u) 2 = K''(t) \text{ and } \del_u h(u) = K''(t) / 2.
+% \]
+It will be easier to write down the saddle point approximation in terms of $u$.
+It is
+\[
+\cosh^n(z)
+\Big(\frac{n}{2\pi}\Big)^{1/2} \Big( \bar x^2 + \frac{1}{u(\bar x)} (1 - \bar x)
+\Big)^{-1/2} \exp \Big[ -n \log \cos(\sqrt{u(\bar x)}) - n \Big(\frac{u +
+  z^2}{2}\Big) \bar x \Big].
+\]
+Plotting this, it is a great approximation and it appears that it may dominate
+the true density.  Note that $u$ as it relates to $\bar x$ does not depend on
+$z$.  If we take this to be the density for $\bar x$ then we can transform to
+the density for $u$ via
+\[
+d \bar x = h'(u) du = K''(t(u)) \frac{dt}{du} du = K''(t(u)) \frac{du}{2}
+\]
+to get
+\[
+\frac{1}{2} \cosh^n(z)
+\Big(\frac{n}{2\pi}\Big)^{1/2} \Big( h(u)^2 + \frac{1}{u} (1 - h(u))
+\Big)^{1/2} \exp \Big[ -n \log \cos(\sqrt{u}) - n \Big(\frac{u +
+  z^2}{2}\Big) h(u) \Big] du.
+\]
+Note the change in exponent on $K''$.  Thus we can try to simulate $x$ directly,
+or we may simulate $u$ and then transform to $x$ via $h(u)$.
+
+\subsection{Musings}
+
+A few notes: we know that $K'(0) = \bbE[\JJ(1,z)]$.  We know that $\utan{u}$ has
+different shapes depending on whether $u$ is positive or negative.  The same
+holds for $\cos(\sqrt{u})$.  The Taylor approximation of $\tan(u)$ is
+\[
+u + \frac{1}{3} u^3 + \frac{2}{15} u^5 + \frac{7}{315} u^7 + \cdots
+\]
+Thus the Taylor approximation of $h(u)$ is
+\[
+h(u) \simeq 1 + \frac{1}{3} u + \frac{2}{15} u^2 + \frac{7}{315} u^3 + \cdots.
+\]
+This is centered at 0 and converges on $(-(\pi/2)^2, (\pi/2)^2)$.
+
+I think maybe we can examine $u$ in three regions.  When $u$ is near
+$(\pi/2)^2$, when $u$ is large and negative, and when $u$ is near 0.  When $u$
+is near $0$ the above approximation holds.  I believe one can find the roots of
+a third degree polynomial.  Thus we can solve for $\bar x$ numerically, and
+hopefully quickly.  When $\bar x$ is large and we must have $u$ near
+$(\frac{\pi}{2})^2$.  In that case
+\[
+\bar x = h(u) \simeq \frac{2}{\pi} \frac{1}{\cos(\sqrt{u})},
+\]
+which is like
+\[
+\log \frac{\pi}{2} + \log(\bar x) = - \log \cos(\sqrt{u}).
+\]
+So
+\[
+u \simeq \Big[ \arccos \Big(\frac{2}{\pi x} \Big) \Big]^2.
+\]
+When $\bar x$ is small we must have $u$ large and negative.  In that case
+\[
+\bar x = h(u) \simeq \frac{1}{\sqrt{u}}.
+\]
+So
+\[
+u \simeq \frac{1}{x^2}.
+\]
+
+Let's forget about $z$ for the moment; though, note, we can see above that it
+would have been easier to find the saddle point approximation for $\JJ(h,0)$ and
+then tilt that by $\cosh^{h}(z) e^{-0.5 z^2 n \bar x}$.
+
+Connection to duality: first, from the exponent we are calculating
+\[
+t(x) = \argmin{t} \Big\{ K(t) - tx \Big\}
+\]
+The value at which this is minimized is
+\[
+\psi(x) = \min_t \Big\{ K(t) - t \bar x \Big\}
+\]
+This, I believe, is the convex dual of $K$.  Is there a way to calculate
+$\psi(x)$ directly?  You can interprate this as finding the point on the curve
+$K(t)$ that is tangent to the line with slope $\bar x$.  Then calculate the
+distance between that line and the line with slow $\bar x$ that passes through
+the origin.  In that way, one can identify tangent lines with $\psi(x)$.
+
+From a more engineering-like perspective, consider the following.
+\[
+\cos \sqrt{u} = \frac{\sin \sqrt{u}}{\sqrt{u}} \frac{\sqrt{u}}{\tan \sqrt{u}} = 
+ \frac{\sin \sqrt{u}}{\sqrt{u}} \frac{1}{\bar x}.
+\]
+Then we can replace 
+\[
+\log \cos \sqrt{u} = \log \Big( \frac{\sin{\sqrt{u}}}{\sqrt{u}} \Big) - \log \bar x.
+\]
+I think it may be better to work with the sin expression.  The density is then
+proportional to
+\[
+(\bar x^2 + (1-\bar x) / u(\bar x))^{-0.5} x^n 
+\exp \Big\{ -n \Big[\log \Big( \frac{\sin{\sqrt{u}}}{\sqrt{u}} \Big) + \frac{u
+\bar x}{2} \Big] \Big\}.
+\]
+We now see things starting to take shape since we know that asymptotically we
+will be approaching something proportional to a Ga(n,something) density on the
+right.  Further, plotting the term in the exponent it appears to be concave.  It
+would be great if we could show that this is like the exponenent of a generalizd
+inverse Gaussian distribution.  Doing some experimentation, this is possible,
+but it also seems as if it might be better to break the curve into three pieces,
+parameterizing the right piece as a line with some positive slope, the middle
+piece being a line with some constant slope, and the left piece being a line
+with some negative slope.  Then we would need to simulate a mixture of a left
+trucated gamma, a truncated beta, and a right truncated gamma to generate a
+proposal.  This is all provided that we can find reaonsable bounds for
+\[
+\bar x^2 + (1-\bar x) / u(\bar x).
+\]
+It would be nice to find some sort of analytical equation for the lines, but we
+do not strictly need to do that since they will only change with $n$.  In fact,
+we only need to find the left line and the right line.  Then we can connect them
+with a flat line after we have tilted.  Though we need to know the minimum of
+the curve to do this.  We could provide the argmin in a table across $z$ and
+then interpolate.
+
+Calculating the mode.  Can we just do
+\[
+\min_x \min_t \Big[ - \log \cos \sqrt{2t} + t \bar x \Big].
+\]
+Also, I am missing the term involving $K''$.  Though, I think that term becomes
+less important as we let $n$ get big.  So we could get a sort of asympotitic
+mode.  Or, we could just abandon the mode when we are coming up with our bound,
+right?  The bound is for the curve given by
+\[
+\Big[ \log \frac{\sin \sqrt{u}}{\sqrt{u}} + \frac{u \bar x}{2} \Big].
+\]
+
+\subsection{Update}
+
+It turns out that knowing about the convex dual will be helpful.  This
+reinforces, once again, that gathering information is more important than
+developing ideas on your own.  The latter is much more time consuming.
+
+First, assume that $\cos{\sqrt{u}}$ is convex.  Then $-\log \cos{\sqrt{u}}$ is
+convex as well.  Recall that the cumulant generating function is $K(t) = - \log
+\cos \sqrt{2t}$.  From the construction of the saddle point approximation, one
+minimizes $K(s) - sx$:
+\[
+\phi(x) = \min_s \{ K(s) - sx \}.
+\]
+I believe $\phi$ is the convex (concave) dual of $K$.  Further, define
+\[
+t(x) = \argmin{s} \{ K(s) - sx \}.
+\]
+Note that $t$ is defined by
+\[
+K'(t) = x
+\]
+as well.  The fact that we are with the convex dual will be very helpful.
+First, it ensures that we have the following relationships to work with.  The
+prime/tick symbol represents the derivative of the function on the original
+coordinate systme.  Evaluating $\phi$:
+\[
+\phi(x) = K(t(x)) - t(x) x.
+\]
+The first derivative:
+\begin{align*}
+  \phi'(x) = \dd{\phi}{x}(x) & = K'(t) \dd{t}{x}(x) - \dd{t}{x}(x) x - t(x) \\
+  & = x \dd{t}{x}(x) - \dd{t}{x}(x) x - t(x) \\
+  & = -t(x).
+\end{align*}
+And for the second derivative: $\phi''(x) = -\dd{t}{x}(x)$.  We also know that
+$x = K'(t)$.  Thus,
+\[
+1 = K''(t) \dd{t}{x} (x).
+\]
+So,
+\[
+\dd{t}{x}(x) = [K''(t)]^{-1}
+\]
+and, taking a derivative again,
+\[
+0 = K'''(t) \Big(\dd{t}{x}\Big)^2 + K''(t) \dd{^2 t}{x^2}(x),
+\]
+in which case,
+\[
+\dd{^2 t}{x^2} = - K'''(t) / (K''(t))^3.
+\]
+
+\subsubsection{Modes:}
+
+Consider the log-likelihood for the moment, we can write it as
+\[
+- \frac{1}{2} \log K''(t) - n \phi(x).
+\]
+To find the mode, we take the derivative to get the equation for the critical
+points:
+\[
+-\frac{1}{2} \frac{K'''(t)}{(K''(t))^2} \dd{t}{x} - n t = 0;
+\]
+thus,
+\[
+- \frac{1}{2} \frac{K'''(t)}{(K''(t))^3} = \frac{1}{2} \dd{^2 t}{x^2} = n t.
+\]
+It would be nice if $K'''$ was positive.  In that case we would have that x must
+solve
+\[
+a = n 2t(x) \, , a < 0,
+\]
+which ensures that $x < 1$, which is where we know the concavity changes as we
+will show below.  Further, as $n \ra \infty$ we know that $t = 0$ and hence $x =
+1$, which is the mean.
+
+Of course, we may not want to consider the mode of the whole function.  Instead,
+we may just want to find the mode of $\phi(x)$.  In that case we have
+\[
+\phi'(x) = 0 \iff t = 0 \iff x = 1
+\]
+So the mode of the exponent is the mean.
+
+\subsubsection{Bound}
+
+We want to bound the density.  I think it may be a better idea to treat
+$(K'')^{-0.5}$ sepearately from the exponential portion.  This will ultimately
+give us a bound that has close to the correct tails (the right tail will be
+correct).  Note that $\phi(x)$ is concave, so $-\phi(x)$ is convex, which is
+\[
+- \phi(x) = \log \cos \sqrt{2t} + tx.
+\]
+We can rewrite this as
+\begin{align*}
+  \log \Big[ \frac{\cos \sqrt{2t}}{\sin \sqrt{2t}} \sqrt{2t} \frac{\sin
+    \sqrt{2t}}{\sqrt{2t}} \Big] + tx
+= - \log x + \log \frac{\sin \sqrt{2t}}{\sqrt{2t}} + tx.
+\end{align*}
+We want to just use
+\[
+\eta_r(x) = \log \frac{\sin \sqrt{2t}}{\sqrt{2t}} + tx
+\]
+when it is appropriate, since we can then absorb $-\log x$ as $x^n$ in the
+density.  We follow Devroye's basic idea for simulating from log concave
+densities.  In particular, we will create an envelope of the above function from
+below.  As noted above, we know that $-\phi(x)$ is convex.  We want to show that
+$\eta_r(x)$ is convex for at least some $x$.  Note that we can rewrite $\eta_r$ as
+\[
+\eta_r(x) = - \phi(x) + \log x.
+\]
+Then
+\[
+\eta_r'(x) = t + \frac{1}{x}
+\]
+and
+\[
+\eta_r''(x) = \dd{t}{x} - \frac{1}{x^2}.
+\]
+This is positive when
+\begin{align*}
+& \dd{t}{x} - \frac{1}{x^2}  = \eta_r''(x) \geq 0 \\
+& [K''(t)]^{-1}  \geq \frac{1}{x^2} \\
+& x^2  \geq x^2 + \frac{(1-x)}{u} \\
+& 0 \geq \frac{(1-x)}{u}.
+\end{align*}
+Thus, $\eta_r$ is convex everywhere.  When $x \geq 1$, then $u$ is positive and
+when $x < 1$, $u$ is negative.
+
+Similarly, we can consider
+\[
+\eta_l(x) = - \phi(x) - \frac{1}{x},
+\]
+which corresponds to including a $1/x$ term.  Then we have
+\[
+\eta_l'(x) = t(x) + \frac{1}{x^2}
+\]
+and
+\[
+\eta_l''(x) = \dd{t}{x} - \frac{1}{x^3}.
+\]
+We want to find the $x$ for which
+\[
+\dd{t}{x} - \frac{1}{x^3} \geq 0 \iff x^3 \geq K''(t).
+\]
+That is,
+\[
+x^3 \geq x^2 + \frac{1-x}{u} \iff x^3 - x^2 = x^2 (x-1) \geq \frac{1-x}{u}.
+\]
+That is
+\[
+(x^2 + \frac{1}{u}) (x-1) \geq 0.
+\]
+Again, when $x \geq 1$ we have $u \geq 0$ this holds.  When $x \leq 1$ we have
+$u \leq 0$ and we need
+\[
+x^2 + \frac{1}{u} \leq 0.
+\]
+Rearranging we have (as $u \leq 0$ for $x \leq 1$)
+\[
+x^2 \leq - \frac{1}{u} \iff x^2 u \geq -1,  \; u \leq 0
+\]
+so that
+\[
+\tan^2 \sqrt{u} \geq -1 \iff 1 \geq -\tan^2{\sqrt{u}}, \; u \leq 0,
+\]
+which indeed holds.  Thus $\eta_r(x)$ is convex for all $x$ as well.
+
+Thus we can follow Devroye in the following way.  On the left, use $-\phi(x) -
+\frac{1}{x} + \frac{1}{x}$.  On the right use $-\phi(x) + \log(x) - \log(x)$.
+In the middle use a flat top.  We also can show that
+\[
+K''(t) \geq \alpha_l x^3, \; x \leq 1
+\]
+and
+\[
+K''(t) \geq \alpha_r x^2, \; x \geq 1.
+\]
+Thus the left and right proposals will be
+\[
+\propto x^{-3/2} \exp( s_l x + 1/x )
+\]
+and
+\[
+\propto x^{n-1} \exp (- s_r x).
+\]
+
+\section{Residues}
+
+We want to invert the moment generating function $\cos^{-h}(\sqrt{2\lambda})$,
+i.e. the Laplace transform of $\cosh^{-h}(\sqrt{2 \lambda})$.  (Much of this
+comes from Churchill.)  First, we have the Weierstauss factorization formula:
+\[
+f(\lambda) = \cos^{-h}(\sqrt{2 \lambda}) = \prod_{i=1}^\infty \Big(1 -
+\frac{\lambda}{c_i}\Big)^{-h}.
+\]
+I believe we can expand this by partial fraction.  Presumably, in the finite
+case we have something like
+\[
+\prod_{i=1}^n \Big(1 - \frac{\lambda}{c_i}\Big)^{-h} = \sum_{i=1}^n \sum_{r=1}^h
+\frac{A_{ir}}{\Big(1 - \frac{\lambda}{c_i}\Big)^{r}}
+\]
+We can then pass to the limit to get
+\[
+\prod_{i=1}^\infty \Big(1 - \frac{\lambda}{c_i}\Big)^{-h} = \sum_{i=1}^\infty \sum_{r=1}^h
+\frac{A_{ir}}{\Big(1 - \frac{\lambda}{c_i}\Big)^r}.
+\]
+I need a citation for this.  We can find the coefficients $A_{ir}$ by examining
+residues.  First, not that all of the poles of $f(\lambda)$ are isolated.  Thus,
+$f(\lambda)$ is analytic in $B_{\delta}(c_i) \backslash \{c_i\}$ for some
+$\delta > 0$.  Thus we can find a Laurent series, which will be
+\[
+f(\lambda) = \sum_{n=0}^\infty a_n^{(i)} (\lambda - c_i)^n + \sum_{r=1}^h
+\frac{b_r^{(i)}}{(\lambda - c_i)^{r}}.
+\]
+Rewriting the expression from the partial sum as
+\[
+\sum_{i=1}^n \sum_{r=1}^h \frac{A_{ir} (-c_i)^r}{(c_i - \lambda)^r}.
+\]
+Since the terms of $(\lambda - c_i)$ must match we have
+\[
+A_{ir} (-c_i)^r = b_r^{(i)}.
+\]
+We can calculate $b_r^{(i)}$.  In particular,
+\[
+\phi(r) = (\lambda - c_i)^h f(\lambda)
+\]
+is analytic.  And from Churchill we know that
+\[
+\frac{\phi(\lambda)}{(\lambda-c_i)^{h-k+1}}
+\]
+is
+\[
+\sum_{n=0}^\infty a_n^{(i)} (\lambda - c_i)^{n+k-1} + \sum_{r=1}^h
+\frac{b_r^{(i)}}{(\lambda - c_i)^{r-k+1}},
+\]
+which has residue $b_k^{(i)}$ and that one may calculate the residue as
+\[
+b_k^{(i)} = \frac{\phi^{(h-k)}(c_i)}{(h-k)!}.
+\]
+Thus
+\[
+A_{ik} = \frac{\phi^{(h-k)}(c_i)}{(-c_i)^k (h-k)!}.
+\]
+Calculating these derivaties is not that easy.  I believe that acutally we can
+also calculate
+\[
+\lim_{\lambda \ra c_i} \frac{\phi^{(h-k)}(\lambda)}{(h-k)!}.
+\]
+But I don't think it is going to be that easy to calculate $\phi^{(h-k)}(c_i)$
+using the MGF.
+
+Consider the infinite product though.  In terms of $\phi$ we have
+\[
+\phi(\lambda) = (-c_i)^h \prod_{j \neq i} \Big(1 - \frac{\lambda}{c_j}\Big)^{-h}.
+\]
+Write $\psi(\lambda) = \log \phi (\lambda)$.  Then we have
+\begin{align*}
+\phi'(\lambda) & = e^{\psi} \psi'; \\
+\phi''(\lambda) & = e^{\psi} (\psi')^2 + e^{\psi} \psi''; \\
+\phi'''(\lambda) & = e^{\psi} (\psi')^3 + 3 e^{\psi} \psi' \psi'' + e^{\psi} \psi'''.
+\end{align*}
+Take the $\log$ to get
+\[
+\psi(\lambda) = \log \phi(\lambda) = h \log (-c_i) + -h \sum_{j \neq i} \log \Big( 1 -
+\frac{\lambda}{c_j}\Big).
+\]
+The derivatives of $\psi$ are 
+\begin{align*}
+\psi'(\lambda) & = h \sum_{j \neq i} \frac{1}{c_j} \Big( 1 - \frac{\lambda}{c_j}\Big)^{-1} \\
+\psi''(\lambda) & = h \sum_{j \neq i} \frac{1}{c_j^2} \Big( 1 - \frac{\lambda}{c_j}\Big)^{-2} \\
+\psi'''(\lambda) & = 2 h \sum_{j \neq i} \frac{1}{c_j^3} \Big( 1 - \frac{\lambda}{c_j}\Big)^{-3}
+\end{align*}
+
+
+% If you have a bibliography.
+% The file withe bibliography is name.bib.
+% \bibliographystyle{plain}
+% \bibliography{name}{}
+
+\end{document}
+
