@@ -984,11 +984,11 @@ when $x < 1$, $u$ is negative.
 
 Similarly, we can consider
 \[
-\eta_l(x) = - \phi(x) - \frac{1}{x},
+\eta_l(x) = - \phi(x) - \frac{1}{2x},
 \]
 which corresponds to including a $1/x$ term.  Then we have
 \[
-\eta_l'(x) = t(x) + \frac{1}{x^2}
+\eta_l'(x) = t(x) + \frac{1}{2x^2}
 \]
 and
 \[
@@ -1097,13 +1097,18 @@ Thus
 \[
 A_{ik} = \frac{\phi^{(h-k)}(c_i)}{(-c_i)^k (h-k)!}.
 \]
-Calculating these derivaties is not that easy.  I believe that acutally we can
-also calculate
+But really we are interested in $b_k^{(i)}$.  Calculating these derivaties is
+not that easy.  I believe that acutally we can also calculate
 \[
 \lim_{\lambda \ra c_i} \frac{\phi^{(h-k)}(\lambda)}{(h-k)!}.
 \]
 But I don't think it is going to be that easy to calculate $\phi^{(h-k)}(c_i)$
-using the MGF.
+using the MGF.  
+% Notice that this is
+% \[
+% A_{ik}(\lambda) = \frac{(-c_i)^{h-k}}{(h-k)!} \prod_{j \neq i} \Big( 1 - \frac{\lambda}{c_j}\Big)^{-h}.
+% \]
+
 
 Consider the infinite product though.  In terms of $\phi$ we have
 \[
