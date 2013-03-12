@@ -42,6 +42,24 @@ pg.a.coef <- function(n, x, h, z=0)
   cosh(z/2)^h * exp(-0.5 * z^2 * x) * 4 * a.coef(n, 4 * x, h)
 }
 
+jj.m1 <- function(b,z)
+{
+  if (z > 1e-12)
+    b * tanh(z) / z
+  else
+    b * (1 - (1/3) * z^2 + (2/15) * z^4 - (17/315) * z^6)
+}
+
+jj.m2 <- function(b, z)
+{
+ 
+  if (z > 1e-12)
+    (b+1) * b * (tanh(z)/z)^2 + b * ((tanh(z)-z)/z^3)
+  else
+    (b+1) * b * (1 - (1/3) * z^3 + (2/15) * z^4 - (17/315) * z^6)^2 +
+      b * ((-1/3) + (2/15) * z - (17/315) * z^3);
+}
+
 ##------------------------------------------------------------------------------
                           ## SAMPLE TRUNCATED GAMMA ##
 ##------------------------------------------------------------------------------
@@ -321,7 +339,6 @@ if (FALSE)
   dev.off()
   
 }
-
 
 ################################################################################
                                 ## TILTED J^* ##
@@ -647,5 +664,43 @@ if (FALSE)
 
   ## hist(samp.a, prob=TRUE, breaks=100)
   ## hist(samp.4$draw, prob=TRUE, breaks=100, col="#99000022", add=TRUE)
+  
+}
+
+################################################################################
+
+################################################################################
+
+if (FALSE)
+{
+  ## Preliminary: approximating using normal.
+  
+  ## source("Ch.R")
+  dx    = 0.1
+  xgrid = seq(dx, 30, dx)
+  y1    = xgrid
+  y2    = xgrid
+  n     = length(xgrid)
+  h     = 20
+  
+  for (i in 1:n) {
+    y1[i] = 0
+    y2[i] = 0
+    for (j in 0:200) {
+      y1[i] = y1[i] + (-1)^j * a.coef(j,xgrid[i],h)
+    }
+  }
+
+  m1 = jj.m1(h, 0)
+  m2 = jj.m2(h, 0)
+  V  = m2 - m1^2;
+  y2 = dnorm(xgrid, m1, sqrt(V));
+  
+  ## png(filename="pg-dens.png", width=800, height=400)
+  par(mfrow=c(1,2))
+  ymax = max(c(y1,y2))
+  plot(xgrid, y1, type="l", ylim=c(0,ymax), main="Density of PG(b,0)", xlab="x", ylab="f(x|b,0)")
+  lines(xgrid, y2, type="l", col=2, lty=2)
+
   
 }
