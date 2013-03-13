@@ -242,9 +242,9 @@ if (FALSE)
   z = 0.0
   n = 1.0
 
-  umin = -30
+  umin = -40
   umax = (pi/2)^2 - 1
-  du = 0.01
+  du = 0.1
   ugrid = seq(umin, umax, du)
   
   tgrid = 0.5 * (ugrid + z^2)
@@ -256,6 +256,7 @@ if (FALSE)
   plot(xgrid, sp.approx)
   
   y1    = xgrid
+  y2    = xgrid
   N     = length(xgrid)
 
   for (i in 1:N) {
@@ -279,10 +280,11 @@ if (FALSE)
   par(mfrow=c(1,2))
   ymax = max(c(sp.approx), na.rm=TRUE)
   plot(xgrid, y1, type="l", ylim=c(0,ymax), main="Density of JJ(b,z)", xlab="x", ylab="f(x|b,0)")
-  lines(xgrid, y2, col=2, lty=2)
-  lines(xgrid, y3, col=3, lty=3)
+  ## lines(xgrid, y2, col=2, lty=2)
+  ## lines(xgrid, y3, col=3, lty=3)
   ## lines(xgrid, y3, type="l", col=2, lty=2)
   lines(xgrid, sp.approx, col=4, lty=4)
+  legend("bottom", legend=c("J*", "S.P."), col=c(1,4), lty=c(1,4))
 
   plot(xgrid, log(y1), ylim=c(log(min(sp.approx, na.rm=TRUE)),log(ymax)), type="l")  
   lines(xgrid, log(sp.approx), col=4, lty=4)
@@ -341,14 +343,15 @@ if (FALSE)
   ## lines(xgrid, right.line, col=3)
   lines(xgrid, pw.line, col=3)
 
-  legend("bottom", legend=c("eta", "phi", "-delta", "eta envelope"), col=c(1,2,1,3), lty=c(1,3,2,1))
+  legend("bottom", legend=c("eta(x)-phi(m)", "phi(x)-phi(m)", "-delta(x)", "eta envelope"),
+         col=c(1,2,1,3), lty=c(1,3,2,1))
   
   plot(xgrid, (kgrid - tgrid * xgrid), col=2, type="l", lty=1,
        xlab="x", ylab="phi(x) scale", main="phi envelope")
   lines(xgrid, pw.line + deltaxgrid, col=3)
   lines(equigrid, zerogrid, col=2, lty=4)
 
-  legend("bottom", legend=c("phi","phi envelope"), col=c(2,3), lty=c(3,1))
+  legend("bottom", legend=c("phi(x)-phi(m)","phi envelope"), col=c(2,3), lty=c(3,1))
   
   ##----------------------------------------------------------------------------
 
@@ -364,7 +367,7 @@ if (FALSE)
   plot(xgrid, b2)
   lines(xgrid, -log(xgrid), col=2)
 
-  z = 0.0
+  ## z = 0.0
   b3 = log.sin.rt(ugrid) - 0.5 * log(abs(ugrid)) + 0.5 * ugrid * xgrid + 0.5 * z^2 * xgrid
   b4 = (xgrid^2 + (1-xgrid) / ugrid)
   
