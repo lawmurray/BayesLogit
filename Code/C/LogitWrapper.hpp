@@ -30,6 +30,8 @@ extern "C" {
 
   void rpg_alt(double *x, double *h, double *z, int* num);
 
+  void rpg_sp(double *x, double *h, double *z, int* num, int* iter);
+
   // Default Logistic
 
   void gibbs(double *wp, double *betap,                            // Posterior

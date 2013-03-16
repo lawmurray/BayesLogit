@@ -110,9 +110,9 @@ rltgamma.dagpunar <- function(num=1, shape=1, rate=1, trnc=1)
   y
 }
 
-rrtinvchi2.1 <- function(h, trnc)
+rrtinvch2.ch.1 <- function(h, trnc)
 {
-  R = trnc / h^2
+  R = 1 / (trnc * h^2)
   E = rexp(2)
   while ( (E[1]^2) > (2 * E[2] / R)) {
     ## cat("E", E[1], E[2], E[1]^2, 2*E[2] / R, "\n")
@@ -126,11 +126,11 @@ rrtinvchi2.1 <- function(h, trnc)
   X
 }
 
-rrtinvchi2 <- function(num, h, trnc)
+rrtinvch2.ch <- function(num, h, trnc)
 {
   out = rep(0, num)
   for (i in 1:num)
-    out[i] = rrtinvchi2.1(h, trnc)
+    out[i] = rrtinvch2.ch.1(h, trnc)
   out
 }
 
@@ -179,7 +179,7 @@ rch.1 <- function(h)
       }
       else {
         ## Right truncated inverse Chi^2
-        X = rrtinvchi2.1(h, trnc)
+        X = rrtinvch2.ch.1(h, trnc)
       }
 
       ## C = cosh(Z) * exp( -0.5 * Z^2 * X )
@@ -390,22 +390,22 @@ rigauss <- function(mu, lambda)
   x
 }
 
-rrtigauss <- function(h, z, R)
+rrtigauss.ch.1 <- function(h, z, trnc=1)
 {
-  ## R is truncation point
+  ## trnc is truncation point
   z = abs(z);
   mu = h/z;
-  X = R + 1;
-  if (mu > R) {
+  X = trnc + 1;
+  if (mu > trnc) {
     alpha = 0.0;
     while (runif(1) > alpha) {
-      X = rrtinvchi2.1(h, R)
+      X = rrtinvch2.ch.1(h, trnc)
       alpha = exp(-0.5 * z^2 * X);
     }
-    ## cat("rtigauss, part i:", X, "\n");
+    ## cat("rtigauss.ch, part i:", X, "\n");
   }
   else {
-    while (X > R) {
+    while (X > trnc) {
       lambda = h^2;
       Y = rnorm(1)^2;
       X = mu + 0.5 * mu^2 / lambda * Y -
@@ -417,6 +417,14 @@ rrtigauss <- function(h, z, R)
     ## cat("rtiguass, part ii:", X, "\n");
   }
   X;
+}
+
+rrtigauss.ch <- function(num, h, z, trnc=1)
+{
+  x = rep(0, num)
+  for (i in 1:num)
+    x[i] = rrtigauss.ch.1(h, z, trnc)
+  x
 }
 
 rpg.1 <- function(h, z)
@@ -451,7 +459,7 @@ rpg.1 <- function(h, z)
       else {
         ## Right truncated inverse Chi^2
         ## Note: this sampler works when z=0.
-        X = rrtigauss(h, z, trnc)
+        X = rrtigauss.ch.1(h, z, trnc)
       }
 
       ## C = cosh(Z) * exp( -0.5 * Z^2 * X )

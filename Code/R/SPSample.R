@@ -16,7 +16,7 @@ y.func <- function(v)
   lt.val = r[lt.idc]
   out[lt.idc] = tanh(lt.val)/ lt.val
   md.val = r[md.idc]
-  out[md.idc] = 1 - (1/3) * md.val^2 + (2/15) * md.val^4 - (17/315) * md.val^6
+  out[md.idc] = 1 + (1/3) * md.val^2 + (2/15) * md.val^4 + (17/315) * md.val^6
   out
 }
 
@@ -55,9 +55,9 @@ v.secant.1 <- function(y, vb, va, tol=1e-8, maxiter=10)
   while(abs(ydiff) > tol && iter < maxiter) {
     iter = iter + 1
     m = (ya - yb) / (va - vb)
-    ydiff = y - yb
-    vstar = ydiff / m + vb;
+    vstar = (y-yb) / m + vb;
     ystar = y.func(vstar)
+    ydiff = y - ystar;
     if (ystar < y) {
       vb = vstar
       yb = ystar
@@ -66,19 +66,20 @@ v.secant.1 <- function(y, vb, va, tol=1e-8, maxiter=10)
       va = vstar
       yb = ystar
     }
+    ## cat("y, v, ydiff:", ystar, vstar, ydiff, "\n")
   }
   out = list(iter=iter, ydiff=ydiff, y=ystar, v=vstar)
   out
 }
 
-v.func <- function(y, lowerb=0, upperb=0)
+v.func <- function(y)
 {
   ## y inverse.
   N = length(y)
   a = rep(0,N)
   out = list(root=a, f.root=a, iter=a, estim.prec=a)
   for (i in 1:N) {
-    temp = v.func.1(y[i], lowerb, upperb)
+    temp = v.func.1(y[i])
     out$root[i] = temp$root
     out$f.root[i] = temp$f.root
     out$iter[i] = temp$iter
@@ -102,11 +103,11 @@ v.iterative <- function(y, ygrid, vgrid, dy)
 
   vb = vgrid[idx]
   va = vgrid[idx+1]
-  ## vout = v.secant.1(y, vb, va)
-  ## vapprox = vout$v
+  vout = v.secant.1(y, vb, va)
+  vapprox = vout$v
 
-  vout = v.func.1.alt(y, vb, va)
-  vapprox = vout$root
+  ## vout = v.func.1.alt(y, vb, va)
+  ## vapprox = vout$root
 
   print(vout)
   vapprox
@@ -191,7 +192,7 @@ sp.approx.1 <- function(x, n=1, z=0)
   phi      = phi + log(cosh(z)) - t*x;
   
   K2 = x^2 + (1-x)/(2*u)
-  K2[u<1e-5 & u>-1e-5] = x^2 - 1/3 + 2/15 * (2*u)
+  K2[u<1e-5 & u>-1e-5] = x^2 - 1/3 - 2/15 * (2*u)
 
   spa = (0.5*n/pi)^0.5 * K2^-0.5 * exp(n*phi)
 
@@ -475,6 +476,19 @@ if (FALSE)
                                 ## rrtigauss ##
 ################################################################################
 
+## pigauss - cumulative distribution function for Inv-Gauss(mu, lambda).
+##------------------------------------------------------------------------------
+pigauss <- function(x, Z=1, lambda=1)
+{
+  ## I believe this works when Z = 0
+  ## Z = 1/mu
+  b = sqrt(lambda / x) * (x * Z - 1);
+  a = sqrt(lambda / x) * (x * Z + 1) * -1.0;
+  y = exp(pnorm(b, log.p=TRUE)) + exp(2 * lambda * Z + pnorm(a, log.p=TRUE));
+                                        # y2 = 2 * pnorm(-1.0 / sqrt(x));
+  y
+}
+
 rrtinvch2.1 <- function(scale, trnc=1)
 {
   R = trnc / scale
@@ -665,6 +679,8 @@ if (FALSE)
   
 }
 
+##------------------------------------------------------------------------------
+## Generate sample for J^*(n,z) using SP approx.
 sp.sampler.1 <- function(n=1, z=0, maxiter=100)
 {
   if (n < 1) print("sp.sampler.1: n must be >= 1.")
@@ -677,10 +693,14 @@ sp.sampler.1 <- function(n=1, z=0, maxiter=100)
   ## xl = mid / kappa
   ## xr = mid * kappa
 
+  ## cat("xl, md, xr:", xl, mid, xr, "\n");
+
   v.mid  = v.func(mid)
   K2.mid = mid^2 + (1-mid) / v.mid
   al     = mid^3 / K2.mid
   ar     = mid^2 / K2.mid
+
+  ## cat("vmd, K2md, al, ar:", v.mid, K2.mid, al, ar, "\n");
 
   tl = tangent.lines.eta(c(xl,xr), z, mid)
   rl = -tl$slope[1]
@@ -692,6 +712,8 @@ sp.sampler.1 <- function(n=1, z=0, maxiter=100)
   ## rr = rrb + 0.5 * z^2
   ## il = log(cosh(z)) + ilb
   ## ir = log(cosh(z)) + irb
+
+  ## cat("rl, rr, il, ir:", rl, rr, il, ir, "\n")
   
   wl = al^0.5 * exp(-n*sqrt(2*rl) + n * il + 0.5*n - 0.5*n*(1-1/mid)) *
     pigauss(mid, Z=sqrt(2*rl), lambda=n)
@@ -700,6 +722,8 @@ sp.sampler.1 <- function(n=1, z=0, maxiter=100)
     gamma(n) * pgamma(mid, shape=n, rate=n * rr, lower=FALSE)
   
   w  = wl + wr
+
+  ## cat("wl, wr:", wl, wr, "\n")
 
   go   = TRUE
   iter = 0
@@ -711,15 +735,15 @@ sp.sampler.1 <- function(n=1, z=0, maxiter=100)
     
     if (w*runif(1) < wl) {
       ## sample left
-      X  = rrtigauss.1(mu=1/sqrt(2*rl), lambda=n, trnc=1)
-      ## while (X > 1) X = rigauss.1(1/sqrt(2*rl), n)
+      X  = rrtigauss.1(mu=1/sqrt(2*rl), lambda=n, trnc=mid)
+      ## while (X > mid) X = rigauss.1(1/sqrt(2*rl), n)
       phi.ev = n * (-rl * X + il) + 0.5 * n * ( (1-1/X) - (1-1/mid))
       FX = al^0.5 * (0.5 * n / pi)^0.5 * X^(-1.5) * exp(phi.ev);
 
     }
     else {
       ## sample right
-      X  = rltgamma.dagpunar.1(shape=n, rate=n*rr, trnc=1)
+      X  = rltgamma.dagpunar.1(shape=n, rate=n*rr, trnc=mid)
       phi.ev = n * (-rr * X + ir) + n * (log(X) - log(mid))
       FX = ar^0.5 * (0.5 * n / pi)^0.5 * exp(phi.ev) / X;
     }
@@ -731,7 +755,7 @@ sp.sampler.1 <- function(n=1, z=0, maxiter=100)
     if (FX*runif(1) < spa$spa) go = FALSE
     
   }
-  
+
   out = list(x=X, iter=iter, wl=wl, wr=wr)
   out
 }
@@ -749,6 +773,21 @@ sp.sampler <- function(num, n=1, z=0, return.df=FALSE)
   df
 }
 
+rpg.sp.R <- function(num, n=1, z=0, return.df=FALSE)
+{
+  z = 0.5 * z;
+  x  = rep(0, num)
+  df = data.frame(x=x, iter=x)
+  for (i in 1:num) {
+    temp = sp.sampler.1(n,z)
+    df$x[i] = temp$x
+    df$iter[i] = temp$iter
+  }
+  df$x = 0.25 * n * df$x
+  if (!return.df) df = df$x
+  df
+}
+
 ##------------------------------------------------------------------------------
                                 ## UNIT TEST ##
 ##------------------------------------------------------------------------------
@@ -758,7 +797,7 @@ if (FALSE)
 
   ## source("SPSample.R")
   n = 10
-  z = 100
+  z = 10
 
   dx = 0.001
   xgrid = seq(dx*5, 0.2, dx)
@@ -803,5 +842,83 @@ if (FALSE)
 
   c(mean(draw.jj), var(draw.jj))
   c(mean(df$x), var(df$x))
+  
+}
+
+################################################################################
+
+################################################################################
+
+if (FALSE)
+{
+
+  ## source("SPSample.R")
+  source("ManualLoad.R")
+
+  nsamp = 5000
+  n = 1
+  z = 0
+
+  seed = sample.int(10000, 1)
+  ## seed = 8922
+
+  set.seed(seed)
+  samp.1 = rpg.sp.R(nsamp, n, z)
+  ## samp.d = rpg.devroye(nsamp, n, z)
+  set.seed(seed)
+  samp.4 = rpg.sp(nsamp, n, z)
+  
+  mean(samp.1)
+  ## mean(samp.d)
+  mean(samp.4)
+
+}
+
+if (FALSE)
+{
+
+  ## source("SPSample.R")
+  source("ManualLoad.R")
+  
+  nsamp = 100000
+  n = 100
+  z = 1
+
+  start.time = proc.time()
+  samp.sp = rpg.sp(nsamp, n, z, track.iter=TRUE)
+  time.sp = proc.time() - start.time
+
+  start.time = proc.time()
+  samp.ga = rpg.gamma(nsamp, n, z)
+  time.ga = proc.time() - start.time
+
+  start.time = proc.time()
+  samp.dv = rpg.devroye(nsamp, n, z)
+  time.dv = proc.time() - start.time
+
+  start.time = proc.time()
+  samp.R = rpg.sp.R(2, n, z)
+  time.R = proc.time() - start.time
+
+  time.sp
+  time.ga
+  time.dv
+  time.R
+  
+  summary(samp.sp$samp)
+  summary(samp.ga)
+  summary(samp.dv)
+  summary(samp.R )
+}
+
+if (FALSE)
+{
+
+  ygrid = exp(seq(-4,4,0.1) * log(2))
+  vgrid = v.func(ygrid)
+  plot(vgrid, ygrid)
+
+  write(ygrid, "y.txt", sep=",")
+  write(vgrid, "v.txt", sep=",")
   
 }

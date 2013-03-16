@@ -83,6 +83,34 @@ rpg.alt <- function(num=1, h=1, z=0.0)
     OUT[[1]]
 }
 
+
+## Draw PG(h, z) using SP approx where h is \geq 1.
+##------------------------------------------------------------------------------
+rpg.sp <- function(num=1, h=1, z=0.0, track.iter=FALSE)
+{
+    ## Check Parameters.
+    if (any(h<1)) {
+      print("h must be >= 1.");
+      return(NA);
+    }
+
+    x = rep(0, num);
+    iter = rep(0, num);
+
+    if (length(h) != num) { h = array(h, num); }
+    if (length(z) != num) { z = array(z, num); }
+
+    ## Faster if we do not track iter.
+    OUT = .C("rpg_sp", x, h, z, as.integer(num), as.integer(iter), PACKAGE="BayesLogit");
+
+    out = list()
+    if (!track.iter)
+      out = OUT[[1]]
+    else
+      out = list(samp=OUT[[1]], iter=OUT[[5]])
+    out
+}
+
 ## Draw PG(n, z)
 ##------------------------------------------------------------------------------
 ## rpg <- function(num=1, n=1, z=0.0, trunc=200)

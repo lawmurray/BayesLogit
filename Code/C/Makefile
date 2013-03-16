@@ -32,12 +32,13 @@ LNK = $(MATLNK) $(RLNK)
 DEP = RRNG.o
 endif
 
-OPTS = -O2 $(USE_R)
+OPTS = -O2 $(USE_R) -g -DNDEBUG
+OPTS = -g -Wall -std=c++98  $(USE_R) ## -Wshadow
 ## OPTS = -g -Wall -pedantic $(USE_R)
 ## Note: pedantic kills eigen.
 
 sobj = LogitWrapper.so FSF_nmix.so FFBS.so hh_lambda.so
-obj = LogitWrapper.o FSF_nmix.o AR1.o CUBS.o CUBS_update.o FFBS.o hh_lambda.o RNG.o Matrix.o MatrixFrame.o $(DEP)
+obj = LogitWrapper.o FSF_nmix.o AR1.o CUBS.o CUBS_update.o InvertY.o FFBS.o hh_lambda.o RNG.o Matrix.o MatrixFrame.o $(DEP)
 
 ## TESTS -- set USE_R = ""
 
@@ -59,6 +60,9 @@ test_cubs : CUBS_update.cpp CUBS_update.h
 test_pgalt : test_pgalt.c PolyaGammaAlt.hpp BayesLogit.so
 	g++ -o test_pgalt BayesLogit.so test_pgalt.c $(OPTS) $(INC) $(LNK)
 
+test_pgsp : test_pgsp.c PolyaGammaSP.hpp BayesLogit.so 
+	g++ -o test_pgsp BayesLogit.so test_pgsp.c $(OPTS) $(INC) $(LNK)
+
 ################################################################################
 
 MatRNG.so : Matrix.o RNG.o
@@ -68,7 +72,7 @@ MatRNG.so : Matrix.o RNG.o
 BayesLogit.so : $(obj)
 	g++ -o BayesLogit.so $(obj) $(OPTS) -shared -fPIC $(LNK) $(GLIB) -lgsl
 
-LogitWrapper.o : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp PolyaGamma.hpp PolyaGammaAlt.hpp
+LogitWrapper.o : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp PolyaGamma.hpp PolyaGammaAlt.hpp PolyaGammaSP.hpp
 	g++ $(OPTS) $(INC) -fPIC -o LogitWrapper.o -c LogitWrapper.cpp
 
 FSF_nmix.o : FSF_nmix.hpp FSF_nmix.cpp
@@ -82,6 +86,9 @@ CUBS.o : CUBS.h CUBS.cpp
 
 CUBS_update.o : CUBS_update.cpp CUBS_update.h
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o CUBS_update.o -c CUBS_update.cpp
+
+InvertY.o : InvertY.hpp InvertY.cpp
+	g++ $(OPTS) $(INC) $(GINC) -fPIC -o InvertY.o -c InvertY.cpp
 
 FFBS.o : FFBS.h FFBS.cpp
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o FFBS.o -c FFBS.cpp 
@@ -99,10 +106,10 @@ RNG.o : $(DEP)
 	g++ $(OPTS) $(INC) -fPIC -c include/RNG/RNG.cpp -o RNG.o 
 
 GRNG.o: 
-	g++ $(INC) $(OPTs) -fPIC -c include/RNG/GRNG.cpp -o GRNG.o
+	g++ $(INC) $(OPTS) -fPIC -c include/RNG/GRNG.cpp -o GRNG.o
 
 RRNG.o: 
-	g++ $(INC) $(OPTs) -fPIC -c include/RNG/RRNG.cpp -o RRNG.o
+	g++ $(INC) $(OPTS) -fPIC -c include/RNG/RRNG.cpp -o RRNG.o
 
 ## CLEAN
 

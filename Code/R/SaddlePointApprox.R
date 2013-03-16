@@ -242,8 +242,8 @@ if (FALSE)
   z = 0.0
   n = 1.0
 
-  umin = -40
-  umax = (pi/2)^2 - 1
+  umin = -30
+  umax = (pi/2)^2 - 0.5
   du = 0.1
   ugrid = seq(umin, umax, du)
   
@@ -295,8 +295,8 @@ if (FALSE)
   a1 = x.a1(ugrid, n, z)
   lines(xgrid, log(a1), col=2, lty=2)
 
-  a2 = x.a2(ugrid, n, z)
-  lines(xgrid, log(a2), col=3, lty=3)
+  ## a2 = x.a2(ugrid, n, z)
+  ## lines(xgrid, log(a2), col=3, lty=3)
 
   ##----------------------------------------------------------------------------
 
@@ -308,14 +308,14 @@ if (FALSE)
   deltaxgrid = delta.val(xgrid)
   
   plot(xgrid, (kgrid - tgrid * xgrid) - deltaxgrid, col=1, type="l",
-       xlab="x", ylab="phi(x) scale", main="eta envelope")
+       xlab="x", ylab="phi(x)-phi(1) scale", main="eta envelope")
   lines(xgrid, -1*deltaxgrid, col=1, lty=2)
 
   lines(xgrid, (kgrid - tgrid * xgrid), col=2, lty=3)
   lines(equigrid, zerogrid, col=2, lty=4)
 
-  x.l = 0.5
-  x.r = 1.5
+  x.l = .75
+  x.r = 4/3
   l.u = invert.x(x.l, xgrid, ugrid)
   u.r = invert.x(x.r, xgrid, ugrid)
   t.l = 0.5 * l.u
@@ -331,10 +331,12 @@ if (FALSE)
   right.line = (xgrid - x.r) * right.slope + r.int
 
   pw.line = -deltaxgrid
-  left.cross = which.min(abs(left.line+deltaxgrid))
+  ## left.cross = which.min(abs(left.line+deltaxgrid))
+  left.cross = which.min(abs(xgrid-1))
   left.idx = 1:left.cross
   pw.line[left.idx] = left.line[1:left.cross]
-  right.cross = which.min(abs(right.line+deltaxgrid))
+  ## right.cross = which.min(abs(right.line+deltaxgrid))
+  right.cross = which.min(abs(xgrid-1))
   right.idx = right.cross:length(pw.line)
   pw.line[right.idx] = right.line[right.idx]
  
@@ -343,11 +345,11 @@ if (FALSE)
   ## lines(xgrid, right.line, col=3)
   lines(xgrid, pw.line, col=3)
 
-  legend("bottom", legend=c("eta(x)-phi(m)", "phi(x)-phi(m)", "-delta(x)", "eta envelope"),
+  legend("bottom", legend=c("eta(x)-phi(1)", "phi(x)-phi(1)", "-delta(x)", "eta envelope"),
          col=c(1,2,1,3), lty=c(1,3,2,1))
   
   plot(xgrid, (kgrid - tgrid * xgrid), col=2, type="l", lty=1,
-       xlab="x", ylab="phi(x) scale", main="phi envelope")
+       xlab="x", ylab="phi(x)-phi(1) scale", main="phi envelope")
   lines(xgrid, pw.line + deltaxgrid, col=3)
   lines(equigrid, zerogrid, col=2, lty=4)
 
