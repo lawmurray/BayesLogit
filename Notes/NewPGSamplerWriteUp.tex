@@ -33,7 +33,7 @@
 %\lhead{Left Header}
 %\rhead{Right Header}
 
-\title{Updated \Polya-Gamma Sampling}
+\title{Improved \Polya-Gamma Sampling}
 
 \author{
   Nicholas G. Polson \\ \\
@@ -85,7 +85,7 @@ large, as may be the case for count data.  Consequently, in terms of effective
 sampling rate, \cite{polson-etal-2013} find that their method works well for
 binomial logistic regression when the number of trials at each observation is
 not too great, but that it does not work as well as the discrete mixture of
-normals approach advaocated by \cite{fruhwirth-schnatter-etal-2009} for negative
+normals approach advocated by \cite{fruhwirth-schnatter-etal-2009} for negative
 binomial regression.  However, \cite{polson-etal-2013} find that, in terms of
 effective sample size, the \Polya-Gamma approach is superior to all methods for
 both binomial logistic regression and negative binomial regression.  Thus, if
@@ -97,8 +97,7 @@ logistic likelihoods.
 Herein, we attempt to make incremental improvements upon the \Polya-Gamma
 sampler presented in \cite{polson-etal-2013}.  Our goal is two fold: first,
 improve \Polya-Gamma sampling for large shape parameters; second, find a way to
-sample \Polya-Gamma random variates for non-integral shape parameters.  We
-address these issues in Sections \ref{sec:largeb} and \ref{sec:smallb}.
+sample \Polya-Gamma random variates for non-integral shape parameters.
 
 \section{Preliminaries}
 
@@ -138,33 +137,33 @@ M(t; b,z) = \frac{\cosh^b(z)}{\cos^{b}(\sqrt{2t - z^2})}
 as $\cosh(\sqrt{-u}) = \cos(\sqrt{u})$.  We denote the cumulant generating
 function as $K(t; b,z) = \log M(t; b,z)$.  A key step in what follows relies on
 the fact that one can represent the cosine function as an infinite product of
-monomials.  In particular, the Weierstrauss factorization theorem says that
+monomials.  In particular, the Weierstrass factorization theorem says that
 \[
-\cos(\sqrt{2t}) = \prod_{n=0}^\infty \Big( 1 - \frac{t}{d_n} \Big), \; 
-  d_n = \frac{\pi^2}{2} \Big( n + \frac{1}{2} \Big)^2.
+\cos(\sqrt{2t}) = \prod_{n=0}^\infty \Big( 1 - \frac{t}{c_n} \Big), \; 
+  c_n = \frac{\pi^2}{2} \Big( n + \frac{1}{2} \Big)^2.
 \]
 Employing this for both the numerator and denominator of the moment generating
 function shows that
 \[
-M(t; b, z) = \prod_{n=0}^\infty \Big( 1 - \frac{t}{c_n} \Big)^{-b}, \; 
-  c_n = \frac{\pi^2}{2} \Big( n + \frac{1}{2} \Big)^2 + \frac{z^2}{2}.
+M(t; b, z) = \prod_{n=0}^\infty \Big( 1 - \frac{t}{d_n} \Big)^{-b}, \; 
+  d_n = \frac{\pi^2}{2} \Big( n + \frac{1}{2} \Big)^2 + \frac{z^2}{2}.
 \]
-Thus, each memeber of $\JJ(b,z)$ is an infinite convolution of gamma
+Thus, each member of $\JJ(b,z)$ is an infinite convolution of gamma
 distributions, and can be expressed as
 \[
-\JJ(b,z) \sim \sum_{n=0}^\infty \frac{g_n}{c_n} \, , \; g_n \simiid Ga(b,1).
+\JJ(b,z) \sim \sum_{n=0}^\infty \frac{g_n}{d_n} \, , \; g_n \simiid Ga(b,1).
 \]
 One may truncate this sum at, for instance, $n=200$, to generate approximate
 draws from $\JJ(b,z)$ when $b$ is not an integer; however, this is extremely
 slow, and, as shown below, one can devise much better approximations.  The
-moment generating fucntion also shows that if $X_1 \sim \JJ(b_1,z)$ and $X_2
+moment generating function also shows that if $X_1 \sim \JJ(b_1,z)$ and $X_2
 \sim \JJ(b_2, z)$ that $X_1 + X_2 \sim \JJ(b_1 + b_2, z)$.
 
 \section{An Alternate Density}
 \label{sec:alternate-density}
 
 The $\JJ(1,z)$ sampler in \cite{polson-etal-2013}, which is motivated by
-\cite{devroye-2009}, relies on a reciprical relationship noticed by
+\cite{devroye-2009}, relies on a reciprocal relationship noticed by
 \cite{ciesielski-taylor-1962}, which shows that in addition to
 (\ref{eqn:igamma-rep}) one may represent the density of a $\JJ(1)$ random
 variable as
@@ -172,16 +171,16 @@ variable as
 \sum_{n=0}^\infty (-1)^n \pi \Big(n+\frac{1}{2}\Big) e^{(n+1/2)^2 \pi^2 x / 2}.
 \]
 By pasting these two densities together, one arrives at an extremely efficient
-sampler.  Unfortunatley, there is no known general reciprical relationship;
+sampler.  Unfortunately, there is no known general reciprocal relationship;
 however, \cite{biane-etal-2001} provide an alternate density for the $\JJ(2)$
-distribution based upon a reciprical relationship with another random variable.
+distribution based upon a reciprocal relationship with another random variable.
 
-While there may not be an obvious reciprical relationship to use, one may find
+While there may not be an obvious reciprocal relationship to use, one may find
 other alternate representations for the density of $\JJ(h)$ random variables
 when $h$ is a positive integer.  Exploiting an idea from \cite{kent-1980} for
 infinite convolutions of exponential random variables, one may invert the moment
-generating function using parial fractions.  Assume $z=0$, so that we are
-working with an untilted $\JJ(h)$ distribution.  Consider its moment generating
+generating function using partial fractions.  Assume $z=0$, so that we are
+working with an untitled $\JJ(h)$ distribution.  Consider its moment generating
 function,
 \begin{equation}
 \label{eqn:mgf-product}
@@ -243,9 +242,9 @@ the convergence may be slow.
 
 However, the most important coefficient, $b_h^{(i)}$, is already known.  Make
 the dependence of $b_m^{(i)}$ on $h$ explicit by writing $b_m^{(i)}(h)$.  From
-the formuals above we know that \( b_h^{(i)}(h) = \nu_h(c_i) \) and that \(
+the formulas above we know that \( b_h^{(i)}(h) = \nu_h(c_i) \) and that \(
 \nu_h(c_i) = \exp(\psi_1(c_i))^h.  \) But \( \exp(\psi_1(c_i)) = \nu_1(c_i) =
-b_1^{(i)}(1).  \) From the reciprical relationship provided at the start of the
+b_1^{(i)}(1).  \) From the reciprocal relationship provided at the start of the
 section, we know that \( b_1^{(i)}(1) = (-1)^i \sqrt{2 c_i}.  \) Thus,
 \[
 A_{ih} = b_h^{(i)}(h) = (-1)^{ih} (2 c_i)^{h/2}.
@@ -356,55 +355,77 @@ this approach, though with a few modifications.  In particular, we will bound
 the exponent of $g_n(x)$ rather than the kernel itself employing functions more
 complex than polynomials.  (We have replaced $\bar x$ with $x$ for notational
 ease.)  One may phrase the minimization problem above in terms of convex
-duality, in which the exponenent of $g_n(x)$ is
+duality, in which the exponent of $g_n(x)$ is
 \[
-\phi(x) = \min_{s} \Big\{ K(s) - s x \Big\}
+\phi(x) = \min_{s \in \bbR} \Big\{ K(s) - s x \Big\}
 \]
-where $K(t)$ is the cumulant generating fuction: $K(t)$ is indeed convex for
-$\JJ(1)$.  The connection to duality will help us find a good bound for
-$\phi(x)$ and the following facts will be useful.
+where $K(t)$ is the cumulant generating function: $K(t)$ is indeed convex for
+$\JJ(1,z)$.  When needed, we will write $K_z(t)$ to denote the explicitly
+dependence upon $z$.  The connection to duality will help us find a good bound
+for $\phi(x)$ and the following facts will be useful.
 
 \begin{fact}
 \label{fact:dual}
-Let $\phi(x)$ be the convex dual of $K$.  Let 
+Let $\phi(x)$ be the concave dual of $K$.  Let
 \[
-t(x) = \argmin{s} \Big\{ K(s) - s x \Big\}.
+t(x) = \argmin{s \in \bbR} \Big\{ K(s) - s x \Big\}.
 \]
 Assume that when we write $t$ we are implicitly evaluating it at $x$.  Then
 \begin{enumerate}
 \item $\displaystyle K'(t) = x$;
+\item $\displaystyle \phi(x) = K(t) - t x$;
 \item $\displaystyle \phi'(x) = -t$;
+% \[
+% \phi'(x) = K'(t) \dd{t}{x} - \dd{t}{x} x - t = -t.
+% \]
 \item $\displaystyle \dd{t}{x}(x) = [K''(t)]^{-1}$;
+% Using (1)
+% \[
+% K''(t) \dd{t}{x}(x) = 1 \implies  \dd{t}{x}(x) = [K''(t)]^{-1}.
+% \]
 \item $\displaystyle \dd{^2 t}{x^2}(x) = - \frac{K'''(t)}{(K''(t))^3}$.
+% Differentiate $\dd{t}{x}$ above and apply (4).
+\item As seen by item (3), $\phi'(x)$ is maximized when $t(x)=0$.  Thus, 
+\[
+m = \argmax{x} \phi(x) \; \text{ is attained when } m = \utan{z}.
+\]
 \end{enumerate}
-As seen by item (2), $\phi'(x)$ is maximized when $t(x)=0$.
+
 \end{fact}
-Further, it will be helpful to have the derivatives of $K$ on hand and a few
-facts about $t(x)$.
+
+Sometimes it will be helpful to work with a shifted version of $t$: \( u = t -
+z^2/2.  \) To reiterate, we will go between three different variables: $x, t, u$
+characterized by the transformations
+\begin{enumerate}
+\item $x = K'(t)$ and
+\item $u = t - z^2 / 2$.
+\end{enumerate}
+It will also be helpful to have the derivatives of $K$ on hand and a few facts
+about $x$ and $u$.
 \begin{fact}
 \label{fact:cgf-derivatives}
-  Recall that $K(s) = - \log \cos \sqrt{2s}$ is the
-  cumulant generating function of $\JJ(1)$.  Then its derivatives are:
+Recall that $K(t) = \log \cosh(z) - \log \cos \sqrt{2u}$ is the cumulant
+generating function of $\JJ(1,z)$.  Its derivatives, with respect to $t$, are:
 \begin{enumerate}
-\item $\displaystyle K'(s) = \utan{2s}$;
-\item $\displaystyle K''(s) = \frac{\tan^2(\sqrt{2s})}{2s} + \frac{1}{2s} \Big(1
-  - \utan{2s} \Big)$.
+\item $\displaystyle K'(t) = \utan{2u}$;
+\item $\displaystyle K''(t) = \frac{\tan^2(\sqrt{2u})}{2u} + \frac{1}{2u} \Big(1
+  - \utan{2u} \Big)$.
 \end{enumerate}
 As shown above, $K'(t) = x$.  When we evaluate $K''$ at $t(x)$ we have
 \[
-K''(t) = x^2 + \frac{1}{2t} (1 - x).
+K''(t) = x^2 + \frac{1}{2u} (1 - x).
 \]
-We may write $\utan{u}$ piecewise as
+We may write $\utan{s}$ piecewise as
 \[
-\utan{u} = 
+\utan{s} = 
 \begin{cases}
-\utan{u}, & u > 0 \\
-\utanh{|u|},  & u < 0 \\
-1, & u = 0.
+\utan{s}, & s > 0 \\
+\utanh{|s|},  & s < 0 \\
+1, & s = 0.
 \end{cases}
 \]
-The last componenet can be seen by taking the Taylor expansion around $u=0$.
-Thus, $t < 0 \iff x < 1$, $t> 0 \iff x > 1$, and $t=0 \iff x = 1$.
+The last component can be seen by taking the Taylor expansion around $s=0$.
+Thus, $u < 0 \iff x < 1$, $u> 0 \iff x > 1$, and $u=0 \iff x = 1$.
 \end{fact}
 
 This leads to the following two claims, which will help us bound the
@@ -413,8 +434,8 @@ exponent by the amount needed to match what we expect to be the shape of the
 tails found in Remark \ref{remark:tails}.
 
 \begin{lemma}
-  The function $\eta_r(x) = \phi(x) - \log(x)$ is concave for all $x > 0$ and
-  strictly concave when $x \neq 1$.
+  The function $\eta_r(x) = \phi(x) - (\log(x) - \log(m))$ is concave
+  for all $x > 0$ and strictly concave when $x \neq 1$.
 \end{lemma}
 
 \begin{proof}
@@ -428,15 +449,16 @@ and
 \]
 Using Fact \ref{fact:dual}, this is negative if and only if
 \[
-[K''(t)]^{-1} \geq \frac{1}{x^2} \iff x^2 \geq K''(t) \iff 0 \geq \frac{(1-x)}{2t}.
+[K''(t)]^{-1} \geq \frac{1}{x^2} \iff x^2 \geq K''(t) \iff 0 \geq \frac{(1-x)}{2u}.
 \]
-When $x > 1$, $t(x) > 0$, and $\eta_r''(x) < 0$.  When $x < 1$, $t(x) < 0$, and
-$\eta_r''(x) < 0$.  Continuity of $K''$ ensures that $\eta_r(0) \leq 0$.
+When $x > 1$, $u(x) > 0$, and $\eta_r''(x) < 0$.  When $x < 1$, $u(x) < 0$, and
+$\eta_r''(x) < 0$.  Continuity of $K''$ ensures that $\eta_r''(0) \leq 0$.
 \end{proof}
 
 \begin{lemma}
-  The function $\eta_l(x) = \phi(x) - \frac{1}{2} \Big(1- \frac{1}{x}\Big)$ is concave for
-  all $x > 0$ and strictly concave for $x \neq 1$.
+  The function $\eta_l(x) = \phi(x) - \Big[\frac{1}{2} \Big(1- \frac{1}{x}\Big)
+  - \frac{1}{2} \Big(1- \frac{1}{m}\Big)\Big]$ is concave for all $x > 0$ and
+  strictly concave for $x \neq 1$.
 \end{lemma}
 
 \begin{proof}
@@ -451,19 +473,19 @@ and
 Using Fact \ref{fact:dual}, this is negative if and only if
 \[
 [K''(t)]^{-1} \geq \frac{1}{x^3} \iff x^3 \geq K''(t) \iff (x^2 +
-\frac{1}{2t})(x-1) \geq 0.
+\frac{1}{2u})(x-1) \geq 0.
 \]
-Again, we know that when $x > 1$, $t > 0$, and hence $\eta_l(x) < 0$.  When $x <
-1$ we need to show that $x^2 + 1/2t < 0$.  This is equivalent to showing that
+Again, we know that when $x > 1$, $u > 0$, and hence $\eta_l(x) < 0$.  When $x <
+1$ we need to show that $x^2 + 1/(2u) < 0$.  This is equivalent to showing that
 \[
-x^2 < -\frac{1}{2t} \iff 2t x^2 > -1, \, t < 0.
+x^2 < -\frac{1}{2u} \iff 2u x^2 > -1, \, u < 0.
 \]
 That is
 \[
-\tan^2{\sqrt{2t}} > -1 \iff \tanh{\sqrt{|2t|}} > -1, \, \text{ for } t < 0,
+\tan^2{\sqrt{2u}} > -1 \iff \tanh{\sqrt{|2u|}} > -1, \, \text{ for } u < 0,
 \]
 which indeed holds.  Thus, when $x < 1$, $\eta_l(x) < 0$.  Again, continuity of
-$K$ then ensures that $\eta_l(0) \leq 0$.
+$K$ then ensures that $\eta_l''(0) \leq 0$.
 \end{proof}
 
 These two lemmas ensure the following claim.
@@ -477,26 +499,28 @@ The function
 \end{cases}
 \]
 is concave.  Let $\delta(x) = \phi(x) - \eta(x)$ denote the difference between
-$\phi(x)$ and $\eta(x)$.
+$\phi(x)$ and $\eta(x)$.  Since $\phi(x) - \phi(m) \leq 0$, $\eta(x) - \phi(m)
+\leq - \delta(x)$.
 \end{claim}
 
-We may create an enclosing envelope in the following way.
+We may create an enclosing envelope in the following way.  See figure
+\ref{fig:envelope} for a graphical interpretation.
+
 \begin{enumerate}
-\item Pick a point $x_l < 1$.  Find the line $L_\ell$ tangent to $\eta$ at
-  $x_l$.  Use this line as the leftmost envelope of $\eta$ until $L_\ell$
-  intersects $-\delta$.  Let $w_l$ denote the $x$-value at that point of
-  intersection.
-\item Pick a point $x_r > 1$.  Find the line $L_r$ tangent to $\eta$ at $x_r$.
-  Use this line as the rightmost envelope of $\eta$ until $L_r$ intersects
-  $-\delta$.  Let $w_r$ denote the $x$-value of that point of intersection.
-\item Use $-\delta$ as the envelope of $\eta$ for $x \in [w_l, w_r]$.
+\item Pick a point $q = (1, \phi(1)+\alpha)$, $\alpha>0$.  (Or pick $x_l$ and
+  $x_r$ arbitrarily.)
+\item Find the tangent line $L_\ell(x)$ that touches $\eta(x)$ at some $x_l < 1$
+  and that passes through $q$.  Use this line as the leftmost envelope of
+  $\eta(x)$ on $(0,1]$
+\item Find the tangent line $L_r(x)$ that touches $\eta(x)$ at some $x_r > 1$
+  and that passes through $q$.  Use this line as the rightmost envelope of
+  $\eta(x)$ on $[1,\infty)$.
 \item That is, let
 \[
 e(x) = 
 \begin{cases}
-L_\ell(x), & x < w_l, \\
--\delta(x), & x \in [w_l, w_r], \\
-L_r(x), & x > w_r.
+L_\ell(x), & x < 1, \\
+L_r(x), & x \geq 1.
 \end{cases}
 \]
 \end{enumerate}
@@ -505,10 +529,52 @@ Then the envelope for $\phi(x)$ is
 \phi(x) \leq e(x) + \delta(x).
 \]
 
+\begin{lemma}
+  There are constants $1> \alpha_\ell, \alpha_r > 0$ such that the function
+  $K''(t)$ satisfies
+\[
+K''(t) \geq  \alpha_\ell(z) x^3 \; \text{ for } x < 1
+\]
+and
+\[
+K''(t) \geq  \alpha_r(z) x^2 \; \text{ for } x > 1.
+\]
+\end{lemma}
+
+Thus, we may dominate the left most portion of $g_n$ with a inverse gaussian kernel:
+\[
+x^{-3/2} \exp \Big( - \frac{n}{2x} + n e_\ell(x) \Big);
+\]
+and we may dominate the right most portion of $g_n$ with a gamma kernel:
+\[
+x^{n-1} \exp \Big( n e_r(x) \Big).
+\]
+
 \begin{figure}
 \centering
 \includegraphics[scale=0.5]{eta-phi-envelope.png}
+\caption{\label{fig:envelope} The saddle point approximation is proportional to
+  $[K''(t(x))]^{-0.5} \exp( n \phi(x) )$.  On the left, the function $\eta(x)$
+  is a solid black curve, which is bounded from above by the solid green curve
+  $e(x)$ (for envelope).  On the right, the function $\phi(x)$ is plotted in red
+  while the envelope $e(x) + \delta(x)$ is plotted in green.}
 \end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.5]{sp-jj0.png}
+\caption{\label{fig:saddlepoint} The black line in $\JJ(1)$.  The blue, dotted
+  line is the saddle point approximation.}
+\end{figure}
+
+% \section{To do:}
+
+% To do:
+% \begin{enumerate}
+% \item Need to pick $x_l$, $x_r$ more methodically.
+% \item Normalize densities above (already have functions).
+% \item Calculate weights.
+% \end{enumerate}
 
 % \section{Sampling $\JJ(b,z)$ for small $b$.}
 % \label{sec:smallb}

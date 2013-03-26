@@ -43,8 +43,9 @@
 
 In this paper, we show how the \Polya-Gamma data augmentation technique of
 \cite{polson-etal-2012} may be used for posterior inference in dynamic
-generalized linear models with logistic likelihoods.  Further, we show that this
-method outperforms several competitors.
+generalized linear models with logistic likelihoods.  Further, we perform an
+suite of empirical benchmarks to show that the \Polya-Gamma data augmentation
+technique out-performs other MCMC methods for binary logistic regression.
 
 Generalized linear models extend linear models by accomodating non-normal
 responses \citep{mccullagh-nelder-1989}.  In a generalized linear model (GLM)
@@ -59,36 +60,42 @@ must appeal to Metropolis-Hastings, Gibbs sampling with data augmentation, or
 some other MCMC method.
 
 The challenge of generating posterior samples is exacerbated for dynamic models
-since there are many more parameters, or states rather, to estimate, which makes
-direct extensions of Metropolis-Hastings samplers from the static to dynamic
-case difficult.  This is the case for GLMs with logistic likelihoods, a subclass
-that has observation densities of the form
+since there are many more unknown quantities to estimate than in the static
+case, which makes, for instance, direct extensions of Metropolis-Hastings
+samplers difficult.  This is the case for GLMs with logistic likelihoods, a
+subclass of GLMS that has observation mass functions of the form
 \[
 p(y | \psi) \propto h(y) \prod_{i=1}^n
-\frac{(e^{\psi_i})^{a_i(y)}}{(1+e^{\psi_i})^{b_i(y)}}
+\frac{(e^{\psi_i})^{a_i(y)}}{(1+e^{\psi_i})^{b_i(y)}} \, ,
 \]
 and for which \Polya-Gamma data augmentation is applicable.  Such likelihoods
-arise when modeling proportions or counts.  For instance, binomial logistic
-regression and negative binomial regression may be written in the form above.
-These two models alone are useful in a wide variety of applications.  The
-dynamic versions of these models are used in economics [McFadden], epidemiology
-[cite Lauren], ecology [cite Lauren], and neuroscience [cite Jonathan and Larry]
-amongst others.  Hence, it is important to know the most efficient methods for
-generating posterior samples for such models.
+arise when modeling proportions or counts.  For instance, the binomial logistic
+regression likelihood and the negative binomial regression likelihood may be
+written in the form above.  These two models alone are useful in a wide variety
+of applications.  Dynamic versions of these models are used in economics
+[McFadden], epidemiology [cite Lauren], ecology [cite Lauren], and neuroscience
+[cite Jonathan and Larry] amongst others.  Hence, it is important to know the
+most efficient methods for generating posterior samples for such models.
 
 This paper examines the relative merits of the three approaches for posterior
 inference in dynamic generalized linear models (GDLM) with logistic likelihoods:
-linear Bayes with conjugate updating and a Metroplis-Hastings step
-\citep{ravines-etal-2006}, a discrete mixture of normals approximation
-\citep{fruhwirth-schnatter-etal-2009, fussl-etal-2013}, and the \Polya-Gamma
-data augmentation scheme.  We show that the \Polya-Gamma technique has superior
-effective sample sizes and often superior effective sampling rates compared to
-the other methods.
+conjugate updating and backward sampling with a Metroplis-Hastings step
+\citep{ravines-etal-2006}, forward filter and backwards sampling using a
+discrete mixture of normals approximation data augmentation scheme
+\citep{fruhwirth-schnatter-etal-2009, fussl-etal-2013}, and forward filter and
+backwards sampling using the \Polya-Gamma data augmentation scheme.  We show
+that the \Polya-Gamma technique has superior effective sample sizes compared to
+the other methods and superior effective sampling rates in the case of binary
+logistic regression.  In general the \Polya-Gamma method works well for dyanmic
+binomial logistic regression or dynamic negative binomial regression when the
+responses are small integers.  This is due to the way in which \Polya-Gamma
+random variates are generated, which slows in proportion to the size of the
+response.
 
 The outline of the paper is as follows: Section 2 reviews other methods of
-inference for dynamic generalized linear models; Section 3 shows how one may use
-the \Polya-Gamma data augmentation technique in the dynamic setting; Section 4
-presents the benchmarking results; Section 5 concludes.
+inference for dynamic regression for exponential familes; Section 3 shows how
+one may use the \Polya-Gamma data augmentation technique in the dynamic setting;
+Section 4 presents the benchmarking results; Section 5 concludes.
 
 \section{Previous Efforts}
 
@@ -101,45 +108,47 @@ posterior samplers, though none has proved to be completely satisfactory.  A
 primary goal of any such sampler is to sample states jointly, like the filter
 forward backwards sampler (FFBS) of \cite{fruhwirth-schnatter-1994} and
 \cite{carter-kohn-1994}, since jointly sampling states tends to result in less
-autocorrelation than sampling the states component-wise, a technique suggested
+autocorrelation than sampling the states component-wise, an approach suggested
 by \cite{carlin-etal-1992} prior to the advent of the advent of the FFBS.
 However, the FFBS procedure requires Gaussian, linear state-space evolution
-equations and observation equations.  Absent these assumptions, as is the case
-with exponential families, the machinery of the FFBS breaks down.  To resurrect
-the FFBS one may approximate the posterior using a dynamic linear model (DLM)
-and then accept or reject using Metropolis-Hastings. or one may use data
-augmentation so that, conditinoally, the observations and states are generated
-by a DLM, though neither method is gaurenteed to work well.
+equations and observation equations.  Without these assumptions, as is the case
+with exponential families in general, the machinery of the FFBS breaks down.  To
+resurrect the FFBS, one may approximate the posterior with some convenient
+proposal density and then accept or reject using Metropolis-Hastings, or one may
+use data augmentation so that, conditinoally, the observations and states are
+generated by a DLM.  Neither method is gaurenteed to work well.
 
 \cite{gamerman-1998} discusses various Metropolis-Hastings based approaches, all
-of which rely on a Laplace approximation, that is iteratively reweighted least
-squares \citep{wedderburn-1974}, for generating proposals. Component-wise
-proposals have decent acceptance rates, though high autocorrelation between
-consecutive samples.  Joint proposals suffer from unacceptable small acceptance
-rates.  Gamerman's solution is to transform the problem so that one samples the
-innovation variances componenent-wise using a Laplace approximation and
-Metropolis-Hastings, arguing that the new coordinate system possesses less
-intrincinc correlation.  But this approach is more computationally intensize
-since one must transform the proposals back to the original coordinate system at
-each iteration to evaluate Metropolis-Hastings acceptance probability.
+of which rely on some Laplace-type approximation (and hence all of which can be
+phrased as iteratively reweighted least squares \citep{wedderburn-1974}) for
+generating proposals.  None of the various approaches is completely
+satisfactory: component-wise proposals have decent acceptance rates, though high
+autocorrelation between consecutive samples, while joint proposals suffer from
+unacceptably small acceptance rates.  Gamerman's solution is to transform the
+problem so that one samples the innovation variances componenent-wise using a
+Laplace approximation with Metropolis-Hastings update, arguing that the new
+coordinate system possesses less intrincinc correlation.  But this approach is
+more computationally intensize since one must transform the proposals back to
+the original coordinate system at each iteration to evaluate Metropolis-Hastings
+acceptance probability.
 
 \cite{shephard-pitt-1997} attempt to strike a balance between the
 autocorrelation of consecutive samples and the acceptance probabilities of
 proposed samples by drawing blocks of states.  Sampling in blocks reduces
-autocorrelation; restraining the size of the blocks ensures a reasonable
-Metropolis-Hastings acceptance probability.  However, their method suffers too
-since it cannot take a joint draw of the hidden states.
+autocorrelation while restraining the size of the blocks ensures a reasonable
+Metropolis-Hastings acceptance probability.  However, their method still suffers
+from autocorrelation between consecutive draws for the hidden states.
 
 More recently, techniques have emerged that do generate joint draws of the
 states.  \cite{ravines-etal-2006} built upon \cite{west-etal-1985} by adding a
 Metropolis-Hastings step to sample the states exactly.  Though this at first
-would seem like a poor choice due to high-dimensionality encountered in time
-series, they find that, in fact, the technique results in reasonable acceptance
-rates unlike a global Lapalce approximation.  The fact that conjugate update
-improves the Metropoli-Hastings proposal enough to allow for ``efficient'' joint
-draw is somewhat surprising.
+would seem like a poor choice due to high-dimensionality often encountered in
+time series, they find that, in fact, the technique results in reasonable
+acceptance rates unlike a global Lapalce approximation.  The fact that conjugate
+update improves the Metropoli-Hastings proposal enough to allow for
+``efficient'' joint draws is somewhat surprising.
 
-Fr\"{u}wirth-Schnatter and her colleagues have explored data augmentation
+Fr\"{u}hwirth-Schnatter and her colleagues have explored data augmentation
 techniques that rely upon discrete mixtures of normals to arrive at
 conditionally Gaussian posteriors in a variety of settings including binomial
 logistic regression and multinomial regression
@@ -149,26 +158,29 @@ logistic regression and multinomial regression
 data \citep{fruhwirth-schnatter-etal-2009}.  All of these techniques may be used
 in static and dynamic regressions.  While these methods work well, several rely
 upon precomputing large tables of weights, means, and variances for the
-components of a collection normal mixtures that approximates an entire family of
+components of a collection normal mixtures that approximate an entire family of
 distributions.  Further all of the discrete mixture of normal techniques make
-use of at least three layers of auxiliary variables.  One would prefer to avoid
+use of at least two layers of auxiliary variables.  One would prefer to avoid
 many layers of latents since this inhibits traversing the posterior landscape.
 
-Posterior inference for binomial logistic regression in
-\cite{fruhwirth-schnatter-fruhwirth-2007} is based upon the latent utilities
-interpretation of \cite{mcfadden-1974}.  Later, in a discrete mixture of normals
-approach based upon \cite{holmes-held-2006} is found to be superior
-\citep{fruhwirth-schnatter-fruhwirth-2010}.  This approximation outperforms
-\cite{holmes-held-2006} as well since due to its computation efficiency.  The
-2010 paper includes an extensive comparison of various data augmentation and
-Metropolis-Hastings methods in the static case.  Most recently,
-\cite{fussl-etal-2013} put forth another generation of posterior samplers for
-binomial logistic regression using discrete mixtures of normals that outperforms
-its ancestors.  Much of this work can be traced back the
+Much of Fru\"{u}hwirth-Schnatter et al.'s work has been devoted to dynamic
+binomial logistic regression. Initially,
+\cite{fruhwirth-schnatter-fruhwirth-2007} employed the latent utilities
+interpretation of \cite{mcfadden-1974}.  Later,
+\citep{fruhwirth-schnatter-fruhwirth-2010} found a discrete mixture of normals
+approach based upon \cite{holmes-held-2006} to be superior. The 2010 paper
+includes an extensive comparison of various data augmentation and
+Metropolis-Hastings methods in the static case, including evidence that the
+discrete mixture of normals approximation outperforms \cite{holmes-held-2006}
+due to its computation efficiency.  Most recently, \cite{fussl-etal-2013} put
+forth another posterior sampler for binomial logistic regression using discrete
+mixtures of normals that improves inference when the number of trials at each
+observation is greater than one.  Much of this work can be traced back the
 \cite{albert-chib-1993}, which provides a data augmentation approach to probit
 regression and which has a dynamic analog.  We limit our comparison below to
 \cite{fussl-etal-2013} since it appears to be the best choice for dynamic
-binomial logistic regression within the Fr\"{u}wirth-Schnatter school.
+binomial logistic regression within Fr\"{u}wirth-Schnatter et al.'s cornicopia
+of methods.
 
 DGLMs can be cast within the more general framework of non-linear non-Gaussian
 state-space models.  \cite{geweke-tanizaki-2001} highlight the various works of
@@ -193,23 +205,23 @@ consider here.
 The \Polya-Gamma data augmentation technique has a single layer of latent
 variables that yields conditionally Gaussian posterior distributions when
 working with logistic likelihoods.  The two common models considered here are
-the binomial logistic model with identical number of trials, whose measurement
-density is
+the binomial logistic model with identical number of trials, whose observation
+probability mass function is
 \[
 p(y_i | p_i) \propto p_i^{y_i} (1-p_i)^{n - y_i},
 \]
-and negative binomial models for count data, whose measurement density is \(
-p(y_i | p_i) \propto p_i^{y_i} (1-p_i)^{d}.  \) In either case, one may use the
-log-odds scale, $\psi_i = \log \frac{p_i}{1-p_i}$, is used for regression.
-Under this coordinate system, the measurement density of the binomial
-observations is
+and negative binomial models for count data, whose observation probability mass
+function is \( p(y_i | p_i) \propto p_i^{y_i} (1-p_i)^{d}.  \) In either case,
+one may use the log-odds scale, $\psi_i = \log \frac{p_i}{1-p_i}$, for
+regression.  Under this coordinate system, the measurement density of the
+binomial observations is
 \[
 p(y_i | \psi_i) \propto \frac{(e^{\psi_i})^{y_i}}{(1+e^{\psi_i})^{n_i}}.
 \]
 A similar form emerges in the case of negative binomial observations.  In
 general, DGLMs with logistic likelihoods have densities of the form
 \[
-p(y, \bbeta) = h(y) \Big[ \prod_{i=1}^n
+p(y, \bbeta) = c(y) \Big[ \prod_{i=1}^n
 \frac{(e^{\psi_i})^{a_i}}{(1+e^{\psi_i})^{b_i}} \bbI \{\psi_i = x_i \beta_i\}
 \Big] p(\bbeta)
 \]
@@ -278,18 +290,18 @@ where $\kappa_t = y_t - n_t / 2$.
 
 
 \begin{example}
-Suppose that one observes counts according to $y_t \sim \NB(d, p_t)$ where $d$
+Suppose that one observes counts according to $y_t \sim \NB(h, p_t)$ where $h$
 is the number of ``failures'' before observing $y_t$ successes and $p_t$ is the
 probability of observing a success.  Letting $\psi_t$ be the log-odds, the data
 generating distribution is
 \[
-p(y_t | \psi_t) = c(y_t, d) \frac{(e^{\psi_t})^{y_t}}{(1+e^{\psi_t})^{y_t+d}}.
+p(y_t | \psi_t) = c(y_t, h) \frac{(e^{\psi_t})^{y_t}}{(1+e^{\psi_t})^{y_t+h}}.
 \]
-In negative binomial regression, it is common to model the log-mean, $\zeta_t =
-\psi_t + \log(d) = x_t \beta_t$, instead of the log-odds.  This requires only a
-slight modification.  Following the work above, the complete conditional
-$(\omega_t | \beta_t, d)$ is $\PG(b_t, \psi_t)$ where $b_t = y_t + d$.
-However, the DLM used to estimate $\bbeta$ is now
+In negative binomial regression, it is common to model the log-mean, $\lambda_t
+= \psi_t + \log(h) = x_t \beta_t$, instead of the log-odds.  This requires only
+a slight modification.  Following the work above, the complete conditional
+$(\omega_t | \beta_t, h)$ is $\PG(b_t, \psi_t)$ where $b_t = y_t + h$.  However,
+the DLM used to estimate $\bbeta$ is now
 % \[
 % \begin{cases}
 % z_t = \psi_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
@@ -300,8 +312,8 @@ However, the DLM used to estimate $\bbeta$ is now
 % where $z_t = \kappa_t / \omega_t$ and $\kappa_t = (y_t - d_t) / 2$.
 \[
 \begin{cases}
-z_t = \zeta_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
-\zeta_t = x_t \beta_t \\
+z_t = \lambda_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
+\lambda_t = x_t \beta_t \\
 \beta_t = \mu + \Phi (\beta_{t-1} - \mu) + \omega_t, & \omega_t \sim N(0, W)
 \end{cases}
 \]
@@ -313,10 +325,12 @@ can estimate the parameters of the VAR(1) process using standard conjugate
 updating procedures and the complete conditional $(\omega | \bbeta, y)$, is
 identical to (\ref{eqn:augmentation}).  \cite{polson-etal-2012} describe how to
 sample from $\PG$ distributions and implement this sampler in the \texttt{R}
-package \texttt{BayesLogit}.  To estimate $d$ in dynamic negative binomial
-regression one may use a Metropolis-Hastings step (Appendix \ref{sec:sample-d}).
+package \texttt{BayesLogit}.  
 
-\subsection{AR(1) Example}
+% To estimate $d$ in dynamic negative binomial regression one may use a
+% Metropolis-Hastings step (Appendix \ref{sec:sample-d}).
+
+%\subsection{AR(1) Example}
 
 \begin{figure}
 \begin{center}
@@ -334,119 +348,121 @@ to four years (2008--11) of weekly data on flu incidence in Texas, collected
 from the Texas Department of State Health Services.  Let $y_t$ denote the number
 of reported cases of influenza-like illness (ILI) in week $t$.  We assume that
 these counts follow a negative-binomial model, which will allow overdispersion
-relative to the Poisson:
-\begin{eqnarray*}
-y_t &\sim& \mbox{NB}(h, p_t) \; , \quad p_t= \frac{e^{\psi_t}}{1+e^{\psi_t}} \\
-\psi_t &=& \alpha + \gamma_t  \; , \quad \gamma_t = \phi \gamma_{t-1} + \epsilon_t \\
-\epsilon_t &\sim& N(0, \sigma^2) \, .
-\end{eqnarray*}
-Figure \ref{fig:nb-ar1} shows the results of the fit.  It is trivial to sample
-from this model by combining the \Polya-Gamma framework together with standard
-results on AR(1) models.  In our analysis, we assumed an improper uniform prior
-on the dispersion parameter $h$, and fixed $\phi$ and $\sigma^2$ to $0.98$ and
-1, respectively.  But it would be equally straightforward to place hyper-priors
-upon each parameter, and to sample them in a hierarchical fashion.  It would
-also be straightforward to incorporate fixed effects in the form of regressors.
+relative to the Poisson.
+% \begin{eqnarray*}
+% % y_t &\sim& \mbox{NB}(h, p_t) \; , \quad p_t= \frac{e^{\psi_t}}{1+e^{\psi_t}} \\
+% \psi_t &=& \alpha + \gamma_t  \; , \quad \gamma_t = \phi \gamma_{t-1} + \epsilon_t \\
+% \epsilon_t &\sim& N(0, \sigma^2) \, .
+% \end{eqnarray*}
+Figure \ref{fig:nb-ar1} shows the results of the fit.  One may sample from this
+model by combining the \Polya-Gamma framework with forward filter backwards
+sampling.  For simplicity, we assumed an improper uniform prior on the
+dispersion parameter $h$, and fixed $\phi$ and $\sigma^2$ to $0.98$ and 1,
+respectively, but it is straightforward to place hyper-priors upon each
+parameter, and to sample them in a hierarchical fashion.  It is also
+straightforward to incorporate fixed effects in the form of regressors.
 
-We emphasize that there are many ways to handle the overdispersion present in
-this data set, and that we do not intend our model to be taken as a definitive
-analysis.  We merely intend it as a proof of concept, showing how various
-aspects of Bayesian hierarchical modeling---in this case, a simple AR(1)
-model---can be combined routinely with binomial likelihoods using the
-\Polya-Gamma scheme.
+% We emphasize that there are many ways to handle the overdispersion present in
+% this data set, and that we do not intend our model to be taken as a definitive
+% analysis.  We merely intend it as a proof of concept, showing how various
+% aspects of Bayesian hierarchical modeling---in this case, a simple AR(1)
+% model---can be combined routinely with binomial likelihoods using the
+% \Polya-Gamma scheme.
 
 \section{Comparison}
 
-We compare methods by median effective sample size (ESS) and median effective
-sampling rate (ESR).  The effective sample size is an of estimate the number of
-independent samples that would need to be generated to produce a population of
-equivalent quality.  The effective sampling rate is the ratio of effective
-sample size to the time taken to generate samples post burn-in.  Thus the time
-used to normalize the effective sample size does not include burn-in or any
-preliminary computations.
+Dynamic versions of binomial logistic regression and negative binomial
+regression are common models.  Hence, it is important to understand which
+methods work best for each model.
 
-For each data set, 10 simulations of 12,000 samples, the first 2,000 being
-discarded as burn-in, are run.  For a single simulation the component-wise
-effective sample size of each element of $\bbeta$ is calculated.  These
-component-wise values are then averaged over the 10 runs.  The minimum, median,
-and maximum average (along simulations) effective sample sizes are reported in
-the tables herein.  Similarly, for each run a component wise effective sampling
-rate is calculated.  The minimum, median, and maximum average (along
-simulations) effective sampling rate is our primary measure of comparison
-because it measures how quickly each method generates independent samples.
+We compare methods by median effective sample size (ESS) and median effective
+sampling rate (ESR).  The effective sample size of $M$ correlated samples is an
+estimate of the number of independent samples from the target distribution
+needed to produce a collection of draws of equivalent quality.  The effective
+sampling rate is the ratio of effective sample size to the time taken to
+generate samples post burn-in.  Thus the time used to normalize the effective
+sample size does not include burn-in or any preliminary computations.
+
+For each data set, 10 batches of 10,000 samples are recorded after an initial
+burn-in of 2,000 draws.  For batch $m$, the component-wise effective sample size
+$ESS_{t}^{m}$ of each univariate chain corresponding to $\beta_t$ is calculated.
+We take the mean over batches to produce the average, component-wise effective
+sample size $\overline{ESS}_t$.  The minimum, median, and maximum average
+effective sample sizes are reported in the tables herein.  Similarly, for each
+run an averaage, component wise effective sampling rate is calculated,
+$\overline{ESR}_t$.  The minimum, median, and maximum average effective sampling
+rate is our primary measure of comparison because it measures how quickly each
+method generates independent samples.
 
 In terms of effective sampling rate, the \Polya-Gamma technique beats both
-\cite{ravines-etal-2006} and \cite{fussl-etal-2013} for dynamic negative
-binomial regression.  The method of \cite{fruhwirth-schnatter-etal-2009} works
-well for dyanmic negative binomial regression when there are moderate to large
-count sizes.  This is due to the current inefficiency in generating random
-variates from $\PG(n, \psi)$ when $n$ is large.  In terms of effective sampling
-size, the \Polya-Gamma technique is superior to the other methods in both
-settings.  Thus, if Polson et al. improve the speed of their sampler it will
-likely surpass \cite{fussl-etal-2013} in terms of ESR for negative binomial
-regression.
+\cite{ravines-etal-2006} and \cite{fussl-etal-2013} for dynamic binary logistic
+regression.  The method of \cite{fruhwirth-schnatter-etal-2009} works well for
+dyanmic negative binomial regression.  This is due to the current inefficiency
+in generating random variates from $\PG(n, \psi)$ when $n$ is large.  In terms
+of effective sampling size, the \Polya-Gamma technique is superior to the other
+methods in both settings.  Thus, if Polson et al. improve the speed of their
+sampler it will likely surpass \cite{fussl-etal-2013} in terms of ESR for
+negative binomial regression.
 
 \section{Conclusion}
 
 \appendix
 
-\section{Sampling $d$ in dynamic negative binomial regression}
-\label{sec:sample-d}
+% \section{Sampling $d$ in dynamic negative binomial regression}
+% \label{sec:sample-d}
 
-We may sample $d$ by an indepedent Metropolis-Hastings or a random-walk
-Metropolis-Hastings.  In either case, we need the log-likelihood of $d$.
+% We may sample $d$ by an indepedent Metropolis-Hastings or a random-walk
+% Metropolis-Hastings.  In either case, we need the log-likelihood of $d$.
 
-The conditional density for a single term $y_t \sim N(d, p_t)$ is
-\[
-\frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t} p_t^{y_t} (1-p_t)^{d} ,
-\]
-or 
-\[
-\frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t} 
-\Big( \frac{\mu_t}{\mu_t + d} \Big)^{y_t} \Big( \frac{d}{\mu_t + d} \Big)^d
-\]
-in terms of the mean $\mu_t$.  Since we chose to model $\log \mu_t = x_t
-\beta_t$ it will be easier to work with the latter version.  In that case, the
-log-likelihood is
-\[
-\ell(d|\mu, y) = \sum_{t=1}^T [ \log \Gamma(y_t + d)  - \log \Gamma(d) ]  + 
-\sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
-d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
-\]
+% The conditional density for a single term $y_t \sim N(d, p_t)$ is
+% \[
+% \frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t} p_t^{y_t} (1-p_t)^{d} ,
+% \]
+% or 
+% \[
+% \frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t} 
+% \Big( \frac{\mu_t}{\mu_t + d} \Big)^{y_t} \Big( \frac{d}{\mu_t + d} \Big)^d
+% \]
+% in terms of the mean $\mu_t$.  Since we chose to model $\log \mu_t = x_t
+% \beta_t$ it will be easier to work with the latter version.  In that case, the
+% log-likelihood is
+% \[
+% \ell(d|\mu, y) = \sum_{t=1}^T [ \log \Gamma(y_t + d)  - \log \Gamma(d) ]  + 
+% \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
+% d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
+% \]
 
-If we assume that $d$ is a natural number then we can rid ourselves of $T$
-evaluations of the gamma function.  We may expand $\Gamma(y_t + d)$ and
-$\Gamma(d)$ as products, in which case the log-likelihood is
-\[
-\ell(d|\mu, y) = \sum_{t=1}^T \sum_{j=0}^{y_t-1} \log(d + j) + 
-\sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
-d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
-\]
-We can rewrite the first term of the sum as
-\[
-\sum_{t=1}^T \sum_{k=1}^{\max(y_t)} \sum_{j=0}^{k-1} \log(d+j) \one \{y_t = k\}
-\]
-which becomes
-\[
-\sum_{k=1}^{\max(y_t)} n_k \sum_{j=0}^{k-1} \log(d+j)
-\]
-where $n_k = \{ \# y_t = k \}$.  We have thus
-\begin{align*}
-\sum_{k=1}^{\max(y_t)} \sum_{j=0}^{\max(y_t)-1} n_k \log(d+j) \one\{j < k\}
-& = 
-\sum_{j=0}^{\max(y_t)-1} \log(d+j) \sum_{k=j+1}^{\max(y_t)} n_k \\
-& = \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j
-\end{align*}
-where $G_j = \{ \# y_t > j \}$.  Notice that $1-G_j = F(j) = \{\# y_t \leq j\}$
-and that $G$ may be pre-processed.  Hence the log-likelihood is
-\[
-\sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j + 
-\sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
-d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
-\]
-Preprocessing $G$ saves us from having to compute a doubly indexed summation.
-
-\appendix
+% If we assume that $d$ is a natural number then we can rid ourselves of $T$
+% evaluations of the gamma function.  We may expand $\Gamma(y_t + d)$ and
+% $\Gamma(d)$ as products, in which case the log-likelihood is
+% \[
+% \ell(d|\mu, y) = \sum_{t=1}^T \sum_{j=0}^{y_t-1} \log(d + j) + 
+% \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
+% d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
+% \]
+% We can rewrite the first term of the sum as
+% \[
+% \sum_{t=1}^T \sum_{k=1}^{\max(y_t)} \sum_{j=0}^{k-1} \log(d+j) \one \{y_t = k\}
+% \]
+% which becomes
+% \[
+% \sum_{k=1}^{\max(y_t)} n_k \sum_{j=0}^{k-1} \log(d+j)
+% \]
+% where $n_k = \{ \# y_t = k \}$.  We have thus
+% \begin{align*}
+% \sum_{k=1}^{\max(y_t)} \sum_{j=0}^{\max(y_t)-1} n_k \log(d+j) \one\{j < k\}
+% & = 
+% \sum_{j=0}^{\max(y_t)-1} \log(d+j) \sum_{k=j+1}^{\max(y_t)} n_k \\
+% & = \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j
+% \end{align*}
+% where $G_j = \{ \# y_t > j \}$.  Notice that $1-G_j = F(j) = \{\# y_t \leq j\}$
+% and that $G$ may be pre-processed.  Hence the log-likelihood is
+% \[
+% \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j + 
+% \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
+% d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
+% \]
+% Preprocessing $G$ saves us from having to compute a doubly indexed summation.
 
 \section{Benchmarks}
 
@@ -454,7 +470,7 @@ Preprocessing $G$ saves us from having to compute a doubly indexed summation.
 
 \begin{tabular}{l r r r r r r r r } 
 \hline
-\multicolumn{9}{c}{Tables/table.tokyo} \\
+\multicolumn{9}{c}{Dataset: Tokyo.  Prior: $\phi = 1, W \sim IGa(150, 15)$.  $T=366$.} \\
 \hline
           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
               PG  &    21.72 &     1.00 &  4352.80 &  7735.08 & 10081.46 &   200.43 &   356.18 &   464.22 \\ 
@@ -462,10 +478,11 @@ Preprocessing $G$ saves us from having to compute a doubly indexed summation.
             CUBS  &   233.98 &     0.47 &   652.86 &   761.98 &   910.62 &     2.79 &     3.26 &     3.89
  \end{tabular}
 
-
+% ./table.bench-dynlogit-low-2-n-1-wout.ar
 \begin{tabular}{l r r r r r r r r } 
 \hline
-\multicolumn{9}{c}{./table.bench-dynlogit-low-2-n-1-wout.ar} \\
+\multicolumn{9}{c}{Dataset: Synth Low.  Prior $\phi_i = 0.95, W_i=0.172$.  $T=500,
+  P=2$.} \\
 \hline
           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
               PG  &    28.34 &     1.00 &  8309.00 &  9395.80 &  9894.45 &   293.16 &   331.50 &   349.09 \\ 
@@ -473,9 +490,11 @@ Preprocessing $G$ saves us from having to compute a doubly indexed summation.
             CUBS  &   609.04 &     0.68 &  2424.95 &  3930.01 &  5168.38 &     3.98 &     6.45 &     8.49
  \end{tabular}
 
+% ./table.bench-dynlogit-high-2-n-1-wout.ar
 \begin{tabular}{l r r r r r r r r } 
 \hline
-\multicolumn{9}{c}{./table.bench-dynlogit-high-2-n-1-wout.ar} \\
+\multicolumn{9}{c}{Dataset: Synth High.  Prior: $\phi_i = 0.95, W_i=0.172$.
+  $T=500, P=2$.} \\
 \hline
           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
               PG  &    28.46 &     1.00 &  8611.53 &  9441.44 &  9894.56 &   302.60 &   331.76 &   347.68 \\ 
@@ -483,65 +502,68 @@ Preprocessing $G$ saves us from having to compute a doubly indexed summation.
             CUBS  &   610.43 &     0.61 &  2562.38 &  4291.96 &  6932.42 &     4.20 &     7.03 &    11.36
  \end{tabular}
 
+% ./table.bench-dynlogit-low-2-n-1-with.ar
 \begin{tabular}{l r r r r r r r r } 
 \hline
-\multicolumn{9}{c}{./table.bench-dynlogit-low-2-n-10-wout.ar} \\
+\multicolumn{9}{c}{ Dataset: Synth Low. Prior $\phi_i \sim N(0.95, 0.01), W_i
+  \sim IGa(10, 1)$.  $T=500, P=2$.} \\
 \hline
           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-              PG  &    49.77 &     1.00 &  7116.22 &  9374.76 &  9911.13 &   142.98 &   188.36 &   199.13 \\ 
-            dRUM  &    28.98 &     1.00 &  3540.13 &  7482.71 &  9884.88 &   122.14 &   258.16 &   341.04 \\ 
-            CUBS  &   638.99 &     0.60 &  1233.54 &  3317.85 &  5278.43 &     1.93 &     5.19 &     8.26
+              PG  &    31.03 &     1.00 &  1348.88 &  7063.34 &  9914.37 &    43.46 &   227.65 &   319.53 \\ 
+            dRUM  &    31.81 &     1.00 &  1213.67 &  5643.54 &  9060.83 &    38.15 &   177.40 &   284.82 \\ 
+            CUBS  &   627.81 &     0.65 &   125.22 &   576.81 &  1695.55 &     0.20 &     0.92 &     2.70
  \end{tabular}
 
+% ./table.bench-dynlogit-high-2-n-1-with.ar
 \begin{tabular}{l r r r r r r r r } 
 \hline
-\multicolumn{9}{c}{./table.bench-dynlogit-high-2-n-10-wout.ar} \\
+\multicolumn{9}{c}{Dataset: Synth Low. Prior $\phi_i \sim N(0.95, 0.01), W_i \sim IGa(10, 1)$.  $T=500, P=2$.} \\
 \hline
           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-              PG  &    50.17 &     1.00 &  7327.10 &  9211.07 &  9826.71 &   146.05 &   183.61 &   195.88 \\ 
-            dRUM  &    28.97 &     1.00 &  3939.55 &  6967.89 &  9766.74 &   135.99 &   240.52 &   337.14 \\ 
-            CUBS  &   643.20 &     0.52 &  2370.69 &  4240.41 &  5878.98 &     3.69 &     6.59 &     9.14
+              PG  &    31.02 &     1.00 &   686.61 &  4802.36 &  9523.97 &    22.13 &   154.81 &   307.01 \\ 
+            dRUM  &    31.84 &     1.00 &   479.20 &  3774.41 &  8505.58 &    15.05 &   118.55 &   267.15 \\ 
+            CUBS  &   618.25 &     0.55 &   181.61 &   541.04 &  1617.91 &     0.29 &     0.87 &     2.61
  \end{tabular}
 
-\begin{tabular}{l r r r r r r r r } 
-\hline
-\multicolumn{9}{c}{./table.bench-dynlogit-low-2-n-1-with.ar} \\
-\hline
-          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-              PG  &    31.19 &     1.00 &  1110.73 &  7062.17 &  9930.51 &    35.61 &   226.43 &   318.38 \\ 
-            dRUM  &    32.01 &     1.00 &   780.11 &  6088.64 &  9712.44 &    24.37 &   190.20 &   303.39 \\ 
-            CUBS  &   652.12 &     0.79 &   570.30 &  1873.22 &  4299.12 &     0.87 &     2.87 &     6.59
- \end{tabular}
+% \begin{tabular}{l r r r r r r r r } 
+% \hline
+% \multicolumn{9}{c}{./table.bench-dynlogit-low-2-n-10-wout.ar} \\
+% \hline
+%           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+%               PG  &    49.77 &     1.00 &  7116.22 &  9374.76 &  9911.13 &   142.98 &   188.36 &   199.13 \\ 
+%             dRUM  &    28.98 &     1.00 &  3540.13 &  7482.71 &  9884.88 &   122.14 &   258.16 &   341.04 \\ 
+%             CUBS  &   638.99 &     0.60 &  1233.54 &  3317.85 &  5278.43 &     1.93 &     5.19 &     8.26
+%  \end{tabular}
 
-\begin{tabular}{l r r r r r r r r } 
-\hline
-\multicolumn{9}{c}{./table.bench-dynlogit-high-2-n-1-with.ar} \\
-\hline
-          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-              PG  &    31.25 &     1.00 &   450.30 &  4953.18 &  9255.15 &    14.41 &   158.50 &   296.14 \\ 
-            dRUM  &    32.05 &     1.00 &   396.48 &  4451.72 &  8994.45 &    12.37 &   138.90 &   280.64 \\ 
-            CUBS  &   647.37 &     0.75 &   300.94 &  1587.59 &  4674.42 &     0.47 &     2.46 &     7.22
- \end{tabular}
+% \begin{tabular}{l r r r r r r r r } 
+% \hline
+% \multicolumn{9}{c}{./table.bench-dynlogit-high-2-n-10-wout.ar} \\
+% \hline
+%           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+%               PG  &    50.17 &     1.00 &  7327.10 &  9211.07 &  9826.71 &   146.05 &   183.61 &   195.88 \\ 
+%             dRUM  &    28.97 &     1.00 &  3939.55 &  6967.89 &  9766.74 &   135.99 &   240.52 &   337.14 \\ 
+%             CUBS  &   643.20 &     0.52 &  2370.69 &  4240.41 &  5878.98 &     3.69 &     6.59 &     9.14
+%  \end{tabular}
 
-\begin{tabular}{l r r r r r r r r } 
-\hline
-\multicolumn{9}{c}{./table.bench-dynlogit-low-2-n-10-with.ar} \\
-\hline
-          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-              PG  &    52.54 &     1.00 &   626.75 &  5161.88 &  9855.10 &    11.93 &    98.24 &   187.56 \\ 
-            dRUM  &    31.84 &     1.00 &   674.18 &  3477.35 &  9119.24 &    21.17 &   109.21 &   286.40 \\ 
-            CUBS  &   661.84 &     0.56 &   364.16 &  1443.76 &  3065.32 &     0.55 &     2.18 &     4.63
- \end{tabular}
+% \begin{tabular}{l r r r r r r r r } 
+% \hline
+% \multicolumn{9}{c}{./table.bench-dynlogit-low-2-n-10-with.ar} \\
+% \hline
+%           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+%               PG  &    52.54 &     1.00 &   626.75 &  5161.88 &  9855.10 &    11.93 &    98.24 &   187.56 \\ 
+%             dRUM  &    31.84 &     1.00 &   674.18 &  3477.35 &  9119.24 &    21.17 &   109.21 &   286.40 \\ 
+%             CUBS  &   661.84 &     0.56 &   364.16 &  1443.76 &  3065.32 &     0.55 &     2.18 &     4.63
+%  \end{tabular}
 
-\begin{tabular}{l r r r r r r r r } 
-\hline
-\multicolumn{9}{c}{./table.bench-dynlogit-high-2-n-10-with.ar} \\
-\hline
-          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-              PG  &    52.99 &     1.00 &   174.62 &  1001.65 &  8922.27 &     3.29 &    18.91 &   168.37 \\ 
-            dRUM  &    31.79 &     1.00 &   151.89 &   867.68 &  7060.28 &     4.78 &    27.30 &   222.06 \\ 
-            CUBS  &   651.22 &     0.47 &   192.77 &   772.78 &  2680.11 &     0.30 &     1.19 &     4.12
- \end{tabular}
+% \begin{tabular}{l r r r r r r r r } 
+% \hline
+% \multicolumn{9}{c}{./table.bench-dynlogit-high-2-n-10-with.ar} \\
+% \hline
+%           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+%               PG  &    52.99 &     1.00 &   174.62 &  1001.65 &  8922.27 &     3.29 &    18.91 &   168.37 \\ 
+%             dRUM  &    31.79 &     1.00 &   151.89 &   867.68 &  7060.28 &     4.78 &    27.30 &   222.06 \\ 
+%             CUBS  &   651.22 &     0.47 &   192.77 &   772.78 &  2680.11 &     0.30 &     1.19 &     4.12
+%  \end{tabular}
 \end{table}
 
 \newpage
@@ -569,27 +591,6 @@ Preprocessing $G$ saves us from having to compute a doubly indexed summation.
 
 \begin{tabular}{l r r r r r r r r } 
 \hline
-\multicolumn{9}{c}{./table.bench-dynnb-low-2-mu-100-wout.ar} \\
-\hline
-          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-              PG  &   393.08 &     1.00 &  1898.18 &  7298.22 &  9990.29 &     4.83 &    18.57 &    25.42 \\ 
-              FS  &    29.68 &     1.00 &  2386.51 &  7229.31 & 10000.00 &    80.40 &   243.58 &   336.93 \\ 
-            CUBS  &   661.62 &     0.37 &   198.71 &  1150.20 &  2867.16 &     0.30 &     1.74 &     4.33
- \end{tabular}
-
-
-\begin{tabular}{l r r r r r r r r } 
-\hline
-\multicolumn{9}{c}{./table.bench-dynnb-high-2-mu-100-wout.ar} \\
-\hline
-          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-              PG  &   292.81 &     1.00 &  4090.32 &  7283.70 &  9697.62 &    13.97 &    24.87 &    33.12 \\ 
-              FS  &    29.65 &     1.00 &  3417.13 &  6864.88 &  9566.54 &   115.26 &   231.58 &   322.68 \\ 
-            CUBS  &   660.24 &     0.39 &  1065.38 &  3124.58 &  4242.90 &     1.61 &     4.73 &     6.43
- \end{tabular}
-
-\begin{tabular}{l r r r r r r r r } 
-\hline
 \multicolumn{9}{c}{./table.bench-dynnb-low-2-mu-10-with.ar} \\
 \hline
           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
@@ -606,6 +607,26 @@ Preprocessing $G$ saves us from having to compute a doubly indexed summation.
               PG  &    62.28 &     1.00 &   244.92 &  2039.14 &  9767.92 &     3.93 &    32.73 &   156.83 \\ 
               FS  &    32.51 &     1.00 &   284.53 &  1219.91 &  5614.48 &     8.75 &    37.52 &   172.66 \\ 
             CUBS  &   669.68 &     0.62 &   363.77 &  1609.55 &  4586.74 &     0.54 &     2.40 &     6.85
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynnb-low-2-mu-100-wout.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &   393.08 &     1.00 &  1898.18 &  7298.22 &  9990.29 &     4.83 &    18.57 &    25.42 \\ 
+              FS  &    29.68 &     1.00 &  2386.51 &  7229.31 & 10000.00 &    80.40 &   243.58 &   336.93 \\ 
+            CUBS  &   661.62 &     0.37 &   198.71 &  1150.20 &  2867.16 &     0.30 &     1.74 &     4.33
+ \end{tabular}
+
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{./table.bench-dynnb-high-2-mu-100-wout.ar} \\
+\hline
+          Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
+              PG  &   292.81 &     1.00 &  4090.32 &  7283.70 &  9697.62 &    13.97 &    24.87 &    33.12 \\ 
+              FS  &    29.65 &     1.00 &  3417.13 &  6864.88 &  9566.54 &   115.26 &   231.58 &   322.68 \\ 
+            CUBS  &   660.24 &     0.39 &  1065.38 &  3124.58 &  4242.90 &     1.61 &     4.73 &     6.43
  \end{tabular}
 
 \begin{tabular}{l r r r r r r r r } 

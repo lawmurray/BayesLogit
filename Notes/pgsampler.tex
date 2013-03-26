@@ -407,7 +407,7 @@ z^{1/2} \exp \Big( -\frac{1}{2} z \Big) \bbI_{(1/(h^2 t), \infty)}(z) dz.
 \]
 Now we have returned to Devroye's scheme.  
 \begin{enumerate}
-\item Sample $W \sim N(0,1) \bbI_{(1/\sqrt{ht},\infty)}$.  
+\item Sample $W \sim N(0,1) \bbI_{(1/(h\sqrt{t}),\infty)}$.  
 
 \item Then $W^2 / h^2$ is the truncated, scaled $\chi^2$ random variate we want.
 \end{enumerate}
@@ -416,7 +416,7 @@ So $h^2 / W^2$ is the truncated inverse $\chi^2$ random variate we want.  In
 that case:
 \begin{enumerate}
 
-\item Let $R = 1/h^2 t$.  
+\item Let $R = 1/(h^2 t)$.  
 
 \item Repeatedly sample $e_i \sim \mcE$ until $e_1^2 > 2 * e_2 / R$.  Then
   \[
@@ -1025,20 +1025,58 @@ Thus we can follow Devroye in the following way.  On the left, use $-\phi(x) -
 \frac{1}{x} + \frac{1}{x}$.  On the right use $-\phi(x) + \log(x) - \log(x)$.
 In the middle use a flat top.  We also can show that
 \[
-K''(t) \geq \alpha_l x^3, \; x \leq 1
+K''(t) \geq \frac{1}{\alpha_l} x^3, \; x \leq 1
 \]
 and
 \[
-K''(t) \geq \alpha_r x^2, \; x \geq 1.
+K''(t) \geq \frac{1}{\alpha_r} x^2, \; x \geq 1.
 \]
 Thus the left and right proposals will be
 \[
-\propto x^{-3/2} \exp( s_l x + 1/x )
+\propto x^{-3/2} e^{n e_l(0) + n/2} \exp( n s_l x - n/(2x) )
 \]
 and
 \[
-\propto x^{n-1} \exp (- s_r x).
+\propto x^{n-1} e^{n e_r(0)} \exp (n s_r(x)).
 \]
+
+Consider the first kernel.  Let $r_l = |s_l|$.  Completing the square in the
+exponent we have
+\begin{align*}
+\frac{-n r_l}{2x} \Big( \frac{1}{r_l} + x^2 \Big)
+& = \frac{-n r_l}{2x} \Big[ \Big(\frac{1}{r_l}\Big)^2 - \frac{2}{\sqrt{r_l}} x +
+x^2 + \frac{2}{\sqrt{r_l}} \\
+& = \frac{-n r_l}{2x} \Big[ \Big( x - \frac{1}{\sqrt{r_l}}\Big)^2 +
+\frac{2}{\sqrt{r_l}} x \Big] \\
+& = \frac{-n r_l}{2x} \Big( x - \frac{1}{\sqrt{r_l}}\Big)^2 - n \sqrt{r_l}.
+\end{align*}
+Putting this together we have
+\[
+\alpha_l^{0.5} e^{-n\sqrt{r_l} + n e_l(0)+n/2} \Big(\frac{n}{2\pi}\Big)^{0.5} x^{-3/2} \exp
+\Big[  \frac{-n r_l}{2x} \Big( x - \frac{1}{\sqrt{r_l}}\Big)^2 \Big].
+\]
+Note the inverse gaussian kernel with parameters $\mu = 1/\sqrt{r_l}$ and
+$\lambda = n$.  Consider the second kernel.  Let $r_r = |s_r|$.  We have
+\[
+\alpha_r^{0.5} e^{n e_r(0)} \Big(\frac{n}{2\pi}\Big)^{0.5} x^{n-1} e^{-n r_r x}.
+\]
+That is
+\[
+\alpha_r^{0.5} \Big(\frac{n}{2\pi}\Big)^{0.5} e^{n e_r(0)}
+\frac{\Gamma(n)}{(nr_r)^n} \frac{(nr_r)^n}{\Gamma(n)} x^{n-1} e^{-nr_r x},
+\]
+the latter terms being the gamma density.  So
+\[
+p_\ell = \alpha_l^{0.5} e^{-n \sqrt{r_l} + n e_l(0) + n/2} \Phi_{IG}(x | \mu=1/\sqrt{r_l}, \lambda=n)
+\]
+and
+\begin{align*}
+p_r & = \alpha_r^{0.5} e^{e_r(0)} \Big(\frac{n}{2\pi}\Big)^{0.5} \frac{\Gamma(n)}{(nr_r)^n} \Phi_{Ga}(x|n, \text{rate}=n r_r,
+\text{lower=FALSE}) \\
+& = \alpha_r^{0.5} e^{e_r(0)} \Big(\frac{n}{2\pi}\Big)^{0.5} \frac{\Gamma(n)}{(nr_r)^n} \frac{\Gamma(n, (n r_r) x)}{\Gamma(n)}
+\\
+& = \alpha_r^{0.5}  \Big(\frac{n}{2\pi}\Big)^{0.5} e^{-n \log(nr_r) + n e_r(0)} \Gamma(n, (nr_r)x).
+\end{align*}
 
 \section{Residues}
 
