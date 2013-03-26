@@ -19,11 +19,11 @@ run <- list("tokyo"=FALSE,
             "low.4"=FALSE,
             "high.2"=FALSE,
             "high.4"=FALSE,
-            "allsynth"=TRUE)
+            "allsynth"=FALSE)
 
 write.dir = "./"
 
-write.it = TRUE
+write.it = FALSE
 plot.it  = FALSE
 print.it = FALSE
 read.it  = FALSE
@@ -462,21 +462,24 @@ if (run$allsynth)
   P = ncol(X.dyn)
   
   ## Prior
-  b.m0 = rep(0, P+1)
-  b.C0 = diag(100, P+1)
+  m0 = rep(0, P+1)
+  C0 = diag(1, P+1)
 
   phi.m0 = rep(0.95, P);
-  phi.V0 = rep(0.1,  P);
+  phi.V0 = rep(0.01,  P);
   W.guess = 0.1
-  W.a0   = rep(300, P)
+  W.a0   = rep(10, P)
   W.b0   = W.a0 * W.guess
   mu.true = rep(0.0, P)
 
-  if (est.ar=="with.ar") {
-    phi.true = NULL
-    W.true = NULL
-  }    
+  phi.send = phi.true
+  W.send   = W.true
   
+  if (est.ar=="with.ar") {
+    phi.send = NULL
+    W.send = NULL
+  }
+
   bench.synth = list();
   if (read.it) load(filename)
   
@@ -489,10 +492,10 @@ if (run$allsynth)
                                              method=nm,
                                              var.names=c("beta", "alpha", "phi", "W"),
                                              dset.name=dset.name,
-                                             m.0=b.m0, C.0=b.C0,
+                                             m.0=m0, C.0=C0,
                                              phi.m0=phi.m0, phi.P0=1/phi.V0,
                                              W.a0=W.a0, W.b0=W.b0,
-                                             mu.true=mu.true, phi.true=phi.true, W.true=W.true);
+                                             mu.true=mu.true, phi.true=phi.send, W.true=W.send);
   }
   
   synth.table = setup.table.dyn(bench.synth, "beta")
@@ -536,15 +539,33 @@ if (FALSE) {
         
         write.table(the.table, file=table.file, row.names=TRUE, col.names=TRUE);
         
-        par(mfrow=c(P,1))
+        par(mfrow=c(P+1,1))
         for (i in 1:P) {
           plot(beta[i,], col=1, type="l")
           ## plot(synth.table$ave.sstat[i,,1,1], type="l", col=2)
-          lines(synth.table$ave.sstat[i,,1,1], col=2)
-          lines(synth.table$ave.sstat[i,,1,2], col=3)
-          lines(synth.table$ave.sstat[i,,1,3], col=4)
+          lines(synth.table$ave.sstat[i,,1,1,drop=FALSE], col=2)
+          lines(synth.table$ave.sstat[i,,1,2,drop=FALSE], col=3)
+          ## lines(synth.table$ave.sstat[i,,1,3,drop=FALSE], col=4)
           
         }
+
+        alpha.pg = mean(bench.synth$PG$gb$alpha);
+        alpha.fs = mean(bench.synth$dRUM$gb$alpha);
+        
+        psi.pg = apply((synth.table$ave.sstat[,-1,1,1]) * t(X), 2, sum) + alpha.pg
+        psi.fs = apply((synth.table$ave.sstat[,-1,1,2]) * t(X), 2, sum) + alpha.fs
+        
+        psi.max = max(psi)
+        psi.min = min(psi)
+        ymax = max(c(psi.pg, psi.max))
+        ymin = min(c(psi.pg, psi.min))
+        ytil = (y / nt) * (ymax - ymin) + ymin;
+        
+        plot(ytil, ylim=c(ymin,ymax))
+        lines(psi, col=5)
+        lines(psi.pg, col=2)
+        lines(psi.fs, col=3)
+
         ## readline("<ENTER>")
         
         
