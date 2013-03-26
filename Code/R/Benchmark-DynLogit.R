@@ -467,6 +467,7 @@ if (run$allsynth)
 
   phi.m0 = rep(0.95, P);
   phi.V0 = rep(0.01,  P);
+  
   W.guess = 0.1
   W.a0   = rep(10, P)
   W.b0   = W.a0 * W.guess
@@ -521,15 +522,13 @@ if (FALSE) {
     for (nt in c(1,10)) {
       for (corr.type in c("low", "high")) {
         
-        
-        cat("AR:", est.ar, "\n");
-        
         dset.name = paste(corr.type, "-", P, "-n-", nt, sep="");
         source.file = paste("DynLogit-synth-", dset.name, ".RData", sep="")
         bench.base  = paste("bench-dynlogit-", dset.name, "-", est.ar, sep="");
         bench.data  = paste(bench.base, ".RData", sep="")
         table.file  = paste("table.", bench.base, sep="");
-        
+      
+        cat("AR:", est.ar, dset.name, "\n");        
         
         load(file.path("Benchmark-DataSets", source.file))
         load(file.path("Bench-Dyn-02", bench.data))
@@ -546,7 +545,6 @@ if (FALSE) {
           lines(synth.table$ave.sstat[i,,1,1,drop=FALSE], col=2)
           lines(synth.table$ave.sstat[i,,1,2,drop=FALSE], col=3)
           ## lines(synth.table$ave.sstat[i,,1,3,drop=FALSE], col=4)
-          
         }
 
         alpha.pg = mean(bench.synth$PG$gb$alpha);
@@ -565,9 +563,8 @@ if (FALSE) {
         lines(psi, col=5)
         lines(psi.pg, col=2)
         lines(psi.fs, col=3)
-
-        ## readline("<ENTER>")
         
+        readline("<ENTER>")
         
       }}}
   
