@@ -69,47 +69,9 @@ class PolyaGammaAlt
 
 };
 
-double ltgamma(double shape, double rate, double trunc, RNG& r);
 double rtinvchi2(double h, double trunc, RNG& r);
-double igauss(double mu, double lambda, RNG& r);
 
 //------------------------------------------------------------------------------
-
-double ltgamma(double shape, double rate, double trunc, RNG& r)
-{
-  double a = shape;
-  double b = rate * trunc;
-
-  if (trunc <=0) {
-    fprintf(stderr, "ltgamma: trunc = %g < 0\n", trunc);
-    return 0;
-  }
-  if (shape < 1) {
-    fprintf(stderr, "ltgamma: shape = %g < 1\n", shape);
-    return 0;
-  }
-
-  if (shape ==1) return r.expon_rate(1) / rate + trunc;
-
-  double d1 = b-a;
-  double d3 = a-1;
-  double c0 = 0.5 * (d1 + sqrt(d1*d1 + 4 * b)) / b;
-   
-  double x = 0.0;
-  bool accept = false;
-
-  while (!accept) {
-    x = b + r.expon_rate(1) / c0;
-    double u = r.unif();
-    
-    double l_rho = d3 * log(x) - x * (1-c0);
-    double l_M   = d3 * log(d3 / (1-c0)) - d3;
-
-    accept = log(u) <= (l_rho - l_M);
-  }
-
-  return trunc * (x/b);
-}
 
 double rtinvchi2(double h, double trunc, RNG& r)
 {
@@ -126,19 +88,6 @@ double rtinvchi2(double h, double trunc, RNG& r)
   X = 1 + E1 * R;
   X = R / (X * X);
   X = h2 * X;
-  return X;
-}
-
-double igauss(double mu, double lambda, RNG& r)
-{
-  // See R code for specifics.
-  double mu2 = mu * mu;
-  double Y = r.norm(0.0, 1.0);
-  Y *= Y;
-  double W = mu + 0.5 * mu2 * Y / lambda;
-  double X = W - sqrt(W*W - mu2);
-  if (r.unif() > mu / (mu + X)) 
-    X = mu2 / X;
   return X;
 }
 
@@ -210,7 +159,7 @@ double PolyaGammaAlt::rtigauss(double h, double z, double trunc, RNG& r)
   }
   else {
     while (X > trunc) {
-      X = igauss(mu, h*h, r);
+      X = r.igauss(mu, h*h);
     }
     // printf("rtigauss, part ii: %g\n", X);
   }
@@ -269,7 +218,7 @@ double PolyaGammaAlt::draw_abridged(double h, double z, RNG& r, int max_inner)
     // if (r.unif() < p/(p+q))
     double uu = r.unif();
     if ( uu < prob_right )
-      X = ltgamma(h, rate_z, trunc, r);
+      X = r.ltgamma(h, rate_z, trunc);
     else
       X = rtigauss(h, z, trunc, r);
 

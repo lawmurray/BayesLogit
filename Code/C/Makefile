@@ -73,7 +73,7 @@ BayesLogit.so : $(obj)
 	g++ -o BayesLogit.so $(obj) $(OPTS) -shared -fPIC $(LNK) $(GLIB) -lgsl
 
 LogitWrapper.o : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp PolyaGamma.hpp PolyaGammaAlt.hpp PolyaGammaSP.hpp
-	g++ $(OPTS) $(INC) -fPIC -o LogitWrapper.o -c LogitWrapper.cpp
+	g++ $(OPTS) $(INC) $(GINC) -fPIC -o LogitWrapper.o -c LogitWrapper.cpp
 
 FSF_nmix.o : FSF_nmix.hpp FSF_nmix.cpp
 	g++ $(OPTS) $(INC) -fPIC -o FSF_nmix.o -c FSF_nmix.cpp 

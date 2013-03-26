@@ -271,11 +271,12 @@ int PolyaGammaSP::draw(double& d, double n, double z, RNG& r, int maxiter)
   // Weights
   double wl, wr, wt, pl;
 
-  wl = exp(0.5 * log(al) - n * rt2rl + n * il + 0.5 * n - 0.5 * n * (1-1./md)) * 
+  wl = exp(0.5 * log(al) - n * rt2rl + n * il + 0.5 * n * 1./md) * 
     RNG::p_igauss(md, 1./rt2rl, n);
 
   wr = exp(0.5 * log(ar) + lcn - n * log(n * rr) + n * ir - n * log(md)) *
-    RNG::Gamma(n) * (1.0 - RNG::p_gamma_rate(md, n, n*rr));
+    yv.upperIncompleteGamma(md, n, n*rr);
+    // RNG::Gamma(n) * (1.0 - RNG::p_gamma_rate(md, n, n*rr));
 
   // printf("wl, wr: %g, %g\n", wl, wr);
 
@@ -289,8 +290,13 @@ int PolyaGammaSP::draw(double& d, double n, double z, RNG& r, int maxiter)
   double F = 0.0;
 
   while(go && iter < maxiter) {
+    // Put first so check on first pass.
+    #ifdef USE_R
+    if (iter % 1000 == 0) R_CheckUserInterrupt();
+    #endif
+
     iter++;
-      
+
     double phi_ev;
     if (r.unif() < pl) {
       X = rtigauss(1./rt2rl, n, md, r);
