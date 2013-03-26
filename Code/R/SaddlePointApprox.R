@@ -398,6 +398,31 @@ if (FALSE)
 
   plot(xgrid, -(1-xgrid)/ugrid)
   plot(xgrid, xgrid^3 - b4)
+
+  ## Plotting in u.
+  plot(ugrid, b4 / xgrid^2)
+  plot(ugrid, b4 / xgrid^3)
+  
+  ## k3
+  b6 = 2 * xgrid * b4 - 0.5 * (1-xgrid) / tgrid^2 - 0.5 * b4 / tgrid
+  b7 = b6 * xgrid
+
+  plot(xgrid, b6)
+  plot(xgrid, b7)
+
+  b8 = -2 * b4 / xgrid^3 + b6 / xgrid^2 / b4
+  b9 = -3 * b4 / xgrid^4 + b6 / xgrid^3 / b4
+
+  plot(xgrid, b8)
+  plot(xgrid, b9)
+
+  b10 = -2 * b4^2 / xgrid^3 + b6 / xgrid^2 
+  b11 = -3 * b4^2 / xgrid^4 + b6 / xgrid^3 
+
+  plot(tgrid, b10)
+  plot(tgrid, b11)
+
+  b12 = cot(sqrt(2*tgrid))
   
   ##----------------------------------------------------------------------------
   

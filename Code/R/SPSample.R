@@ -361,8 +361,8 @@ ig.mode <- function(mu, lambda)
 if (FALSE)
 {
 
-  n = 10
-  z = 10
+  n = 4
+  z = 1
   
   dx = 0.001
   xgrid = seq(dx*5, 2, dx)
@@ -382,7 +382,7 @@ if (FALSE)
 
   xl = spa.m$m
   m  = spa.m$m * 1.1
-  xr = spa.m$m * 1.2
+  xr = spa.m$m * 1.15
   
   phi.m = phi.func(m,z)$val
   
@@ -393,27 +393,38 @@ if (FALSE)
   par(mfrow=c(1,2))
 
   ## idxp = xgrid >= 0
-  idxp = xgrid<=0.2 & xgrid >=0.001
+  idxp = xgrid<=1.5 & xgrid >=0.25
   
-  plot(xgrid[idxp], phed$phi[idxp], type="l")
-  lines(xgrid[idxp], phed$eta[idxp], col=2)
+  ## plot(xgrid[idxp], phed$phi[idxp], type="l")
+  ## lines(xgrid[idxp], phed$eta[idxp], col=2)
+  plot(xgrid[idxp], phed$eta[idxp], col=1, type="l", xlab="x", ylab="eta",
+       main=paste("eta vs x, ", "n=", n, ", z=", z, sep=""))
   lines(xgrid[idxp], -phed$delta[idxp] + phi.m, col=3)
 
   tl = tangent.lines.eta(c(xl, xr, m), z, m)
 
-  lines(xgrid[idxp], tl$slope[1]*xgrid[idxp] + tl$icept[1], col=4)
-  lines(xgrid[idxp], tl$slope[2]*xgrid[idxp] + tl$icept[2], col=5)
+  lines(xgrid[idxp], tl$slope[1]*xgrid[idxp] + tl$icept[1], col=4, lty=2)
+  lines(xgrid[idxp], tl$slope[2]*xgrid[idxp] + tl$icept[2], col=5, lty=2)
 
-  lines(xgrid[idxp], -0.5*z^2 * (xgrid[idxp]-m) + phi.m, col=6, lty=4)
+  ## lines(xgrid[idxp], -0.5*z^2 * (xgrid[idxp]-m) + phi.m, col=6, lty=4)
 
-  plot(xgrid[idxp], phed$phi[idxp], type="l")
+  legend("bottomleft", legend=c("eta", "Left Ev.", "Right Ev.", "-delta"),
+         col=c(1,4,5,3), lty=c(1,2,2,1))
+  abline(v=m, lty=3)
+  
+  plot(xgrid[idxp], phed$phi[idxp], type="l", xlab="x", ylab="phi",
+       main=paste("phi vs x,", "n=", n, ", z=", z, sep=""))
 
   phi.ev1 = tl$slope[1]*xgrid + tl$icept[1] + phed$delta
   phi.ev2 = tl$slope[2]*xgrid + tl$icept[2] + phed$delta
   phi.ev3 = rep(phi.m, length(xgrid))
   
-  lines(xgrid[idxp], phi.ev1[idxp], col=4)
-  lines(xgrid[idxp], phi.ev2[idxp], col=5)
+  lines(xgrid[idxp], phi.ev1[idxp], col=4, lty=2)
+  lines(xgrid[idxp], phi.ev2[idxp], col=5, lty=2)
+
+  legend("bottomright", legend=c("phi", "Left Ev.", "Right Ev."),
+         col=c(1,4,5), lty=c(1,2,2))
+  abline(v=m, lty=3)
 
   ##----------------------------------------------------------------------------
 
@@ -434,11 +445,11 @@ if (FALSE)
 
   ## ----------------------------------------
   
-  plot(xgrid[idxp], exp(spa.df$phi[idxp]), type="l")
-  lines(xgrid[idxp], exp(adj.phi[idxp]), col=2)
+  plot(xgrid[idxp], exp(spa.df$phi[idxp]), type="l", ylab="exp(phi)", xlab="x")
+  ##lines(xgrid[idxp], exp(adj.phi[idxp]), col=2)
   lines(xgrid[idxp], exp(phi.ev1[idxp]), col=4, lty=2)
   lines(xgrid[idxp], exp(phi.ev2[idxp]), col=5, lty=2)
-  lines(xgrid[idxp], exp(phi.ev3[idxp]), col=6)
+  ## lines(xgrid[idxp], exp(phi.ev3[idxp]), col=6)
   ## lines(xgrid[idxp], spa.df$spa[idxp] * (0.5*n/pi)^-0.5 * spa.df$K2[idxp]^0.5, col=1, lty=2)
 
   idr = xgrid >= m
@@ -456,12 +467,17 @@ if (FALSE)
   ev4 = exp(n*phi.ev1) * spa.df$K2^-0.5 * (0.5*n/pi)^0.5
   
   ra = c(spa.df$spa[idxp], ev1[xgrid<m]); ymax = max(ra); ymin = min(ra);
-  plot(xgrid[idxp], spa.df$spa[idxp], type="l", ylim=c(ymin, ymax))
-  lines(xgrid[idxp], (0.5*n/pi)^0.5 * exp(n*adj.phi[idxp]), col=3, lty=2)
-  lines(xgrid[idxp], ev4[idxp], col=8, lty=2)
+  plot(xgrid[idxp], spa.df$spa[idxp], type="l", ylim=c(ymin, ymax),xlab="x", ylab="SP",
+       main=paste("Saddlepoint Approximation ", "n=", n, ", z=",z, sep=""))
+  ## lines(xgrid[idxp], (0.5*n/pi)^0.5 * exp(n*adj.phi[idxp]), col=3, lty=2)
+  ## lines(xgrid[idxp], ev4[idxp], col=8, lty=2)
   lines(xgrid[idxp], ev1[idxp], col=4, lty=2)
   lines(xgrid[idxp], ev2[idxp], col=5, lty=2)
-  lines(xgrid[idxp], ev3[idxp], col=6, lty=2)
+  ## lines(xgrid[idxp], ev3[idxp], col=6, lty=2)
+
+  legend("topright", legend=c("SP Approx.", "Left Ev.", "Right Ev."),
+         col=c(1,4,5), lty=c(1,2,2))
+  abline(v=m, lty=3)
 
   ## ----------------------------------------
 
@@ -843,6 +859,8 @@ if (FALSE)
   c(mean(draw.jj), var(draw.jj))
   c(mean(df$x), var(df$x))
   
+  ##----------------------------------------------------------------------------
+  
 }
 
 ################################################################################
@@ -920,5 +938,95 @@ if (FALSE)
 
   write(ygrid, "y.txt", sep=",")
   write(vgrid, "v.txt", sep=",")
+  
+}
+
+if (FALSE)
+{
+
+  ## source("SPSample.R")
+  source("ManualLoad.R")
+  
+  nsamp  = 20000
+  ntrial = 4
+
+  n.seq = c(1, 10, 50, 100)
+  z.seq = c(0.0, 0.1, 0.5, 1, 2, 10)
+  n.len = length(n.seq)
+  z.len = length(z.seq)
+
+  out = array(0, dim=c(4, n.len, z.len, ntrial));
+  sum.stat  = array(0, dim=c(6, 4, n.len, z.len));
+  temp.time = rep(0, 4)
+
+  id = c("sp", "ga", "dv", "al")
+  
+  dimnames(out)[[1]] = id
+  dimnames(out)[[2]] = paste("n", n.seq, sep="")
+  dimnames(out)[[3]] = paste("z", z.seq, sep="")
+  
+  for (zdx in 1:z.len) {
+    for (ndx in 1:n.len) {
+      
+      n = n.seq[ndx]
+      z = z.seq[zdx]
+
+      cat("z=", z, "n=", n, "\n")
+      
+      for (i in 1:ntrial) {
+        
+        start.time = proc.time()
+        samp.sp = rpg.sp(nsamp, n, z, track.iter=FALSE)
+        time.sp = proc.time() - start.time
+        temp.time[1] = time.sp[1]
+        
+        start.time = proc.time()
+        samp.ga = rpg.gamma(nsamp, n, z)
+        time.ga = proc.time() - start.time
+        temp.time[2] = time.ga[1]
+        
+        start.time = proc.time()
+        samp.dv = rpg.devroye(nsamp, n, z)
+        time.dv = proc.time() - start.time
+        temp.time[3] = time.dv[1]
+        
+        start.time = proc.time()
+        samp.al = rpg.alt(nsamp, n, z)
+        time.al = proc.time() - start.time
+        temp.time[4] = time.al[1]
+
+        out[,ndx,zdx,i] = temp.time
+      }
+      
+      sum.stat[,1,ndx,zdx] = summary(samp.sp)
+      sum.stat[,2,ndx,zdx] = summary(samp.ga)
+      sum.stat[,3,ndx,zdx] = summary(samp.dv)
+      sum.stat[,4,ndx,zdx] = summary(samp.al)
+    }
+  }
+  
+}
+
+if (FALSE) {
+
+  which.min.n <- function(x, n=1) {
+    ## Put in increasing order.
+    N   = length(x)
+    out = order(x)
+    out[n]
+  }
+
+  min.n <- function(x, n=1) {
+    N   = length(x)
+    out = order(x)
+    x[out[n]]
+  }
+  
+  ave.time   = apply(out, c(1,2,3), mean)
+  best.idx   = apply(ave.time, c(2,3), which.min)
+  second.idx = apply(ave.time, c(2,3), function(x){which.min.n(x,2)})
+
+  best.time   = apply(ave.time, c(2,3), min)
+  second.time = apply(ave.time, c(2,3), function(x){min.n(x,2)})
   
 }

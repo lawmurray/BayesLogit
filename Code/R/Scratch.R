@@ -137,5 +137,51 @@ if (FALSE) {
   plot(h, x.switch)
 
   lm.1 = lm(x.switch[200:301] ~ h[200:301])
+
+  ##----------------------------------------------------------------------------
+
+  idc = seq(1,p,10)
+  N   = length(idc)
+  
+  for (j in 1:N) {
+    i = idc[j]
+    ## Ratio
+    col.l = "#FF000022"
+    col.r = "#0000FF22"
+    
+    if (j==1) {
+      col.l = "#FF0000FF"
+      col.r = "#0000FFFF"
+      plot(x, y[,i] / gam[,i], type="l", main=paste("f(x|h)/proposal; h=1..4"),
+           col=col.l, ylim=c(0,1.2), ylab="ratio", xlab="x")
+      legend("topleft", legend=c("l(x|h)", "r(x|h)"), col=c(col.l, col.r),
+             lty=c(1,1))
+    }
+    else {
+      lines(x, y[,i] / gam[,i], col=col.l)
+    }
+    lines(x, y[,i] / w[,i], type="l", col=col.r);
+    abline(h=1.0, col=1)
+    ## readline("<ENTER>")
+  }
+  
+}
+
+################################################################################
+
+################################################################################
+
+if (FALSE)
+{
+
+  source("ManualLoad.R")
+
+  num = 10000;
+  n   = 2
+  z   = 0
+  
+  samp.d = rpg.devroye(num, n, z)
+  samp.s = rpg.sp(num, n, z)
+
   
 }
