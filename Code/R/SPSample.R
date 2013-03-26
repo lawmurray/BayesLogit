@@ -947,10 +947,11 @@ if (FALSE)
   ## source("SPSample.R")
   source("ManualLoad.R")
   
-  nsamp  = 20000
-  ntrial = 4
+  nsamp  = 10000
+  ntrial = 2
 
-  n.seq = c(1, 10, 50, 100)
+  ## n.seq = c(1, 10, 50, 100)
+  n.seq = c(1,2,3,4,10,12,14,16,18,20,30,40,50,100)
   z.seq = c(0.0, 0.1, 0.5, 1, 2, 10)
   n.len = length(n.seq)
   z.len = length(z.seq)
@@ -1009,6 +1010,8 @@ if (FALSE)
 
 if (FALSE) {
 
+  ## FIND BEST METHOD
+  
   which.min.n <- function(x, n=1) {
     ## Put in increasing order.
     N   = length(x)
@@ -1028,5 +1031,68 @@ if (FALSE) {
 
   best.time   = apply(ave.time, c(2,3), min)
   second.time = apply(ave.time, c(2,3), function(x){min.n(x,2)})
+
+
+  ##----------------------------------------------------------------------------
+  ## MAKE TABLES
+  write.table(apply(best.idx, c(1,2), function(n){id[n]}),
+              file="best.idx.table", sep=" & ", eol=" \\\\\n")
+  ## write.table(apply(second.idx, c(1,2), function(n){id[n]}),
+  ##             file="second.idx.table", sep=" & ", eol=" \\\\\n");
+  write.table(round(best.time, 3), file="best.time.table", sep=" & ", eol=" \\\\\n")
+  write.table(round(ave.time[3,,]/best.time, 2),
+              file="devroye.to.best.table", sep=" & ", eol="\\\\\n");
+
+  speed.up = ave.time[3,,]/best.time
+
+  plot(n.seq, speed.up[,1], type="l", col=1, main="J*(1,z) Time / Best Time",
+       xlab="n", ylab="Ratio")
+  for (zdx in 2:z.len) {
+    lines(n.seq, speed.up[,zdx], col=zdx)
+  }
+  legend("bottomright", legend=paste("z =", z.seq), col=1:z.len, lty=1)
+
+}
+
+################################################################################
+
+if (FALSE) {
+
+  ## TEST HYBRID METHOD
+
+   ## source("SPSample.R")
+  source("ManualLoad.R")
+  
+  nsamp = 100000
+  n = 20
+  z = 1
+
+  start.time = proc.time()
+  samp.sp = rpg.sp(nsamp, n, z, track.iter=FALSE)
+  time.sp = proc.time() - start.time
+
+  start.time = proc.time()
+  samp.al = rpg.alt(nsamp, n, z)
+  time.al = proc.time() - start.time
+
+  start.time = proc.time()
+  samp.dv = rpg.devroye(nsamp, n, z)
+  time.dv = proc.time() - start.time
+
+  start.time = proc.time()
+  samp.hy = rpg(nsamp, n, z)
+  time.hy = proc.time() - start.time
+
+  ## What is the hit on time.
+  time.sp
+  time.al
+  time.dv
+  time.hy
+
+  summary(samp.sp)
+  summary(samp.al)
+  summary(samp.dv)
+  summary(samp.hy)
   
 }
+

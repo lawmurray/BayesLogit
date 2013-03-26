@@ -32,6 +32,8 @@ extern "C" {
 
   void rpg_sp(double *x, double *h, double *z, int* num, int* iter);
 
+  void rpg_hybrid(double *x, double *h, double *z, int* num);
+
   // Default Logistic
 
   void gibbs(double *wp, double *betap,                            // Posterior

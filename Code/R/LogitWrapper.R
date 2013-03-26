@@ -113,19 +113,25 @@ rpg.sp <- function(num=1, h=1, z=0.0, track.iter=FALSE)
 
 ## Draw PG(n, z)
 ##------------------------------------------------------------------------------
-## rpg <- function(num=1, n=1, z=0.0, trunc=200)
-## {
-##   n.int = floor(n)
-##   n.rem = n - n.int
-  
-##   x.int = rpg.devroye(num, n.int, z)
-##   x.rem = rpg.gamma(num, n.rem, z, trunc)
+rpg <- function(num=1, h=1, z=0.0)
+{
+    ## Check Parameters.
+    if (any(h<1)) {
+      print("h must be >= 1.");
+      return(NA);
+    }
 
-##   out = x.int + x.rem
+    x = rep(0, num);
 
-##   out
-## }
-rpg <- rpg.alt
+    if (length(h) != num) { h = array(h, num); }
+    if (length(z) != num) { z = array(z, num); }
+
+    ## Faster if we do not track iter.
+    OUT = .C("rpg_hybrid", x, h, z, as.integer(num), PACKAGE="BayesLogit");
+
+    OUT[[1]]
+}
+## rpg <- rpg.alt
 
 ################################################################################
                                  ## Utility ##

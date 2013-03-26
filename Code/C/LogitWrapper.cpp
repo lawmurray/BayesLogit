@@ -126,6 +126,38 @@ void rpg_sp(double *x, double *h, double *z, int* num, int *iter)
   #endif
 }
 
+void rpg_hybrid(double *x, double *h, double *z, int* num)
+{
+  RNG r;
+  PolyaGamma dv;
+  PolyaGammaAlt alt;
+  PolyaGammaSP sp;
+  
+  #ifdef USE_R
+  GetRNGstate();
+  #endif
+
+  for(int i=0; i < *num; ++i){
+    double b = h[i];
+    if (b > 13) {
+      sp.draw(x[i], b, z[i], r);
+    }
+    else if (b==1 || b==2) {
+      x[i] = dv.draw((int)b, z[i], r);
+    }
+    else if (b > 0) {
+      x[i] = alt.draw(b, z[i], r);
+    }
+    else {
+      x[i] = 0.0;
+    }
+  }
+
+  #ifdef USE_R
+  PutRNGstate();
+  #endif
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 			   // POSTERIOR INFERENCE //
