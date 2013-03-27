@@ -1064,11 +1064,11 @@ if (FALSE) {
   source("ManualLoad.R")
   
   nsamp = 100000
-  n = 20
+  n = 200
   z = 1
 
   start.time = proc.time()
-  samp.sp = rpg.sp(nsamp, n, z, track.iter=FALSE)
+  ## samp.sp = rpg.sp(nsamp, n, z, track.iter=FALSE)
   time.sp = proc.time() - start.time
 
   start.time = proc.time()
@@ -1089,7 +1089,7 @@ if (FALSE) {
   time.dv
   time.hy
 
-  summary(samp.sp)
+  ## summary(samp.sp)
   summary(samp.al)
   summary(samp.dv)
   summary(samp.hy)

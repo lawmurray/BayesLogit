@@ -386,7 +386,7 @@ if (FALSE)
   T = 500
   P = 2
   corr.type = "low"
-  ntrial = 100
+  ntrial = 1
 
   ## for (P in c(2,4)) {
   ##   for (corr.type in c("low", "high")) {
