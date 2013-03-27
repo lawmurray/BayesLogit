@@ -1,4 +1,4 @@
-library("BayesLogit")
+## library("BayesLogit")
 library("coda")
 library("bayesm")
 
@@ -16,7 +16,8 @@ source("Benchmark-Utilities.R")
 ################################################################################
 
 run <- list("small"=FALSE,
-            "med"=FALSE)
+            "med"=FALSE,
+            "larger"=FALSE)
 
 write.dir = ""
 
@@ -30,6 +31,7 @@ ntrials = 10
 verbose = 1000
 
 logit.meth <- c("PG", "FS", "RAM");
+run.it = c(1,2)
 
 ################################################################################
                              ## Dyn NB Benchmark ##
@@ -218,8 +220,10 @@ if (run$med)
 {
   load("DataSets/NBSynth_N400_P4_I3.RData")
 
+  ## y = pmin(150, y)
+  
   out = list();
-  for (i in 1:3) {
+  for (i in run.it) {
     nm = logit.meth[i]
     out[[nm]] <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                            method=nm, m.0=NULL, C.0=NULL, dset.name="")
@@ -227,7 +231,25 @@ if (run$med)
 
   bench.nb.med.counts = out
 
-  if (write.it) save(bench.nb.small.counts, file="NB-bench-I3.RData")
+  if (write.it) save(bench.nb.med.counts, file="NB-bench-I3.RData")
+}
+
+##------------------------------------------------------------------------------
+## LARGER COUNTS
+if (run$larger)
+{
+  load("DataSets/NBSynth_N400_P4_I4.RData")
+
+  out = list();
+  for (i in run.it) {
+    nm = logit.meth[i]
+    out[[nm]] <- benchmark.NB(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
+                           method=nm, m.0=NULL, C.0=NULL, dset.name="")
+  }
+
+  bench.nb.larger.counts = out
+
+  if (write.it) save(bench.nb.larger.counts, file="NB-bench-I4.RData")
 }
 
 ################################################################################
@@ -236,6 +258,9 @@ if (run$med)
 
 if (FALSE) {
 
-  setup.table(out)
+  tab = setup.table(out)
+
+  filename = "NB-bench-I3-hybrid-2.table"
+  write.table(tab$table, file=filename)
   
 }
