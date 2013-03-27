@@ -1,5 +1,9 @@
 #include "InvertY.hpp"
 
+#ifdef USE_R
+#include "R.h"
+#endif
+
 //------------------------------------------------------------------------------
 
 double y_eval(double v)

@@ -26,9 +26,12 @@
 
 #include "RNG.hpp"
 #include "Matrix.h"
+#include <cmath>
 #include <vector>
 #include <iostream>
 #include <stdexcept>
+
+using std::pow;
 
 // The numerical accuracy of __PI will affect your distribution.
 const double __PI = 3.141592653589793238462643383279502884197;
@@ -66,6 +69,11 @@ class PolyaGamma
   double pigauss(double x, double Z);
   double mass_texpon(double Z);
   double rtigauss(double Z, RNG& r);
+
+  static double jj_m1(double b, double z);
+  static double jj_m2(double b, double z);
+  static double pg_m1(double b, double z);
+  static double pg_m2(double b, double z);
 
 };
 
@@ -253,6 +261,41 @@ double PolyaGamma::draw_like_devroye(double Z, RNG& r)
   }
 } // draw_like_devroye
 
+////////////////////////////////////////////////////////////////////////////////
+			      // Static Members //
+////////////////////////////////////////////////////////////////////////////////
+
+double PolyaGamma::jj_m1(double b, double z) 
+{
+  double m1 = 0.0;
+  if (z > 1e-12)
+    m1 = b * tanh(z) / z;
+  else
+    m1 = b * (1 - (1/3) * pow(z,2) + (2/15) * pow(z,4) - (17/315) * pow(z,6));
+  return m1;
+}
+
+double PolyaGamma::jj_m2(double b, double z)
+{
+  double m2 = 0.0;
+  if (z > 1e-12)
+    m2 = (b+1) * b * pow(tanh(z)/z,2) + b * ((tanh(z)-z)/pow(z,3));
+  else
+    m2 = (b+1) * b * pow(1 - (1/3) * pow(z,3) + (2/15) * pow(z,4) - (17/315) * pow(z,6), 2) +
+      b * ((-1/3) + (2/15) * z - (17/315) * pow(z,3));
+  return m2;
+}
+
+double PolyaGamma::pg_m1(double b, double z)
+{
+  return jj_m1(b, 0.5 * z) * 0.25;
+}
+ 
+double PolyaGamma::pg_m2(double b, double z)
+{
+  return jj_m2(b, 0.5 * z) * 0.0625;
+}
+  
 ////////////////////////////////////////////////////////////////////////////////
 			       // END OF CLASS //
 ////////////////////////////////////////////////////////////////////////////////
