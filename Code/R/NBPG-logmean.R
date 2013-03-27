@@ -82,8 +82,8 @@ NB.PG.gibbs <- function(y, X,
     ## d = draw.df.real.mean(y, d, mu);
     ## draw (w | d, beta)
     psi = phi - log(d);
-    w = rpg.devroye(N, y+d, psi);
-    ## w = rpg(N, y+d, psi)
+    ## w = rpg.devroye(N, y+d, psi);
+    w = rpg(N, y+d, psi)
     ## w = rpg.gamma(N, y+d, psi, trunc=200);
 
     ## draw beta
@@ -111,27 +111,49 @@ NB.PG.gibbs <- function(y, X,
 
 if (FALSE) {
 
-  ## library("BayesLogit")
   ## source("NBPG-logmean.R")
+  source("ManualLoad.R")
   
-  N = 500
-  X = cbind(1, rnorm(N))
+  N = 400
+  P = 4
+  X = matrix(rnorm(N*(P-1)), nrow=N, ncol=P-1);
+  X = cbind(1, X)
 
-  beta = c(1.0, 1.5);
+  beta = c(4.0, 0.2, -0.9, -0.2);
 
   ## Poisson-Gamma mixture.
   phi = X %*% beta;
   mu = exp(phi);
-  d  = 3
+  d  = 4
   p  = (mu / (mu + d));
   alpha = p / (1-p)
   lambda = rgamma(N, d, scale=alpha);
   y = rpois(N, lambda);
 
+  samp = 10000
+  burn = 500
+  verbose = 1000
+
+  start.time = proc.time()
+  out <- NB.PG.gibbs(y, X,
+                     samp=samp, burn=burn, verbose=verbose,
+                     beta.true = NULL, w.true = NULL, d.true=NULL)
+  diff.time = proc.time() - start.time
+  
+}
+
+#-------------------------------------------------------------------------------
+
+if (FALSE) {
+
+  load("DataSets/NBSynth_N400_P4_I3.RData")
+
+  ## y = pmin(150, y)
+
   samp = 1000
   burn = 500
   verbose = 500
-
+  
   start.time = proc.time()
   out <- NB.PG.gibbs(y, X,
                      samp=samp, burn=burn, verbose=verbose,

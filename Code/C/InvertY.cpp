@@ -92,6 +92,7 @@ double YV::v_func(double y, int maxiter)
     v = atan(0.5 * y * IYPI);
     return v*v;
   }
+  else if (y==1) return 0.0;
     
   double id = (log(y) / log(2) + 4.0) / 0.1;
   // printf("y, id, y[id], v[id]: %g, %g, %g, %g\n", y, id, ygrid[(int)id], vgrid[(int)id]);
@@ -118,7 +119,10 @@ double YV::v_func(double y, int maxiter)
 
   } while (status == GSL_CONTINUE && iter < maxiter);
 
-  if (iter >= maxiter) fprintf(stderr, "YV: v reached maxiter.\n");
+  if (iter >= maxiter) {
+    fprintf(stderr, "YV: v reached maxiter.  ");
+    fprintf(stderr, "y: %g; init v: %g; cur. v: %g\n", y, vgrid[(int)id], v);
+  }
 
   return v;
 }
