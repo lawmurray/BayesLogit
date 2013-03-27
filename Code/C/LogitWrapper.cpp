@@ -139,7 +139,12 @@ void rpg_hybrid(double *x, double *h, double *z, int* num)
 
   for(int i=0; i < *num; ++i){
     double b = h[i];
-    if (b > 13) {
+    if (b > 170) {
+      double m = dv.pg_m1(b,z[i]);
+      double v = dv.pg_m2(b,z[i]) - m*m;
+      x[i] = r.norm(m, sqrt(v));
+    }
+    else if (b > 13) {
       sp.draw(x[i], b, z[i], r);
     }
     else if (b==1 || b==2) {
