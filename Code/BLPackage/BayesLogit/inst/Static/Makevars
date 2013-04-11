@@ -4,7 +4,7 @@
 # PKG_LIBS = -lblas -llapack
 
 ## W/OUT Dynamic Stuff
-OBJECTS = Matrix.o MatrixFrame.o RRNG.o RNG.o FSF_nmix.o LogitWrapper.o
+OBJECTS = Matrix.o MatrixFrame.o RRNG.o RNG.o FSF_nmix.o LogitWrapper.o InvertY.o
 PKG_LIBS = $(BLAS_LIBS) $(FLIBS) $(LAPACK_LIBS) 
 PKG_CPPFLAGS = -DUSE_R -Wall -DNDEBUG -DDISABLE_SINGLE
 

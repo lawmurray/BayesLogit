@@ -9,6 +9,9 @@ if [[ -z $1 ]]; then
     exit
 fi
 
+name=`echo $1 | tr '[:upper:]' '[:lower:]'` 
+#echo $name
+
 set -x
 
 cp ${RELDIR}${1}/DESCRIPTION ${RELDIR}../DESCRIPTION
@@ -20,7 +23,7 @@ set +x
 FILES="man/CUBS.Rd man/AR1.Rd man/AR1Ind.Rd R/CUBS.R"
 
 ## Add files for dynamic.
-if [[ $1 == Dynamic ]]; then
+if [[ $name == dynamic ]]; then
   for FILE in $FILES; do
 	set -x
     cp "${RELDIR}${1}/$FILE" "${RELDIR}../$FILE"
@@ -29,7 +32,7 @@ if [[ $1 == Dynamic ]]; then
 fi
 
 ## Remove files for static.
-if [[ $1 == Static ]]; then
+if [[ $name == static ]]; then
   for FILE in $FILES; do
 	PTF="${RELDIR}../$FILE"
 	if [[ -e "$PTF" ]]; then
