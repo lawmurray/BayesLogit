@@ -1,47 +1,19 @@
 #ifndef __INVERTY__
 #define __INVERTY__
 
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_roots.h>
-#include <gsl/gsl_sf.h>
+#include <math.h>
 
 const double tol    = 1e-8;
-const double vlower = -100.0;
-const double vupper = 2.22;
 const double IYPI = 3.141592653589793238462643383279502884197;
 
-
-double   y_eval(double v, void* params);
+double   y_eval(double v);
 void   ydy_eval(double v, double* yp, double* dyp);
 
 double   f_eval(double v, void* params);
 double  df_eval(double v, void* params);
 void   fdf_eval(double v, void* params, double* fp, double* dfp);
 
-//------------------------------------------------------------------------------
-
-class YV {
-
-private:
-  double yupper;
-  double ylower;
-
-public:
-
-  const gsl_root_fdfsolver_type * T;
-  gsl_root_fdfsolver            * s;
-  gsl_function_fdf              FDF;
-  
-  YV();
-  virtual ~YV();
-
-  double y_func(double v);
-  double v_func(double y, int maxiter=100);
-
-  double upperIncompleteGamma(double x, double shape, double rate);
-
-};
+double v_eval(double y, double tol=1e-9, int max_iter=1000);
 
 //------------------------------------------------------------------------------
 
@@ -83,6 +55,8 @@ const double vgrid[] = {
   2.210954,2.228537,2.244889,2.260099,2.274249,
   2.287418,2.299673,2.311082,2.321703,2.331593,
   2.340804};
+
+//------------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
 
