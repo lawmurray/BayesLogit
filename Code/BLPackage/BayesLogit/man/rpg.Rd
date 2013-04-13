@@ -2,9 +2,11 @@
 \name{rpg}
 
 \alias{rpg}
-\alias{rpg.gamma}
-%\alias{rpg.gamma.R}
 \alias{rpg.devroye}
+\alias{rpg.gamma}
+\alias{rpg.alt}
+\alias{rpg.sp}
+%\alias{rpg.gamma.R}
 %\alias{rpg.devroye.R}
 
 \title{The Polya-Gamma Distribution}
@@ -41,6 +43,10 @@ rpg.gamma(num=1, h=1, z=0.0, trunc=200)
 
 rpg.devroye(num=1, n=1, z=0.0)
 
+rpg.alt(num=1, h=1, z=0.0)
+
+rpg.sp(num=1, h=1, z=0.0, track.iter=FALSE)
+
 }
 
 % rpg.gamma.R(num=1, n=1, z=0.0, trunc=200)
@@ -56,6 +62,7 @@ rpg.devroye(num=1, n=1, z=0.0)
   \item{h}{Shape parameter.  code{h} >= 1 if not using sum of gammas method.}
   \item{z}{Parameter associated with tilting.}
   \item{trunc}{The number of elements used in sum of gammas approximation.}
+  \item{track.iter}{The number of proposals made before accepting.}
 }
 
 \value{

@@ -6,6 +6,7 @@
 #include "RNG.hpp"
 #include "Matrix.h"
 #include "InvertY.hpp"
+//#include "InvertY2.hpp"
 #include <vector>
 #include <iostream>
 #include <stdexcept>
@@ -49,7 +50,7 @@ protected:
 
   double cos_rt(double v);
 
-  YV yv;
+  // YV yv;
 
 };
 
@@ -174,7 +175,8 @@ void PolyaGammaSP::delta_func(double x, double mid, FD& delta)
 
 double PolyaGammaSP::phi_func(double x, double z, FD& phi)
 {
-  double v = yv.v_func(x);
+  // double v = yv.v_func(x);
+  double v = v_eval(x);
   double u = 0.5 * v;
   double t = u + 0.5 * z*z;
 
@@ -206,7 +208,8 @@ double PolyaGammaSP::tangent_to_eta(double x, double z, double mid, Line& tl)
 
 double PolyaGammaSP::sp_approx(double x, double n, double z)
 {
-  double v  = yv.v_func(x);
+  // double v  = yv.v_func(x);
+  double v = v_eval(x);
   double u  = 0.5 * v;
   double z2 = z * z;
   double t  = u + 0.5 * z2;
@@ -236,7 +239,8 @@ int PolyaGammaSP::draw(double& d, double n, double z, RNG& r, int maxiter)
   // printf("xl, md, xr: %g, %g, %g\n", xl, md, xr);
 
   // Inflation constants
-  double vmd  = yv.v_func(md);
+  // double vmd  = yv.v_func(md);
+  double vmd  = v_eval(md);
   double K2md = 0.0;
 
   if (fabs(vmd) >= 1e-6) 
@@ -275,8 +279,8 @@ int PolyaGammaSP::draw(double& d, double n, double z, RNG& r, int maxiter)
     RNG::p_igauss(md, 1./rt2rl, n);
 
   wr = exp(0.5 * log(ar) + lcn - n * log(n * rr) + n * ir - n * log(md)) *
-    yv.upperIncompleteGamma(md, n, n*rr);
-    // RNG::Gamma(n) * (1.0 - RNG::p_gamma_rate(md, n, n*rr));
+    // yv.upperIncompleteGamma(md, n, n*rr);
+    RNG::Gamma(n) * (1.0 - RNG::p_gamma_rate(md, n, n*rr));
 
   // printf("wl, wr: %g, %g\n", wl, wr);
 

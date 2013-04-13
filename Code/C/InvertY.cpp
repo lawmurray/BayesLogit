@@ -1,4 +1,5 @@
 #include "InvertY.hpp"
+#include <stdio.h>
 
 #ifdef USE_R
 #include "R.h"
@@ -53,82 +54,46 @@ double df_eval(double v, void * params)
   return df;
 }
 
-//------------------------------------------------------------------------------
-
-YV::YV() : T(gsl_root_fdfsolver_newton), s(NULL)
+double v_eval(double y, double tol, int max_iter)
 {
-  s = gsl_root_fdfsolver_alloc (T);
-
-  FDF.f   = &f_eval;
-  FDF.df  = &df_eval;
-  FDF.fdf = &fdf_eval;
-  FDF.params = 0;
-  
-  ylower = y_eval(vlower);
-  yupper = y_eval(vupper);
-}
-
-YV::~YV() { 
-  if (s != NULL) { 
-    gsl_root_fdfsolver_free(s); 
-    s = NULL; 
-  } 
-}
-
-double YV::y_func(double v) {
-  return y_eval(v);
-}
-
-double YV::v_func(double y, int maxiter) 
-{
-  double v = 1.0;
-
-  double ycopy = y;
-  FDF.params = &ycopy;
+  double ylower = ygrid[0];
+  double yupper = ygrid[grid_size-1];
 
   if (y < ylower) {
     return -1. / (y*y);
   } else if (y > yupper) {
-    v = atan(0.5 * y * IYPI);
+    double v = atan(0.5 * y * IYPI);
     return v*v;
   }
   else if (y==1) return 0.0;
     
   double id = (log(y) / log(2) + 4.0) / 0.1;
   // printf("y, id, y[id], v[id]: %g, %g, %g, %g\n", y, id, ygrid[(int)id], vgrid[(int)id]);
-  
-  gsl_root_fdfsolver_set(s, &FDF, vgrid[(int)id]);
 
-  int iter = 0;
-  int status = 0;
-  double vp = 0.0;
-  // double fval, dfval;
+  // C++ default is truncate decimal portion.
+  int idlow  = (int)id;
+  int idhigh = (int)id + 1;
+  double vl  = vgrid[idlow];  // lower bound
+  double vh  = vgrid[idhigh]; // upper bound
 
-  do {
+  int    iter = 0;
+  double diff = tol + 1.0;
+  double vnew = vl;
+  double vold = vl;
+  double f0, f1;
+
+  while (diff > tol && iter < max_iter) {
     iter++;
-    status = gsl_root_fdfsolver_iterate (s);
-    vp = v;
-    v  = gsl_root_fdfsolver_root(s);
-    status = gsl_root_test_delta(v, vp, 0, 1e-8);
-
-    // ydy_eval(v, &fval, &dfval);
-    // printf("yval, dyval, v: %g, %g, %g\n", fval, dfval, v);
-
-    // fdf_eval(v, FDF.params, &fval, &dfval);
-    // printf("fval, dfval: %g, %g\n", fval, dfval);
-
-  } while (status == GSL_CONTINUE && iter < maxiter);
-
-  if (iter >= maxiter) {
-    fprintf(stderr, "YV: v reached maxiter.  ");
-    fprintf(stderr, "y: %g; init v: %g; cur. v: %g\n", y, vgrid[(int)id], v);
+    vold = vnew;
+    fdf_eval(vold, &y, &f0, &f1);
+    vnew = vold - f0 / f1;
+    vnew = vnew > vh ? vh : vnew;
+    vnew = vnew < vl ? vl : vnew;
+    diff = fabs(vnew - vold);
+    // printf("iter: %i, v: %g, diff: %g\n", iter, vnew, diff);
   }
 
-  return v;
-}
+  if (iter >= max_iter) fprintf(stderr, "InvertY.cpp, v_eval: reached max_iter: %i\n", iter);
 
-double YV::upperIncompleteGamma(double x, double shape, double rate)
-{
-  double t = rate * x;
-  return gsl_sf_gamma_inc(shape, t);
+  return vnew;
 }

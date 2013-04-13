@@ -38,7 +38,7 @@ OPTS = -g -Wall -std=c++98  $(USE_R) ## -Wshadow
 ## Note: pedantic kills eigen.
 
 sobj = LogitWrapper.so FSF_nmix.so FFBS.so hh_lambda.so
-obj = LogitWrapper.o FSF_nmix.o AR1.o CUBS.o CUBS_update.o InvertY.o FFBS.o hh_lambda.o RNG.o Matrix.o MatrixFrame.o $(DEP)
+obj = LogitWrapper.o FSF_nmix.o AR1.o CUBS.o CUBS_update.o InvertY.o InvertY2.o FFBS.o hh_lambda.o RNG.o Matrix.o MatrixFrame.o $(DEP)
 
 ## TESTS -- set USE_R = ""
 
@@ -87,8 +87,11 @@ CUBS.o : CUBS.h CUBS.cpp
 CUBS_update.o : CUBS_update.cpp CUBS_update.h
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o CUBS_update.o -c CUBS_update.cpp
 
+InvertY2.o : InvertY2.hpp InvertY2.cpp 
+	g++ $(OPTS) $(INC) $(GINC) -fPIC -o InvertY2.o -c InvertY2.cpp
+
 InvertY.o : InvertY.hpp InvertY.cpp
-	g++ $(OPTS) $(INC) $(GINC) -fPIC -o InvertY.o -c InvertY.cpp
+	g++ $(OPTS) $(INC) -fPIC -o InvertY.o -c InvertY.cpp
 
 FFBS.o : FFBS.h FFBS.cpp
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o FFBS.o -c FFBS.cpp 
