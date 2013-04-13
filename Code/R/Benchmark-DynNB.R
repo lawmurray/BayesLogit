@@ -15,17 +15,17 @@ run <- list("flu"   =FALSE,
             "synth1"=FALSE,
             "synth2"=FALSE,
             "synth3"=FALSE,
-            "allsynth"=TRUE)
+            "allsynth"=FALSE)
 
 methods = c("PG", "FS", "CUBS")
 
 write.dir = "."
 
-write.it = TRUE
+write.it = FALSE
 plot.it  = FALSE
 read.it = FALSE
 
-run.idc = 1:3
+run.idc = 1:2
 
 samp = 10000
 burn  = 2000
@@ -443,5 +443,92 @@ if (FALSE) {
         
 
       }}}
+  
+}
+
+################################################################################
+#-------------------------------------------------------------------------------
+                            ## GENERATE AND TEST ##
+#-------------------------------------------------------------------------------
+################################################################################
+
+if (FALSE)
+{
+
+  T = 500
+  P = 4
+  corr.type = "low"
+  nb.mean = 24
+
+  ## for (P in c(2,4)) {
+  ##   for (corr.type in c("low", "high")) {
+  ##     for (nb.mean in c(10, 100)) {
+  
+  c  = 0.5
+  d.true  = 4
+  marg.V   = 5 / sqrt(P) * c
+  phi.true = rep(0.95, P)
+
+  W.true = marg.V * (1 - phi.true^2)
+
+  beta = matrix(0, nrow=P, ncol=T+1)
+  beta[,1] = 0
+  for (i in 2:(T+1))
+    beta[,i] = phi.true * (beta[,i-1]) + rnorm(P, 0, sqrt(W.true))
+  
+  xgrid = seq(-1, 1, length.out=T)
+  
+  tX = matrix(0, nrow=P, ncol=T);
+  if (corr.type=="low")  freq = c(1, 2, 3, 4)
+  if (corr.type=="high") freq = c(1, 1.1, 1.2, 1.3)
+  for (i in 1:P)
+    tX[i,] = cos(freq[i] * pi * xgrid);
+
+  tX = tX / sqrt(P) * (1-c)
+  X  = t(tX)
+  
+  log.mean = log(nb.mean) + colSums(beta[,-1] * tX)
+  psi = log.mean - log(d.true)
+  p.success  = 1 / (1 + exp(-psi))
+  y   = rnbinom(T, d.true, 1-p.success) ## p.success is prob of registering a single count.
+
+  ## filename = paste("DynNB-synth-", corr.type, "-", P, "-mu-", nb.mean, ".RData", sep="")  
+  ## if (FALSE) {
+  ##   save(d.true, nb.mean, marg.V, phi.true, W.true, beta, tX, X, log.mean, psi, p.success, y, freq, xgrid,
+  ##        file=filename, compress=TRUE)
+  ## }
+
+  #-----------------------------------------------------------------------------
+
+  X.dyn = X;
+
+  ## Prior
+  b.m0 = 3.0;
+  b.C0 = 3.0;
+  W    = 0.1;
+  W.a0   = 100;
+  W.b0   = W.a0 * W;
+
+  if (est.ar=="with.ar") {
+    phi.true = NULL
+    W.true = NULL
+  }   
+  
+  out = list()
+  
+  ## source("Benchmark-DynNB.R")
+  for (i in run.idc) {
+    ## source("Benchmark-DynNB.R")
+    nm = methods[i];
+    out[[nm]] <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=NULL, 
+                                  samp=samp, burn=burn, ntrials=1, verbose=verbose,
+                                  method=nm, var.names="beta", dset.name="Synth1",
+                                  m.0=b.m0, C.0=b.C0,
+                                  W.a0=W.a0, W.b0=W.b0,
+                                  mu.true=0.0, phi.true=phi.true, W.true=W.true, d.true=NULL);
+  }
+  
+  synth1.table = setup.table.dyn(out, "beta")
+ 
   
 }
