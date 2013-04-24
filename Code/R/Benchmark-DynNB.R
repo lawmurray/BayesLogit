@@ -456,7 +456,7 @@ if (FALSE)
 {
 
   T = 500
-  P = 4
+  P = 2
   corr.type = "low"
   nb.mean = 24
 
@@ -502,12 +502,21 @@ if (FALSE)
 
   X.dyn = X;
 
+  T = length(y)
+  X.dyn = X
+  X.stc = matrix(1, nrow=T, ncol=1)
+  P = ncol(X.dyn)
+  
   ## Prior
-  b.m0 = 3.0;
-  b.C0 = 3.0;
-  W    = 0.1;
-  W.a0   = 100;
-  W.b0   = W.a0 * W;
+  m0 = rep(0, P+1)
+  C0 = diag(100, P+1)
+
+  phi.m0 = rep(0.95, P);
+  phi.V0 = rep(0.1,  P);
+  W.guess = 0.1
+  W.a0   = rep(300, P)
+  W.b0   = W.a0 * W.guess
+  mu.true = rep(0.0, P)
 
   if (est.ar=="with.ar") {
     phi.true = NULL
@@ -520,15 +529,14 @@ if (FALSE)
   for (i in run.idc) {
     ## source("Benchmark-DynNB.R")
     nm = methods[i];
-    out[[nm]] <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=NULL, 
-                                  samp=samp, burn=burn, ntrials=1, verbose=verbose,
+    out[[nm]] <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=X.stc, 
+                                  samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                   method=nm, var.names="beta", dset.name="Synth1",
-                                  m.0=b.m0, C.0=b.C0,
+                                  m.0=m0, C.0=C0,
                                   W.a0=W.a0, W.b0=W.b0,
-                                  mu.true=0.0, phi.true=phi.true, W.true=W.true, d.true=NULL);
+                                  mu.true=mu.true, phi.true=phi.true, W.true=W.true, d.true=NULL);
   }
   
-  synth1.table = setup.table.dyn(out, "beta")
- 
+  synth.table = setup.table.dyn(out, "beta")
   
 }
