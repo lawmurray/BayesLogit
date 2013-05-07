@@ -122,7 +122,8 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
     if (!know.d) d = draw.df(y, d, mu.lambda, G, ymax);
     psi = log.mean - log(d);
     if (any(!is.finite(psi))) return(list("error"=1, "dump"=psi));
-    w = rpg.devroye(T, y+d, psi);
+    ## w = rpg.devroye(T, y+d, psi);
+    w = rpg(T, y+d, psi)
 
     winv = 1/w
     if (any(!is.finite(winv))) return(list("error"=2, "dump"=winv));

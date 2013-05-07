@@ -38,7 +38,8 @@ OPTS = -g -Wall -std=c++98  $(USE_R) ## -Wshadow
 ## Note: pedantic kills eigen.
 
 sobj = LogitWrapper.so FSF_nmix.so FFBS.so hh_lambda.so
-obj = LogitWrapper.o FSF_nmix.o AR1.o CUBS.o CUBS_update.o InvertY.o InvertY2.o FFBS.o hh_lambda.o RNG.o Matrix.o MatrixFrame.o $(DEP)
+obj  = LogitWrapper.o FSF_nmix.o AR1.o CUBS.o CUBS_update.o PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o \
+	InvertY.o InvertY2.o FFBS.o hh_lambda.o RNG.o Matrix.o MatrixFrame.o $(DEP)
 
 ## TESTS -- set USE_R = ""
 
@@ -72,7 +73,7 @@ MatRNG.so : Matrix.o RNG.o
 BayesLogit.so : $(obj)
 	g++ -o BayesLogit.so $(obj) $(OPTS) -shared -fPIC $(LNK) $(GLIB) -lgsl
 
-LogitWrapper.o : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp PolyaGamma.hpp PolyaGammaAlt.hpp PolyaGammaSP.hpp
+LogitWrapper.o : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o LogitWrapper.o -c LogitWrapper.cpp
 
 FSF_nmix.o : FSF_nmix.hpp FSF_nmix.cpp
@@ -86,6 +87,15 @@ CUBS.o : CUBS.h CUBS.cpp
 
 CUBS_update.o : CUBS_update.cpp CUBS_update.h
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o CUBS_update.o -c CUBS_update.cpp
+
+PolyaGammaSP.o : PolyaGammaSP.hpp PolyaGammaSP.cpp
+	g++ $(OPTS) $(INC) -fPIC -o PolyaGammaSP.o -c PolyaGammaSP.cpp
+
+PolyaGammaAlt.o : PolyaGammaAlt.hpp PolyaGammaAlt.cpp
+	g++ $(OPTS) $(INC) -fPIC -o PolyaGammaAlt.o -c PolyaGammaAlt.cpp
+
+PolyaGamma.o : PolyaGamma.hpp PolyaGamma.cpp
+	g++ $(OPTS) $(INC) -fPIC -o PolyaGamma.o -c PolyaGamma.cpp
 
 InvertY2.o : InvertY2.hpp InvertY2.cpp 
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o InvertY2.o -c InvertY2.cpp
