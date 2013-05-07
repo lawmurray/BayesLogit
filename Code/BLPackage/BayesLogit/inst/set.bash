@@ -9,9 +9,16 @@ if [[ -z $1 ]]; then
     exit
 fi
 
-name=`echo $1 | tr '[:upper:]' '[:lower:]'` 
-name=`echo $name | sed -e 's/^./\U&/'`
+#name=$1
+name=`echo $1 | awk '{print tolower($0)}'`
 #echo $name
+
+if [[ $name == dynamic ]]; then
+name=Dynamic
+fi
+if [[ $name == static ]]; then
+name=Static
+fi
 
 set -x
 
@@ -25,6 +32,7 @@ FILES="man/CUBS.Rd man/AR1.Rd man/AR1Ind.Rd R/CUBS.R"
 
 ## Add files for dynamic.
 if [[ $name == Dynamic ]]; then
+  name=Dynamic  
   for FILE in $FILES; do
 	set -x
     cp "${RELDIR}${name}/$FILE" "${RELDIR}../$FILE"
@@ -34,6 +42,7 @@ fi
 
 ## Remove files for static.
 if [[ $name == Static ]]; then
+  name=Static
   for FILE in $FILES; do
 	PTF="${RELDIR}../$FILE"
 	if [[ -e "$PTF" ]]; then
