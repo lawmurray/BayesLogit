@@ -22,11 +22,17 @@ fi
 
 set -x
 
+# Copy files
 cp ${RELDIR}${name}/DESCRIPTION ${RELDIR}../DESCRIPTION
 cp ${RELDIR}${name}/NAMESPACE   ${RELDIR}../NAMESPACE
 cp ${RELDIR}${name}/Makevars    ${RELDIR}../src/Makevars
 
 set +x
+
+# Remove -Wall if nowall is specified as second argument.
+if [[ $2 == nowall ]]; then
+sed -i~ -e 's/\-Wall//g' ${RELDIR}../src/Makevars
+fi
 
 FILES="man/CUBS.Rd man/AR1.Rd man/AR1Ind.Rd R/CUBS.R"
 
@@ -35,7 +41,7 @@ if [[ $name == Dynamic ]]; then
   name=Dynamic  
   for FILE in $FILES; do
 	set -x
-    cp "${RELDIR}${name}/$FILE" "${RELDIR}../$FILE"
+	cp "${RELDIR}${name}/$FILE" "${RELDIR}../$FILE"
 	set +x
   done
 fi
