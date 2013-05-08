@@ -18,8 +18,16 @@ PolyaGamma::PolyaGamma(int trunc) : T(trunc), b(T)
 
 void PolyaGamma::set_trunc(int trunc)
 {
-  if (trunc < 1)
+  
+  if (trunc < 1) {
+  #ifndef NTHROW
     throw std::invalid_argument("PolyaGamma(int trunc): trunc < 1.");
+  #else
+    fprintf(stderr, "PolyaGamma(int trunc): trunc < 1.  Set trunc=1.\n");
+    trunc = 1;
+  #endif
+  }
+  
 
   T = trunc;
   b.resize(T);
@@ -118,7 +126,14 @@ double PolyaGamma::rtigauss(double Z, RNG& r)
 
 double PolyaGamma::draw(int n, double z, RNG& r)
 {
-  if (n < 1) throw std::invalid_argument("PolyaGamma::draw: n < 1.");
+  if (n < 1) {
+  #ifndef NTHROW
+    throw std::invalid_argument("PolyaGamma::draw: n < 1.");
+  #else
+    fprintf(stderr, "PolyaGamma::draw: n < 1.  Set n = 1.\n");
+    n = 1;
+  #endif
+  }
   double sum = 0.0;
   for (int i = 0; i < n; ++i)
     sum += draw_like_devroye(z, r);
