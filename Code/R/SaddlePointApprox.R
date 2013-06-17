@@ -238,11 +238,12 @@ if (FALSE)
   ## Preliminary: approximating using normal.
 
   ## source("SaddlePointApprox.R")
-
+  ## png("pg-sp-dens.png", width=600, height=300); par(mfrow=c(1,2))
+  
   z = 0.0
-  n = 1.0
+  n = 10.0
 
-  umin = -30
+  umin = -100
   umax = (pi/2)^2 - 0.5
   du = 0.1
   ugrid = seq(umin, umax, du)
@@ -253,7 +254,7 @@ if (FALSE)
   term1 = (0.5 * n / pi)^(0.5) * (xgrid^2 + (1-xgrid) / ugrid)^(-0.5)
   term2 = exp(n * (kgrid - tgrid * xgrid));
   sp.approx = term1 * term2
-  plot(xgrid, sp.approx)
+  ## plot(xgrid, sp.approx)
   
   y1    = xgrid
   y2    = xgrid
@@ -277,14 +278,14 @@ if (FALSE)
   ## y4 = approx1(xgrid, n, z)
   
   ## png(filename="pg-dens.png", width=800, height=400)
-  par(mfrow=c(1,2))
+  ## par(mfrow=c(1,2))
   ymax = max(c(sp.approx), na.rm=TRUE)
   plot(xgrid, y1, type="l", ylim=c(0,ymax), main="Density of JJ(b,z)", xlab="x", ylab="f(x|b,0)")
   ## lines(xgrid, y2, col=2, lty=2)
   ## lines(xgrid, y3, col=3, lty=3)
   ## lines(xgrid, y3, type="l", col=2, lty=2)
   lines(xgrid, sp.approx, col=4, lty=4)
-  legend("bottom", legend=c("J*", "S.P."), col=c(1,4), lty=c(1,4))
+  legend("topright", legend=c("J*", "S.P."), col=c(1,4), lty=c(1,4))
 
   plot(xgrid, log(y1), ylim=c(log(min(sp.approx, na.rm=TRUE)),log(ymax)), type="l")  
   lines(xgrid, log(sp.approx), col=4, lty=4)
@@ -297,6 +298,17 @@ if (FALSE)
 
   ## a2 = x.a2(ugrid, n, z)
   ## lines(xgrid, log(a2), col=3, lty=3)
+
+  ## ----------
+  
+  ymax = max(c(sp.approx), na.rm=TRUE)
+  plot(xgrid/4*n, 4*y1/n, type="l", ylim=c(0,4*ymax/n),
+       main=paste("Density of PG(", n, ")", sep=""), xlab="x", ylab="f")
+  ## lines(xgrid, y2, col=2, lty=2)
+  ## lines(xgrid, y3, col=3, lty=3)
+  ## lines(xgrid, y3, type="l", col=2, lty=2)
+  lines(xgrid/4*n, 4*sp.approx/n, col=4, lty=4)
+  legend("topright", legend=c("PG", "S.P."), col=c(1,4), lty=c(1,4))
 
   ##----------------------------------------------------------------------------
 

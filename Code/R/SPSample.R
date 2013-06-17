@@ -1,4 +1,25 @@
 
+################################################################################
+
+a.coef <- function(n, x, h, z)
+{
+  ## a_n(x,h).
+  ## You could precompute lgamma(h), log(2).
+  d.n = (2 * n + h)
+  l.out = h * log(2) - lgamma(h) + lgamma(n+h) - lgamma(n+1) + log(d.n) -
+    0.5 * log(2 * pi * x^3) - 0.5 * d.n^2 / x - 0.5 * z^2  * x;
+  out = cosh(z)^h * exp(l.out)
+  out
+}
+
+djstar <- function(xg, h, z, N=10)
+{
+  a = outer(0:N, xg, function(n,x){
+    (-1)^n*a.coef(n, x, h, z)
+  })
+  s = apply(a, 2, cumsum)
+  out = list("a"=a, "s"=s)
+}
 
 ################################################################################
 
@@ -361,7 +382,7 @@ ig.mode <- function(mu, lambda)
 if (FALSE)
 {
 
-  n = 4
+  n = 10
   z = 1
   
   dx = 0.001
@@ -555,6 +576,23 @@ rrtigauss.ch2 <- function(num, mu, lambda, trnc)
   for (i in 1:num) {
     temp = rrtigauss.ch2.1(mu, lambda, trnc)
     df[i,] = as.numeric(temp)
+  }
+  df
+}
+
+rrtigauss.reject <- function(num, mu, lambda, trnc)
+{
+  x = rep(0, num)
+  df = data.frame(x=x, iter=x)
+  for (i in 1:num) {
+    accept = FALSE
+    iter = 0
+    while(!accept) {
+      iter = iter + 1
+      draw = rigauss.1(mu, lambda)
+      accept = draw < trnc
+    }
+    df[i,] = c(draw, iter)
   }
   df
 }
@@ -1045,12 +1083,12 @@ if (FALSE) {
 
   speed.up = ave.time[3,,]/best.time
 
-  plot(n.seq, speed.up[,1], type="l", col=1, main="J*(1,z) Time / Best Time",
+  plot(n.seq, speed.up[,1], type="l", col=1, main="S1 Time / Best Time",
        xlab="n", ylab="Ratio")
   for (zdx in 2:z.len) {
     lines(n.seq, speed.up[,zdx], col=zdx)
   }
-  legend("bottomright", legend=paste("z =", z.seq), col=1:z.len, lty=1)
+  legend("bottomright", legend=paste("c =", 2*z.seq), col=1:z.len, lty=1)
 
 }
 
@@ -1063,8 +1101,8 @@ if (FALSE) {
    ## source("SPSample.R")
   source("ManualLoad.R")
   
-  nsamp = 100000
-  n = 200
+  nsamp = 10000
+  n = 20
   z = 1
 
   start.time = proc.time()
@@ -1096,3 +1134,54 @@ if (FALSE) {
   
 }
 
+################################################################################
+                       ## Kullback-Liebler Divergence ##
+################################################################################
+
+if (FALSE) {
+
+  ## source("ManualLoad.R")
+  ## source("SPSample.R")
+
+  dx = 0.01
+  xgrid = seq(dx, 4, dx)
+
+  h = 2
+  z = 1
+  N = 10
+  M = 10000
+
+  n.seq = c(1,2,3,4,10,12,14,16,18,20,30,40,50,100)
+  z.seq = c(0.0, 0.1, 0.5, 1, 2, 10)
+  len.n = length(n.seq)
+  len.z = length(z.seq)
+
+  kl = matrix(0, nrow=len.n, ncol=len.z)
+  dimnames(kl)[[1]] = paste("n", n.seq, sep="")
+  dimnames(kl)[[2]] = paste("z", z.seq, sep="")
+  
+  for (j in 1:len.z) {
+    for (i in 1:len.n) {
+      h = n.seq[i]
+      z = z.seq[j]
+      cat("Working on h =", h, "z =", z, "\n")
+      
+      out   = djstar(xgrid, h, z, N)
+      spa   = sp.approx(xgrid/h, h, z)/h
+      jgrid = out$s[3,]
+      
+      plot(xgrid, jgrid, type="l")
+      lines(xgrid, spa, col=2)
+      
+      X     = rpg.alt(M, h, z)
+      out   = djstar(X, h, z, N)
+      spad  = sp.approx(X/h, h, z)/h
+      jd    = out$s[3,]
+      ratio = spad / jd
+      
+      kl[i, j] = mean(log(ratio)*ratio)
+
+    }
+  }
+  
+}
