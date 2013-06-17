@@ -15,11 +15,11 @@ run <- list("flu"   =FALSE,
             "synth1"=FALSE,
             "synth2"=FALSE,
             "synth3"=FALSE,
-            "allsynth"=FALSE)
+            "allsynth"=TRUE)
 
 methods = c("PG", "FS", "CUBS")
 
-write.dir = "."
+write.dir = "Bench-Dyn-03" # Used in file.path
 
 write.it = FALSE
 plot.it  = FALSE
@@ -30,7 +30,7 @@ run.idc = 1:2
 samp = 10000
 burn  = 2000
 verbose = 1000
-ntrials = 2
+ntrials = 10
 
 ################################################################################
                              ## Dyn NB Benchmark ##
@@ -334,17 +334,23 @@ if (run$allsynth)
 
   ## source("Benchmark-DynNB.R")
 
+  sstats = list()
+  tables = list()
+  ids    = list()
+  iter   = 0
+  
   P = 2
   nb.mean = 100
   corr.type = "high"
   ## est.ar = "with.ar"
   est.ar = "with.ar"
-
+  
   for (est.ar in c("wout.ar", "with.ar")) {
     ## for (P in c(2,4)) {
       for (nb.mean in c(10,100)) {
         for (corr.type in c("low", "high")) {
 
+  iter = iter + 1
   cat("AR:", est.ar, "\n");
           
   dset.name = paste(corr.type, "-", P, "-mu-", nb.mean, sep="");
@@ -396,7 +402,21 @@ if (run$allsynth)
   ## if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X, n=n, bmark1=pg, bmark2=fs); }
   if (write.it) save(bench.synth, synth.table, dset.name, file=file.path(write.dir, filename))
 
+  sstats[[iter]] = synth.table$ave.sstat
+  tables[[iter]] = synth.table$table
+  ids[[iter]]    = filename
+  
 }}}#}
+  
+}
+
+## Write tables.
+if (FALSE) {
+
+  for (i in 1:length(ids)) {
+    tempname = sub("RData", "table", ids[[i]])
+    write.table(tables[[i]], tempname)
+  }
   
 }
 
@@ -420,11 +440,13 @@ if (FALSE) {
         bench.base  = paste("bench-dynnb-", dset.name, "-", est.ar, sep="");
         bench.data  = paste(bench.base, ".RData", sep="")
         table.file  = paste("table.", bench.base, sep="");
-
                   
         load(file.path("Benchmark-DataSets", source.file))
         load(file.path("Bench-Dyn-02", bench.data))
 
+        ## cat("phi.true", phi.true, "\n");
+        ## cat("W.true:", W.true, "\n");
+        
         the.table = synth.table$table
         the.table[3,2] = mean(bench.synth$CUBS$arate)
         
