@@ -68,7 +68,8 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
     beta = array(0, dim=c(M, P.b, T+1)),
     mu   = array(0, dim=c(M, P.b)),
     phi  = array(0, dim=c(M, P.b)),
-    W    = array(0, dim=c(M, P.b))
+    W    = array(0, dim=c(M, P.b)),
+    psi  = array(0, dim=c(M, T))
     )
 
   ## Initialize ##
@@ -109,7 +110,7 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
     if (j==burn+1) start.ess = proc.time();
 
     psi = apply(X.dyn * t(beta)[-1,], 1, sum);
-    if (P.a > 0) psi = psi + X.stc %*% iota;
+    if (P.a > 0) { psi = psi + X.stc %*% iota; }
     
     ## draw om
     om = rpg.devroye(T, n, psi);
@@ -136,6 +137,7 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
       out$mu[j-burn, ]    = mu;
       out$phi[j-burn, ]   = phi;
       out$W[j-burn, ]     = W;
+      out$psi[j-burn,]    = psi;
     }
 
     if (j %% verbose == 0) { cat("Dyn Logit PG: Iteration", j, "\n"); }
