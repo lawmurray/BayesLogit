@@ -42,6 +42,8 @@ $rsyncit $CODE/C/CUBS_update.h    $BLDIR/src/
 $rsyncit $CODE/C/CUBS_update.cpp  $BLDIR/src/
 $rsyncit $CODE/C/AR1.h            $BLDIR/src/
 $rsyncit $CODE/C/AR1.cpp          $BLDIR/src/
+$rsyncit $CODE/C/DynExpFamMH.hpp  $BLDIR/src/DynExpFamMH.h
+$rsyncit $CODE/C/DynExpFamMH.cpp  $BLDIR/src/
   
 
 $rsyncit $INCL/Matrix/Matrix.h             $BLDIR/src/
@@ -60,6 +62,7 @@ $rsyncit $CODE/R/Indicators.R       $BLDIR/R/
 $rsyncit $CODE/R/Logit-Indicators.R $BLDIR/R/
 $rsyncit $CODE/R/FFBS.R             $BLDIR/R/
 $rsyncit $CODE/R/CUBS.R             $BLDIR/inst/Dynamic/R/
+$rsyncit $CODE/R/DynExpFamMHWrapper.R $BLDIR/R/
 $rsyncit $CODE/R/KS.R               $BLDIR/R/
 $rsyncit $CODE/R/AR1.R              $BLDIR/R/
 $rsyncit $CODE/R/ComputeMixture.R   $BLDIR/R/
@@ -70,6 +73,7 @@ $rsyncit $CODE/R/logit-EM.R      $BLDIR/R/
 $rsyncit $CODE/R/logit-combine.R $BLDIR/R/
 $rsyncit $CODE/R/PG.R            $BLDIR/R/
 $rsyncit $CODE/R/MultLogitPG.R   $BLDIR/R/
+
 
 # Data files.
 $rsyncit $CODE/R/DataSets/spambase.RData   $BLDIR/data/
