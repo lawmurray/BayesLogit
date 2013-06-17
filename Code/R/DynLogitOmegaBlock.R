@@ -101,7 +101,7 @@ dyn.logit.om <- function(y, X.dyn, n, m0, C0,
     ## Draw beta
     if (!know.beta) {
       prior.prec = diag(1/W, N.b * N);
-      prior.prec[1:N.b,1:N.b] = solve(diag(1/W, N.b) + diag(phi,P) %*% C0 %*% diag(phi,P));
+      prior.prec[1:N.b,1:N.b] = solve(diag(W, N.b) + diag(phi,P) %*% C0 %*% diag(phi,P));
       draw = draw.omega.mh(omega, beta, llh, y, tX.dyn, ntrials=n, prior.prec, phi, starts, just.max=just.max, offset=psi.stc);
       omega   = draw$omega;
       beta    = draw$beta;

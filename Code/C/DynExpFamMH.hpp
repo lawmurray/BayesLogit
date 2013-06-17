@@ -12,6 +12,7 @@
 #endif
 
 using std::vector;
+using Eigen::VectorXi;
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using Eigen::MatrixXi;
@@ -180,9 +181,9 @@ double rNorm(MatrixBase<dV>& d, const Gaussian& nbp, RNG& r)
   return ldens;
 }
 
-template<typename dV>
-void log_logit_likelihood(const MatrixBase<dV>& y,
-			  const int ntrials,
+template<typename dV1, typename dV2>
+void log_logit_likelihood(const MatrixBase<dV1>& y,
+			  const MatrixBase<dV2>& ntrials,
 			  llh_struct& llh,
 			  const int block_start,
 			  const int num_blocks)
@@ -190,11 +191,10 @@ void log_logit_likelihood(const MatrixBase<dV>& y,
   // Assume psi_stc and psi_dyn are set correct.
   // int nsize = y.size();
   
-  double ntrialsd = (double) ntrials;
-
   int block_end = block_start + num_blocks;
 
   for (int i = block_start; i < block_end; i++) {
+    double ntrialsd = (double) ntrials[i];
     llh.psi[i]  = llh.psi_stc[i] + llh.psi_dyn[i];
     double psi  = llh.psi[i];
     double epsi = exp(psi);
@@ -208,9 +208,9 @@ void log_logit_likelihood(const MatrixBase<dV>& y,
 
 }
 
-template<typename dV>
-void log_logit_likelihood(const MatrixBase<dV>& y,
-			  const int ntrials,
+template<typename dV1, typename dV2>
+void log_logit_likelihood(const MatrixBase<dV1>& y,
+			  const MatrixBase<dV2>& ntrials,
 			  llh_struct& llh,
 			  const int block_start)
 {
@@ -308,9 +308,9 @@ void laplace_stc_beta(Gaussian& nbp, const MatrixBase<dV1>& beta, const llh_stru
 
 }
 
-template <typename dM, typename dV1, typename dV2>
+template <typename dM, typename dV1, typename dV2, typename dV3>
 bool draw_stc_beta(MatrixBase<dV2>& beta, llh_struct& llh,
-		   MatrixBase<dV1>& y, MatrixBase<dM>& X, int ntrials, 
+		   MatrixBase<dV1>& y, MatrixBase<dM>& X, MatrixBase<dV3>& ntrials, 
 		   MatrixBase<dV1>& offset, 
 		   MatrixBase<dV1>& b0, MatrixBase<dM>& P0,
 		   RNG& r, bool just_maximize=false)
@@ -321,7 +321,7 @@ bool draw_stc_beta(MatrixBase<dV2>& beta, llh_struct& llh,
   // std::cout << "b0:\n" << b0.transpose() << "\n";
   // std::cout << "P0:\n" << P0 << "\n";
   // std::cout << "offset:\n" << offset.transpose() << "\n";
-  // std::cout << "ntrials:\n" << ntrials << "\n";
+  // std::cout << "ntrials:\n" << ntrials.transpose() << "\n";
 
   // int N = X.rows();
   int B = X.cols();
@@ -561,9 +561,9 @@ void laplace_omega(Gaussian& nbp, const MatrixBase<dV1>& omega, const llh_struct
 
 }
 
-template <typename dM, typename dV>
+template <typename dM, typename dV, typename dV2>
 bool draw_omega_block(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& llh,
-		      MatrixBase<dV>& y, MatrixBase<dM>& tX, int ntrials, MatrixBase<dV>& offset,
+		      MatrixBase<dV>& y, MatrixBase<dM>& tX, MatrixBase<dV2>& ntrials, MatrixBase<dV>& offset,
 		      MatrixBase<dM>& Xi, MatrixBase<dM>& L,
 		      MatrixBase<dM>& prior_prec, MatrixBase<dM>& Phi,
 		      int block_start, int num_blocks, 
@@ -664,9 +664,9 @@ bool draw_omega_block(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& l
   return accept;
 }
 
-template<typename dM, typename dV>
+template<typename dM, typename dV, typename dV2>
 int draw_omega(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& llh,
-	       MatrixBase<dV>& y, MatrixBase<dM>& tX, int ntrials, MatrixBase<dV>& offset,
+	       MatrixBase<dV>& y, MatrixBase<dM>& tX, MatrixBase<dV2>& ntrials, MatrixBase<dV>& offset,
 	       MatrixBase<dM>& Xi, MatrixBase<dM>& L,
 	       MatrixBase<dM>& prior_prec, MatrixBase<dM>& Phi,
 	       MatrixXi& starts,
@@ -686,19 +686,19 @@ int draw_omega(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& llh,
 
   int naccept = 0;
 
-  // cout << "omega:\n" << omega << "\n";
-  // cout << "y:\n" << y.transpose() << "\n";
-  // cout << "tX:\n" << tX << "\n";
-  // cout << "Xi:\n" << Xi << "\n";
-  // cout << "L:\n" << L << "\n";
-  // cout << "prior.prec:\n" << prior_prec << "\n";
-  // cout << "Phi:\n" << Phi << "\n";
+  // std::cout << "omega:\n" << omega << "\n";
+  // std::cout << "y:\n" << y.transpose() << "\n";
+  // std::cout << "tX:\n" << tX << "\n";
+  // std::cout << "Xi:\n" << Xi << "\n";
+  // std::cout << "L:\n" << L << "\n";
+  // std::cout << "prior.prec:\n" << prior_prec << "\n";
+  // std::cout << "Phi:\n" << Phi << "\n";
 
-  // cout << "psi:\n" << llh.psi.transpose() << "\n";
-  // cout << "l0:\n"  << llh.l0.transpose()  << "\n";
-  // cout << "l1:\n"  << llh.l1.transpose()  << "\n";
-  // cout << "l2:\n"  << llh.l2.transpose()  << "\n";
-  // cout << "pl2:\n" << llh.pl2.transpose() << "\n";
+  // std::cout << "psi:\n" << llh.psi.transpose() << "\n";
+  // std::cout << "l0:\n"  << llh.l0.transpose()  << "\n";
+  // std::cout << "l1:\n"  << llh.l1.transpose()  << "\n";
+  // std::cout << "l2:\n"  << llh.l2.transpose()  << "\n";
+  // std::cout << "pl2:\n" << llh.pl2.transpose() << "\n";
 
   for (int i=0; i<ssize; i++) {
     int num_blocks = the_breaks(i+1) - the_breaks(i);

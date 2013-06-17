@@ -446,15 +446,15 @@ if (FALSE) {
 
   P.a = 2
   X.stc = matrix(rnorm(N*2), N, 2);
-  ## alpha.t = c(-1, 1);
-  alpha.t = c(0, 0);
+  alpha.t = c(-1, 1);
+  ## alpha.t = c(0, 0);
   
   phi = 0.9
   sig = 1.0
   W   = sig^2;
   n = 20
   m0 = rep(0, P)
-  C0 = diag(1,P)
+  C0 = diag(1.0,P)
   m0.stc = rep(0, P.a)
   C0.stc = diag(100, P.a)
 
@@ -484,13 +484,13 @@ if (FALSE) {
 if (FALSE) {
 
   ## starts = c(1,5)
-  starts = c(1, 6);
-  samp = 4000
+  starts = c(1,6);
+  samp = 20000
   burn = 1000
   verbose = 1000
   just.max = FALSE
 
-  set.seed(1000);
+  ## set.seed(1000);
   
   source("DynLogitOmegaBlock.R")
   output4 <- dyn.logit.om(y=y, X.dyn=X, n=n, m0=m0, C0=C0,
@@ -498,7 +498,7 @@ if (FALSE) {
                       mu.m0=NULL, mu.P0=NULL,
                       phi.m0=NULL, phi.P0=NULL,
                       W.a0=NULL, W.b0=NULL,
-                      X.stc=NULL, m0.stc=m0.stc, C0.stc=C0.stc,
+                      X.stc=X.stc, m0.stc=m0.stc, C0.stc=C0.stc,
                       mu.true = 0, phi.true=phi, W.true=W,
                       alpha.true=NULL, beta.true = NULL, 
                       just.max=just.max)
@@ -506,8 +506,8 @@ if (FALSE) {
   ## plot(beta.t[1,], type="l")
   ## lines(output4$beta[samp,1,], col=2)
 
-  ## alpha.m4 = output4$alpha[samp,]
-  ## beta.m4  = output4$beta[samp,,]
+  alpha.m4 = apply(output4$alpha, 2, mean)
+  beta.m4  = apply(output4$beta, c(2,3), mean)
   ## psi.m4   = colSums(t(X) * beta.m4) + X.stc %*% alpha.m4
   psi.m4   = output4$psi
   p.m4     = exp(psi.m4) / (1 + exp(psi.m4))
@@ -519,14 +519,14 @@ if (FALSE) {
 
   ##------------------------------------------------------------------------------
   
-  pg.C0 = diag(1, P + P.a); pg.C0[1:P.a,1:P.a] = C0.stc; pg.C0[P.a:(P.a+P),P.a:(P.a+P)] = C0
+  pg.C0 = diag(1, P + P.a); pg.C0[1:P.a,1:P.a] = C0.stc; pg.C0[(P.a+1):(P.a+P),(P.a+1):(P.a+P)] = C0
   pg.m0 = c(m0.stc, m0)
 
-  pg.C0 = C0
-  pg.m0 = m0
+  ## pg.C0 = C0
+  ## pg.m0 = m0
 
   source("DynLogitPG.R")
-  out.pg <- dyn.logit.PG(y=y, X.dyn=X, n=rep(n, length(y)), X.stc=NULL,
+  out.pg <- dyn.logit.PG(y=y, X.dyn=X, n=rep(n, length(y)), X.stc=X.stc,
                          samp=samp, burn=burn, verbose=verbose,
                          m.0=pg.m0, C.0=pg.C0,
                          mu.m0=NULL, mu.P0=NULL,
@@ -535,9 +535,9 @@ if (FALSE) {
                          beta.true=NULL, iota.true=NULL, w.true=NULL,
                          mu.true=0, phi.true=phi, W.true=W)
     
-  ## beta.pg  = apply(out.pg$beta, c(2,3), mean)
-  ## alpha.pg = apply(out.pg$alpha, 2, mean)
-  ## psi.m5 = colSums(t(X) * beta.pg[,-1]) + X.stc %*% alpha.pg
+  beta.pg  = apply(out.pg$beta[,,-1,drop=FALSE], c(2,3), mean)
+  alpha.pg = apply(out.pg$alpha, 2, mean)
+  ## psi.m5 = colSums(t(X) * beta.pg) + X.stc %*% alpha.pg
   p.m5   = 1.0 / (1 + exp(-out.pg$psi))
   p.m5   = apply(p.m5, 2, mean)
   lines(n * p.m5, col=5, lty=5);
@@ -599,5 +599,80 @@ if (FALSE) {
   beta.om3 = matrix(L %*% as.numeric(om.m3), nrow=P, ncol=N);
 
   lines(n*p.om3, col=3, lty=3)
+  
+}
+
+
+################################################################################
+
+if (FALSE) {
+
+  N = 10
+  P = 1
+  n = 20
+  
+  P.a = 2
+  X.stc = matrix(rnorm(N*2), N, 2);
+  alpha.t = c(-1, 1);
+  ## alpha.t = c(0, 0);
+
+  beta.t  = matrix(0, nrow=P, ncol=N);
+  
+  X = matrix(1, nrow=N, ncol=P)
+  psi.dyn.t = colSums(t(X) * beta.t)
+  psi.stc.t = X.stc %*% alpha.t
+  psi.t = psi.dyn.t + psi.stc.t;
+  p.t = exp(psi.t) / (1 + exp(psi.t))
+  y = rbinom(N, n, prob=p.t);
+
+  plot(y, ylim=c(0, n))
+  lines(n*p.t, col=2);
+  
+}
+
+if (FALSE) {
+
+  ## starts = c(1,5)
+  starts = c(1, 6);
+  samp = 10000
+  burn = 1000
+  verbose = 1000
+  just.max = FALSE
+
+  ## set.seed(1000);
+  
+  source("DynLogitOmegaBlock.R")
+  output6 <- dyn.logit.om(y=y, X.dyn=X, n=n, m0=m0, C0=C0,
+                      samp=samp, burn=burn, verbose=verbose, starts=starts,
+                      mu.m0=NULL, mu.P0=NULL,
+                      phi.m0=NULL, phi.P0=NULL,
+                      W.a0=NULL, W.b0=NULL,
+                      X.stc=X.stc, m0.stc=m0.stc, C0.stc=C0.stc,
+                      mu.true = 0, phi.true=phi, W.true=W,
+                      alpha.true=NULL, beta.true = beta.t, 
+                      just.max=just.max)
+
+  ## plot(beta.t[1,], type="l")
+  ## lines(output6$beta[samp,1,], col=2)
+
+  alpha.m6 = apply(output6$alpha, 2, mean)
+  beta.m6  = apply(output6$beta, c(2,3), mean)
+  ## psi.m6   = colSums(t(X) * beta.m6) + X.stc %*% alpha.m6
+  psi.m6   = output6$psi
+  p.m6     = exp(psi.m6) / (1 + exp(psi.m6))
+  p.m6     = apply(p.m6, 2, mean)
+
+  plot(y)
+  lines(n * p.t, col=1)
+  lines(n * p.m6, col=4, lty=4)
+
+  ##------------------------------------------------------------------------------
+
+  output7 = logit(y/n, X=X.stc, n=rep(n, length(y)), m0.stc, solve(C0.stc), samp=samp, burn=burn);
+  alpha.m7 = apply(output7$beta, 2, mean)
+  psi.post.m7 = output7$beta %*% t(X.stc)
+  p.m7   = 1.0 / (1 + exp(-psi.post.m7))
+  p.m7   = apply(p.m7, 2, mean)
+  lines(n * p.m7, col=5, lty=5);
   
 }

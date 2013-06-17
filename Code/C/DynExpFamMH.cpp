@@ -64,6 +64,7 @@ void draw_omega(double* omega, double* beta,
 
   Map<VectorXd> y_m(y, N);
   Map<MatrixXd> tX_m(tX, B, N);
+  Map<VectorXi> ntrials_m(ntrials, N);
   Map<VectorXd> offset_m(offset, N);
    
   MatrixXd Xi(N, NB);
@@ -112,7 +113,7 @@ void draw_omega(double* omega, double* beta,
 
   *naccept = 0;
   *naccept = draw_omega(omega_m, beta_m, llh,
-			y_m, tX_m, *ntrials, offset_m,
+			y_m, tX_m, ntrials_m, offset_m,
 			Xi_m, L_m, 
 			prior_prec_m, Phi_m,
 			starts_mat, r, *just_maximize);
@@ -153,6 +154,7 @@ void draw_stc_beta(double* beta,
 
   Map<VectorXd> y_m(y, N);
   Map<MatrixXd> X_m(X, N, B);
+  Map<VectorXi> ntrials_m(ntrials, N);
   Map<VectorXd> offset_m(offset, N);
 
   Map<VectorXd> b0_m(b0, B);
@@ -174,7 +176,7 @@ void draw_stc_beta(double* beta,
   #endif
 
   *naccept = 0;
-  *naccept = draw_stc_beta(beta_m, llh, y_m, X_m, *ntrials, offset_m, b0_m, P0_m, r, *just_maximize);
+  *naccept = draw_stc_beta(beta_m, llh, y_m, X_m, ntrials_m, offset_m, b0_m, P0_m, r, *just_maximize);
 
   #ifdef USE_R
   PutRNGstate();
