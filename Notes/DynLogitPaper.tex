@@ -47,35 +47,34 @@ generalized linear models with logistic likelihoods.  Further, we perform an
 suite of empirical benchmarks to show that the \Polya-Gamma data augmentation
 technique out-performs other MCMC methods for binary logistic regression.
 
-Generalized linear models extend linear models by accomodating non-normal
-responses \citep{mccullagh-nelder-1989}.  In a generalized linear model (GLM)
-the response $y_t \sim P(\psi_t)$ depends on $\psi_t$ in a possibly non-linear
-way while $\psi_t$ itself is a linear combination of predictors, $x_t' \beta$.
-Extensions to the dynamic case are straightforward via a dynamic regression:
-$\psi_t = x_t' \beta_t$, where one must specify the dynamics of $\beta_t$ to
-complete the model.  Unlike Gaussian, linear models, most likelihoods found in
-generalized linear models do not lead to convenient posterior distributions for
-$\beta$ or $\{\beta_t\}_{t=0}^T$.  Thus, when generating posterior samples one
-must appeal to Metropolis-Hastings, Gibbs sampling with data augmentation, or
-some other MCMC method.
+Generalized linear models consider responses $y_t \sim P(\psi_t)$ that depend on
+the linear combination of predictors $\psi_t = x_t' \beta$ in a (possibly)
+non-linear way \citep{mccullagh-nelder-1989}.  Extensions to the dynamic case
+are straightforward via a dynamic regression coefficient: $\psi_t = x_t'
+\beta_t$, where one must specify the dynamics of $\beta_t$ to complete the model
+.  Unlike Gaussian, linear models, most likelihoods found in generalized linear
+models do not lead to convenient posterior distributions for $\beta$ or
+$\{\beta_t\}_{t=0}^T$.  Thus, when generating posterior samples one must appeal
+to Metropolis-Hastings, Gibbs sampling with data augmentation, or some other
+MCMC method.
 
 The challenge of generating posterior samples is exacerbated for dynamic models
 since there are many more unknown quantities to estimate than in the static
 case, which makes, for instance, direct extensions of Metropolis-Hastings
 samplers difficult.  This is the case for GLMs with logistic likelihoods, a
-subclass of GLMS that has observation mass functions of the form
+subclass of GLMs that have probability mass functions of the form
 \[
 p(y | \psi) \propto h(y) \prod_{i=1}^n
 \frac{(e^{\psi_i})^{a_i(y)}}{(1+e^{\psi_i})^{b_i(y)}} \, ,
 \]
 and for which \Polya-Gamma data augmentation is applicable.  Such likelihoods
-arise when modeling proportions or counts.  For instance, the binomial logistic
-regression likelihood and the negative binomial regression likelihood may be
-written in the form above.  These two models alone are useful in a wide variety
-of applications.  Dynamic versions of these models are used in economics
-[McFadden], epidemiology [cite Lauren], ecology [cite Lauren], and neuroscience
-[cite Jonathan and Larry] amongst others.  Hence, it is important to know the
-most efficient methods for generating posterior samples for such models.
+arise when modeling proportions on the log-odds scale, which is often convenient
+for categorical or count data.  For instance, two common models, binomial
+logistic regression and negative binomial regression, fit within this framework.
+Dynamic versions of these models are used in economics [McFadden], epidemiology
+[cite Lauren], ecology [cite Lauren], and neuroscience [cite Jonathan and Larry]
+amongst others.  Hence, it is important to know the most efficient methods for
+generating posterior samples for such models.
 
 This paper examines the relative merits of the three approaches for posterior
 inference in dynamic generalized linear models (GDLM) with logistic likelihoods:
@@ -649,7 +648,97 @@ negative binomial regression.
             CUBS  &   674.96 &     0.30 &   381.00 &   744.60 &  1115.24 &     0.56 &     1.10 &     1.65
  \end{tabular}
 
+\caption{Using old non-hybrid sampler.}
 
+\end{table}
+
+\newpage
+
+\begin{table}
+
+% ./bench-dynnb-low-2-mu-10-wout.ar.table
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Low: $P=2$, $N=10$, $\Phi = 0.95I$, $W=0.172 I$} \\
+\hline
+          Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
+             PG   &    42.19 &     1.00 &   7909.83 &   9605.44 &   9989.04 &    187.49 &    227.68 &    236.77 \\ 
+             FS   &    29.49 &     1.00 &   1828.26 &   6526.06 &   9794.63 &     62.00 &    221.31 &    332.15
+ \end{tabular}
+
+%./bench-dynnb-low-2-mu-10-with.ar.table
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Low: $P=2$, $N=10$, $\phi \sim N(0.95, 0.1 I)$, $W_i \sim Ga(300/2, 30/2)$} \\
+\hline
+          Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
+             PG   &    45.03 &     1.00 &    159.08 &   4846.11 &   9717.61 &      3.53 &    107.62 &    215.79 \\ 
+             FS   &    32.36 &     1.00 &    140.04 &   1824.40 &   7436.81 &      4.33 &     56.37 &    229.79
+ \end{tabular}
+
+% ./bench-dynnb-high-2-mu-10-wout.ar.table
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{High: $P=2$, $N=10$, $\Phi = 0.95I$, $W=0.172 I$} \\
+\hline
+          Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
+             PG   &    42.08 &     1.00 &   9092.48 &   9724.85 &   9968.42 &    216.06 &    231.09 &    236.88 \\ 
+             FS   &    29.52 &     1.00 &   2915.06 &   5866.55 &   9705.36 &     98.74 &    198.71 &    328.74
+ \end{tabular}
+
+% ./bench-dynnb-high-2-mu-10-with.ar.table
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{High: $P=2$, $N=10$, $\phi \sim N(0.95, 0.1 I)$, $W_i \sim Ga(300/2, 30/2)$} \\
+\hline
+          Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
+             PG   &    44.93 &     1.00 &    276.43 &   1969.84 &   9528.81 &      6.15 &     43.84 &    212.09 \\ 
+             FS   &    32.39 &     1.00 &    239.37 &   1090.05 &   5350.24 &      7.39 &     33.65 &    165.19
+ \end{tabular}
+
+% ./bench-dynnb-low-2-mu-100-wout.ar.table
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Low: $P=2$, $N=100$, $\Phi = 0.95I$, $W=0.172 I$} \\
+\hline
+          Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
+             PG   &    38.41 &     1.00 &   1886.58 &   7345.99 &   9855.94 &     49.12 &    191.26 &    256.61 \\ 
+             FS   &    29.49 &     1.00 &   2447.72 &   7362.03 &   9927.30 &     83.00 &    249.64 &    336.62
+ \end{tabular}
+
+% ./bench-dynnb-low-2-mu-100-with.ar.table
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{Low: $P=2$, $N=100$, $\phi \sim N(0.95, 0.1 I)$, $W_i \sim Ga(300/2, 30/2)$} \\
+\hline
+          Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
+             PG   &    41.25 &     1.00 &   1832.73 &   4804.28 &   9270.06 &     44.43 &    116.46 &    224.71 \\ 
+             FS   &    32.34 &     1.00 &   2283.24 &   4706.06 &   9081.44 &     70.60 &    145.52 &    280.80
+ \end{tabular}
+
+% ./bench-dynnb-high-2-mu-100-wout.ar.table
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{High: $P=2$, $N=100$, $\Phi = 0.95I$, $W=0.172 I$} \\
+\hline
+          Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
+             PG   &    40.60 &     1.00 &   4037.45 &   7248.51 &   9720.22 &     99.44 &    178.52 &    239.40 \\ 
+             FS   &    29.49 &     1.00 &   3449.77 &   6959.22 &   9727.76 &    116.98 &    235.98 &    329.85
+ \end{tabular}
+
+% ./bench-dynnb-high-2-mu-100-with.ar.table
+\begin{tabular}{l r r r r r r r r } 
+\hline
+\multicolumn{9}{c}{High: $P=2$, $N=100$, $\phi \sim N(0.95, 0.1 I)$, $W_i \sim Ga(300/2, 30/2)$} \\
+\hline
+          Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
+             PG   &    43.42 &     1.00 &   1308.62 &   3487.57 &   8016.66 &     30.13 &     80.31 &    184.62 \\ 
+             FS   &    32.35 &     1.00 &   1199.19 &   3212.34 &   7733.74 &     37.07 &     99.29 &    239.05
+ \end{tabular}
+
+\caption{Using hybrid sampler.  $d$ set to 4.  $x_t^{(i)} \propto
+  \cos( \pi \omega_i u_t)$.  $\beta_t = \phi \beta_{t-1} + \omega_t, \; \omega_t
+  \sim N(0, W)$.  $\psi_t = \log(nb.mean) + x_t' \beta_t$.}
 
 \end{table}
 

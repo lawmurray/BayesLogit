@@ -10,6 +10,8 @@
 \newcommand{\Ga}{\text{Ga}}
 \newcommand{\NB}{\text{NB}}
 
+%\newcommand{\vect}{\text{vec}}
+
 % Page Layout
 \setlength{\oddsidemargin}{0.0in}
 \setlength{\textwidth}{6.5in}
@@ -1260,6 +1262,702 @@ Taking derivatives we have
 \]
 
 \end{description}
+
+\section{Dynamic Regression (Again)}
+
+I believe \cite{shephard-pitt-1997} relies on quasi-likelihoods.  Recall, for
+the moment, that in general, we have
+\[
+p(y|\theta) p(\theta) = p(y,\theta).
+\]
+Hence, 
+\[
+p(\theta | y) = p(y,\theta) / p(y).
+\]
+Or we could be estimating some of the $\theta$'s, call the subset of interest
+$\theta_1$ and the remaining, $\theta_2$.  Then we have
+\[
+p(\theta_1 | y, \theta_2) = p(y,\theta) / p(y, \theta_2).
+\]
+When finding a Laplace approximation in either case, the normalizing constant
+does not matter, since it is not a function of $\theta$ or $\theta_1$,
+respectively.  We just need the joint distribution, i.e. the data-generating
+process with the prior, to calculate the appropriate gradient and Hessian.
+Also, I believe we could do a single Netwon set to update $\theta$ or we could
+combine two Newton steps to update $\theta_1$ and $\theta_2$, which would
+essentially be coordinate ascent and Newton.  The same applies to MH sampling.
+We can come up with the Laplace approximation and then using it to sample in
+block-like fashion.
+
+In the dynamic case, Shephard and Pitt suggest using a transformation from
+$\theta$ to $\omega$, which corresponds to the innovation variance.  In the case
+that
+\[
+\theta_t = \Phi \theta_{t-1} + \omega_t
+\]
+this corresponds to $A \theta = \omega$, where $A$ is the lower triangular
+matrix
+\[
+A =
+\begin{pmatrix}
+I & 0 & 0 & 0 & \ldots \\
+-\Phi & I & 0 & 0 & \ldots \\
+0 & -\Phi & I & 0 & \ldots \\
+0 & 0 & -\Phi & I & \ddots \\
+\vdots & \vdots & \vdots & \ddots & \ddots
+\end{pmatrix}
+\]
+and $\theta = \{\theta_0, \ldots, \theta_T\}$.  Sovling $Ax = b$ is fast.  In
+fact, we know that $\theta_0 = \omega_0$ and $\theta_t = \omega_t + \Phi
+\theta_{t-1}$, we can solve this inductively (forward solve).  We can also
+invert $A$ easily, it is lower triangular.  We know that $\theta$ has a nice
+Markovian factorization and that this can be used for forward filtering and
+backwards sampling.  However, it isn't obvious to me that has nice structure
+when conditioning on ``future'' values of $\theta_t$.  Though, as the
+calculation in the previous section shows, it seems like that factorization
+should still be useful when finding a Laplace approximation.  It seems like we
+should still get a digonal Hessian.
+
+Let $\ell(\theta)$ denote the likelihood.  In the case of exponential studies,
+this likelihood has been studied extensively.  I should be able to find the
+closed form solution to $\nabla_\theta \ell$.  From that, one should get
+something like
+\[
+\nabla_\omega \ell (\theta(\omega)) = \nabla_\theta \ell(\theta) A^{-1} h^{\omega}.
+\]
+A similar calculation is available for the Hessian:
+\[
+D^2_\omega \ell (\theta(\omega)) = (h_2^{\omega})' (A^{-1})' D^2_\theta \ell(\theta)
+(A^{-1}) h_1^{\omega}.
+\]
+
+For our problems, we have the log-odds, $\psi_t = x_t \beta_t$, the states
+$\beta_t$, and the innovations $\omega_t$.  One minor concern I have is
+incorporating an intercept, which previously I did using FFBS.  Though, in the
+MCMC case it may not matter.
+
+So we should have $\ell(\psi) = \sum_{i=1}^T \ell(\psi_i)$, where I am abusing
+notation by using two $\ell$'s.  In the dynamic case $\psi = X \theta$ where $X
+= \diag\{x_t'\}$.  Then
+\[
+\frac{\del^2 \ell}{\del \theta_j \del \theta_j} = x_j \ell''(x_t \theta_t) x_j'
+\]
+and
+\[
+\frac{\del^2 \ell}{\del \theta_i \del \theta_j} = 0 \, , \; i \neq j. 
+\]
+So the Hessian for the LLH in $\theta$ is block diabonal with rank-1 blocks.  We
+regularize this using the prior.  We can transform this using $A$.  Or, we can
+use a submatrix of $A$ is we only care about updating a certain portion of
+$\omega$.
+
+In particular, let $\theta^{(t)}_{i} = \theta_{t+i}$.  Then given,
+$\theta^{(t)}_{0:k+1}$ we can map $\theta^{(t)}_{1:k}$ to $\omega^{(t)}_{1:k}$.
+
+There are a couple of options I need to think about here.  We can draw $\theta$
+in blocks.  We can draw $\omega$ in blocks.  We can draw $\theta$ in blocks by
+drawing $p(\omega_1 | y, \theta_2)$ and then transforming $\omega_1$ to
+$\theta_1$.  It seems to me that this last option is what Shephard and Pitt are
+suggesting.  Note that $A'A = P$ where $P$ is the precision matrix of the prior.
+$A$ is lower bidiagonal and $P$ is tridiagonal.  We know that $\omega = A^{-1}
+\theta$ will lead to a term of the form $\omega' \omega$ in the log-posterior,
+effecitively making the ``prior'' of $\omega$ diagonal.  (Since we are just
+scaling things, this does, in fact, correspond to the true prior.)  This is
+telling us that we know how to factor tridiagonal matrices.  Now imagine that we
+want to sample $\theta_1$ given $\theta_2$.  Let $H$ be the Hessian of the
+log-likelihood of $\theta$ and $P$ be the precision of the prior of $\theta$, where
+the prior is assumed to be Gaussian.  Then we should have something like
+\[
+\theta_1' (H_{11} + P_{11}) \theta_{1} - 2 \theta_1' (H_{12} + P_{12}) \theta_2
+- 2 \theta_1' G_1
+\]
+where $G_1$ is the gradient of the log-likelihood.  (I have assumed we are
+centering around 0.)  We know that $H_{11}$ is block diagonal and $P_{11}$ is
+tridiagonal for our purposes.  We also that we can transform $\theta_1$ so that
+$P_{11}$ will turn into a diagonal matrix.  (When transforming we need to be
+careful.  I believe we want to think about getting the Laplace approximation to
+$p(\theta_1 | y, \theta_2)$ and then transforming $\theta_1$ to $\omega_1$,
+which alters the distribution.  Since we are working with a Gaussian
+approximation, everything will work out nicely.)  It is also useful to think
+carefully about $H_{12}$ and $P_{12}$.  $H_{12}$ should be zero because $H$ is
+block diagonal.  $P_{12}$ should mostly be zero, since $P$ is tridiagonal.  Thus
+only the $\theta$ values on the border should matter.  (Since $H$ is block
+diagonal, we should only have to update that in blocks as a function of
+$\theta$.  $P$ is fixed as a function of $\theta$.  We will need to recalculate
+both when we change the parameters of the AR model.)
+
+\section{Dynamic MH (III)}
+
+(See \citep{wedderburn-1974}.)  Consider the static case.  Suppose we
+have log-likelihood $\sum_{i=1}^N \ell(\psi_i)$ and log prior $\rho(\beta)$.
+Assume the prior is Gaussian.  Then the second order approximation to the
+log-posterior is completely determined by the log-likelihood.  In that case, we
+have
+\[
+\frac{\del}{\del \beta} \sum_{i=1}^N \ell(\psi_i) = 
+\sum_{i=1}^N \ell'(\psi_i) x_i'
+\]
+as $\psi_i = x_i' \beta$.  The second derivative is
+\[
+\frac{\del}{\del \beta} \sum_{i=1}^N \ell'(\psi_i) x_i'
+= \sum_{i=1}^N \ell'(\psi_i) x_i x_i'.
+\]
+Suppose we center this about the previous $\beta$, $\beta^{(p)}$.  Then we have
+\[
+\frac{1}{2} (\beta - \beta^{(p)})' \Big[  \sum_{i=1}^N \ell''(\psi_i^{(p)}) x_i x_i'
+\Big]  (\beta - \beta^{(p)})'  + \Big[ \sum_{i=1}^N \ell'(\psi_i^{(p)}) x_i' \Big]
+(\beta - \beta^{(p)}).
+\]
+To maximize, we could consider $\delta \beta = \beta - \beta^{(p)}$, or we can
+consider the expression above directly.  We do the latter.  Notice that at this
+point, we can follow a Newton scheme and we would be done.  But we can also
+reinterpret this as a least squares problem.  To do that, recall that a LS
+solution has the form $(X'DX)^{-1} X'Dy$.  Finding the quadratic form in just
+$\beta$ produces
+\[
+\frac{1}{2} \beta' \Big[  \sum_{i=1}^N \ell''(\psi_i^{(p)}) x_i x_i'
+\Big] \beta + \Big[ \sum_{i=1}^N \ell'(\psi_i^{(p)}) x' - 
+\sum_{i=1}^N (\beta^{(p)})' \ell'(\psi_i^{(p)}) x_i x_i' \Big] \beta
+\]
+which is
+\[
+\frac{1}{2} \beta' \Big[  \sum_{i=1}^N \ell''(\psi_i^{(p)}) x_i x_i'
+\Big] \beta 
++ \Big[ \sum_{i=1}^N \Big(\ell'(\psi_i^{(p)}) - \psi_i^{(p)} \ell''(\psi_i^{(p)}\Big)
+x_i' \Big] \beta.
+\]
+or
+\[
+\frac{1}{2} \beta' \Big[  \sum_{i=1}^N \ell''(\psi_i^{(p)}) x_i x_i'
+\Big] \beta 
++ \Big[ \sum_{i=1}^N \Big(\frac{\ell'(\psi_i^{(p)})}{\ell''(\psi_i^{(p)})} - \psi_i^{(p)} \Big)
+\ell''(\psi_i^{(p)}) x_i' \Big] \beta.
+\]
+Thus the quadratic form for $\beta$ is identical to that produced solving the
+least squares problem
+\[
+y_i^* = x_i \beta + \nu_i, \; \nu_i \sim N(0,1/w_i^{(p)})
+\]
+where
+\[
+w^{(p)}_i = -\ell''(\psi_i^{(p)})
+\]
+and
+\[
+y_i^* = \psi_i^{(p)} - \frac{\ell'(\psi_i^{(p)})}{\ell''(\psi_i^{(p)})}.
+\]
+To double check this, consider the case of a normal likelihood.  Then
+$\ell'(\psi) = -(y-\psi) / V$ and $\ell''(\psi) = 1/V$, which makes $y_i^* =
+y_i$.  So we can iteratively solve
+\[
+\begin{cases}
+y_i^*(\beta^{(p)}) = x_i \beta + \nu_i, \; \nu_i \sim N(0, 1/w_i(\beta^{(p)}))
+\\
+\beta \sim N(m_0, C_0)
+\end{cases}
+\]
+where $y_i^*$ and $w_i$ are as above.
+
+There is no difference between following Newton's method or following
+iteratively weighted least squares.  They are the same.  It is just easy for
+statisticians to think about iteratively weighted least squares.  This may come
+in handy below.
+
+Now consider the case of a dynamic regression.  Again let $\sum_{i=1}^N
+\ell(\psi_i)$ be the log-likelihood.  The prior is absolutely essential, and
+takes for the form of the state-space equation.  Thing proceed very similarly.
+We have
+\[
+\frac{\del}{\del \beta_i} \sum_{i=1}^N \ell(\psi_i)
+= \ell'(\psi_i) x_i'
+\]
+and
+\[
+\frac{\del}{\del \beta_j} \ell'(\psi_i) x_i = 
+\begin{cases}
+0, & j \neq i , \\
+\ell''(\psi_i) x_i x_i' , & j = i.
+\end{cases}
+\]
+Thus we can see that the Hessian with respect to stack $\{\beta_i\}$ will be
+block-diagonal, with rank-1 blocks.  This is, essentially, all we need if we
+want to do a massive Netwon step.  Also, note that the complete gradient and the
+complete Hessian give us the information we need to update a block of $\beta$'s
+using the Laplace approximation---we just select the correct blocks.  After
+updating a block of $\beta$'s we would just need to update the correct blocks of
+the Hessian and gradient to reflect the new $\psi$'s.  But we want to see how
+this is converted into a LS's problem.  To that end, suppose we take the
+approximation around $\beta^{(p)}$, then we have
+\[
+\frac{1}{2} \sum_{i=1}^N \beta_i' \ell''(\psi_i^{(p)}) x_i x_i' \beta_i
++ \sum_{i=1}^N \Big[ \Big( \ell'(\psi_i^{(p)}) - (\beta_i^{(p)})' \ell''(\psi_i^{(p)})
+x_i \Big) x_i' \beta_i \Big]
+\]
+which is
+\[
+\frac{1}{2} \sum_{i=1}^N \beta_i' \ell''(\psi_i^{(p)}) x_i x_i' \beta_i
++ \sum_{i=1}^N \Big[ \Big( \frac{\ell'(\psi_i^{(p)})}{\ell''(\psi_i^{(p)})} -
+\psi_i^{(p)}\Big)  \ell(\psi_i^{(p)})  x_i' \beta_i \Big].
+\]
+As you can see, very little has changed to the approximation of the liklihood.
+This is the same approximation we would get by
+\[
+y_i^* = x_i \beta_i + \nu_i, \; \nu_i \sim N(0, 1/w_i^{(p)})
+\]
+where
+\[
+w^{(p)}_i = -\ell''(\psi_i^{(p)})
+\]
+and
+\[
+y_i^* = \psi_i^{(p)} - \frac{\ell'(\psi_i^{(p)})}{\ell''(\psi_i^{(p)})},
+\]
+just like above, with the only difference being that $\psi_i = x_i' \beta_i$.
+As mentioned above, the Hessian of the likelihood is block diagonal, so the
+likelihood is unaffected when we consider sampling $\beta$ in blocks.  There are
+no interacting $\beta$'s there.  However, there are interacting $\beta$'s in the
+\emph{prior}.  Since the posterior is always proportional to the joint, which is
+the data generating density times the prior, the conditioning in blocks will
+just impact the prior in this case.  Thus we can derive the blocking posterior
+by blocking the prior.  For an AR(1) process the prior precision is nice: it is
+tridiagonal.  This leads to a blocking scheme with tridiagonal precisions!
+Which means the prior will still be an AR(1) process!  (However, the parameters
+of the AR process will be different.  To work with Cholesky decomps., you want
+to order your observations from largest to smallest.  In that case we can write
+the likelihood for $\beta$ as $(A \beta)' D (A \beta)$ where $A$ is upper
+bidiagonal and hence (assuming $D=I$) $P = A'A$ reveals the Cholesky
+decomposition.)
+
+In particular, recall that, given a precision matrix $\Omega$ and $x \sim N(m,
+\Omega^{-1})$ that we have
+\[
+(x_2 | x_1) \sim N(m_{2|1}, V_{2|1})
+\]
+where
+\[
+m_{2|1} = -\Omega_{22}^{-1} \Omega_{21} (x_1 - m_1) + m_2.
+\]
+and
+\[
+\Omega_{2|1} = \Omega_{22}
+\]
+and $V_{2|1} = \Omega_{2|1}^{-1}$.  Since $\Omega$ is (block) tridiagonal,
+$\Omega_{22}$ is (block) tridiagonal, and corresponds to the precision from an
+AR(1) process.  If one wanted to be fast, they could use the tridiagonality to
+invert $\Omega_{22}$ quickly.  Further, $\Omega_{21}$ is almost all zeros, so
+one could be clever about that product as well---in the case above the only
+values of $\beta$ that matter are those ``on the border'' of the values that you
+will sample.  While $\Omega_{22}$ will look very similar to $\Omega$, it will
+differ in the $(0,0)$th element (or the $(N,N)$th element depending how you
+arrange things).
+
+(My aside: the above work shows why the FFBS works.  The hessian of the log
+likelihood from the DLM is block diagonal.  The prior is block tridiagonal.
+Hence the posterior precistion, or an approximation to the posterior precision
+will be block tridiagonal.  I think you can calculate the Cholesky decomposition
+of a symmetric, tridiagonal matrix in linear time, and further that
+decomposition will be lower bidiagonal.  Solving a bidiagonal linear system is
+also linear in time.  Hence the whole thing is linear in time.  So, to do a
+Newton step with the same efficiency as the FFBS, we just need to take advantage
+of the tridiagonal structure of the posterior precision.)
+
+There are three possibilities: (1) that the block includes $\beta_1$, (2) that
+the block does not include $\beta_1$ or $\beta_T$ and (3) that the block
+includes $\beta_T$.  (I hadn't contemplated this before, but drawing $\beta_0$
+is somewhat superfluous.  We could just as easitly start by setting up the time
+$1$ prior and then forward filtering and backwards sampling, stopping at
+$\beta_1$.  I suppose, including the prior $\beta_0 \sim N(m_0, C_0)$ in a DLM
+let's you adjust things manually.  It may also affect the selction of
+parameters?)  In cases (1) and (2) we have to use the modified AR(1) process.
+In case (3), we can use the AR(1) process using the known value on the left.
+
+It seems to me that it may just be easier to use some block tridiagonal routine
+to draw from the block.  Otherwise we need a block Choleksy routine and a block
+forward or backward solve routine for tri/bi diagonal matries.  I suppose it
+boils down to essentially the same thing.
+
+If we let $H(\psi^{(p)}$ denote the Hessian and $G(\psi^{(p)})$ denote the
+gradient then the log-likelihood and log-prior yield
+\[
+\frac{1}{2} (\beta - \beta^{(p)})' H (\beta - \beta^{(p)}) + G \beta -
+\frac{1}{2} \beta' P \beta,
+\]
+which is
+\[
+-\frac{1}{2} \beta' (P - H) \beta + (G - (\beta^{(p)})' H) \beta.
+\]
+We can use the latter expression to get the conditional draw of $\beta_1$.  We
+could also just focus on $\beta_{1}$.  Recall that $H$ is block diagonal and let
+$\Omega = P - H$ and $b' = (G - \beta^{(p)} H)$, then we have
+\[
+-\frac{1}{2} \beta_1' \Omega_{11} \beta_1 - \beta_2' P_{21} \beta_1 + b_1' \beta_1,
+\]
+that is
+\[
+-\frac{1}{2} \beta_1' \Omega_{11} \beta_1 + (b_1' - \beta_2' P_{21}) \beta_1.
+\]
+Thus we have
+\[
+\begin{cases}
+\bbE[\beta_1 | \beta_2] = - \Omega_{11}^{-1} ( P_{12} \beta_2 - b_1) \\
+V(\beta_1 | \beta_2) = \Omega_{11}^{-1}.
+\end{cases}
+\]
+Note that $P_{12}$ is sparse.
+
+Shephard and Pitt and Gamerman suggest using a transformed coordinate system.
+First, note that if one has a MH sampling in one coordinate system and then
+does a change of variable to that routine for both the target and proposal that
+the acceptance rate doesn't change:
+\[
+\frac {\pi(x^*)}{\pi(x)} \frac {q(x|x^*)}{q(x^*|x)}
+= \frac {\pi(x^*(w^*))  |\frac{dx}{dw}(w^*)|}{\pi(x(w)) |\frac{dx}{dw}(w)|} 
+\frac{q(x(w)|x^*(w^*)) |\frac{dx}{dw}(w)|}{q(x^*(w^*)|x(w))  |\frac{dx}{dw}(w^*)|}.
+\]
+Of course, it may be easier to transform the space to pick a better proposal.
+But that is not what Shepard etc.\ propose.  Instead, I believe this should be
+seen as a way to improve Gibbs sampling a Gaussian distribution.  You want to
+Gibbs sample along the principle components to get the best mixing.  In fact,
+Gibbs sampling along the pricinple components means you are taking independent
+samples, so it is the same as taking a joint draw.  We won't be doing that
+exactly here; first, because things aren't Gaussian, and second, because the
+draws aren't independent.  But the idea, I expect, is the same, in that you want
+to try to make ``orthogonal'' moves.
+
+Consider the transformation $\omega = A \beta$ where $\beta$ is ordered in a
+decreasing fashion and $\omega$ are the innovation variances, with the convation
+that $\omega_1 = \beta_1$.  $A$ is upper diagonal.  Then the log-prior has the
+term $(A \theta)' D (A \theta)$ where $D$ is diagonal corresponding to the
+variance of the innovations and the variance of $\beta_1$.  The prior presion,
+thus, will be diagonal if we work on the $\omega$ scale.  However, I don't see
+how one can easily write down a pseudo-likelihood.  On the $\omega$ scale, you
+don't have any block diagonal structure.
+
+Earlier, we noted that if you update $\beta_{i:i+k}$ then you only need to
+update the block diagonal Hessian $H$ where $H_{ii} = \ell''(\psi_i) x_ix_i'$
+and gradient $G$ where $G_i = \ell'(\psi_i) x_i'$ for the corresponding blocks
+$H_{jj}$ and $G_j$ where $j \in i:i+k$.  When updating $\omega$, things change.
+Since $\omega_i$ affects $\beta_{j}$ for $j \geq i$, when we update the block
+$\omega_{i:i+k}$ we must update $H_{jj}$ and $G_j$ for $j \geq i$.  This is
+because $\psi_i = \psi(\beta_i)$ but $\psi_i = \psi(\omega_1, \ldots,
+\omega_i)$.  That is, of course, if we assume that we always will take the
+Taylor expansion about the current value of $\omega$.
+
+Given the above two observations it seems like it might be easiest to just do a
+blocked Newton scheme to do blocked MH within Gibbs.  When calculating the
+likelihood, I think we need to include all $\psi_i$ values that include the
+updated $\theta_i$ values.
+
+So the procedure will be something like: we have $H$ and $G$.  Use
+transformation to get $\tilde H = \tilde H(\omega)$ and $\tilde G = \tilde
+G(\omega)$.  The log-posterior approximation is something like
+\[
+\frac{1}{2} (\omega - \omega^{(p)})' \tilde H (\omega - \omega^{(p)}) + \tilde G (\omega -
+\omega^{(p)})
++ \omega' D \omega.
+\]
+We need to rewrite this in terms of $\omega = (\omega_1, \omega_2)$ to get the
+quadratic form in terms of $(\omega_1 | \omega_2)$.  Or rather, I could rephrase
+this as a Gaussian posterior, and then use the conditional rules.  Let $-\Omega =
+H + D$ and $b' = \tilde G - (\omega^{(p)})' \tilde H$.  Then we have
+\[
+-\frac{1}{2} \omega' \Omega \omega + b' \omega.
+\]
+The joint is then $\omega \sim N(m, \Omega^{-1})$ where $\Omega m = b$.  We can
+then use our rules of conditonal expectation to get
+\[
+\begin{cases}
+\bbE[\omega_1|\omega_2] = -\Omega_{11}^{-1} \Omega_{12} (\omega_2 - m_2) + m_1 \\
+V(\omega_1 | \omega_2) = \Omega_{11}^{-1}.
+\end{cases}
+\]
+If we just consider $\omega_1$, then we have
+\[
+-\frac{1}{2} \omega_{1}' \Omega_{11} \omega_1 +  -\omega_2 \Omega_{21} \omega_1 +
+-\frac{1}{2} \omega_2' \Omega_{22} \omega_2 + b_1' \omega_1,
+\]
+which becomes
+\[
+-\frac{1}{2} \omega_{1} ' \Omega_{11} \omega_1 + [b_1' - \omega_2 \Omega_{21}] \omega_1.
+\]
+So we have 
+\[
+\begin{cases}
+\bbE[\omega_1 | \omega_2] = - \Omega_{11}^{-1} [\Omega_{12} \omega_2 - b_1] \\
+V(\omega_1 | \omega_2) = \Omega_{11}^{-1}.
+\end{cases}
+\]
+These reconcile because $\Omega_{11}^{-1} \Omega_{12} m_2 + m_1 =
+\Omega_{11}^{-1} b_1$ which one can see by multiplying through by $\Omega_{11}$.
+
+\subsection{$\beta$ Algorithm}
+
+Let $\psi_i = x_i' \beta_i$.  Let $H$ be the Hessian of the log-likelihood in
+terms of $\beta$, i.e. the block diagonal matrix with diagonal elements
+\[
+H(\psi)_{ii} = \ell''(\psi_i) x_i x_i'.
+\]
+Let $G$ be the gradient of the log-likelihood in terms of $\beta$, i.e. the
+block row vector with elements
+\[
+G(\psi)_i = \ell'(\psi_i) x_i'.
+\]
+Let $F(\psi) = \beta' H(\psi)$, which is a block row vector with
+\[
+F(\psi)_i = \psi_i \ell''(\psi_i) x_i'.
+\]
+Note that when we update $\beta_i$ we just need to update the corresponding
+portions of $H$, $G$, and $F$.  Also note, that we can think of, for instance,
+$G$, as a product of the vectorized version of $\{x_i\}$.  Let $b' = G - F$.
+Assume that the prior for $\beta$ is
+\[
+\begin{cases}
+\beta_t = \Phi \beta_{t-1} + \omega_t, \; \omega_t \sim N(0, W) \\
+\beta_0 \sim N(0, C_0).
+\end{cases}
+\]
+I have written this in a way that ignores the mean.  We can incorporate a mean
+via $\psi_i = x_i' (\mu + \beta_i)$ or $\psi_i = \alpha + x_i' \beta_i$ and then
+estimate each accordingly.  Assume we are ordering things in an ascending
+manner.  (It doesn't matter, since the prior precision will be tridiagonal
+either way, though it may be convenient to think in ascending or descending
+order; here I think that ascending will be useful for computational purposes.)
+Let $A$ be
+\[
+A =
+\begin{pmatrix}
+I & 0 & 0 & 0 & \ldots \\
+-\Phi & I & 0 & 0 & \ldots \\
+0 & -\Phi & I & 0 & \ldots \\
+0 & 0 & -\Phi & I & \ddots \\
+\vdots & \vdots & \vdots & \ddots & \ddots
+\end{pmatrix}.
+\]
+Let $D$ be the block diagonal matrix with entries $D_{ii} = W$ for $i=2..T$ and
+$D_{11} = \Phi C_0 \Phi' + W$.  Then the prior log-likelihood is
+\[
+(A \beta)' D (A \beta) = \beta' A'DA \beta,
+\]
+so the prior precision is the block tridiagonal matrix $P = A'DA$.  Let $\Omega
+= H + P$.  From above, we know that to sample in blocks we can use
+\[
+\begin{cases}
+\bbE[\beta_1 | \beta_2] = - \Omega_{11}^{-1} ( P_{12} \beta_2 - b_1) \\
+V(\beta_1 | \beta_2) = \Omega_{11}^{-1}.
+\end{cases}
+\]
+where $P_{12}$ is sparse.  If $i_\ell$ and $i_r$ are the right and left end
+points of $\beta_1$, then we have that
+\[
+P_{12} \beta_2 = P_{i_\ell, i_\ell-1} \beta_{i_\ell-1}
++ P_{i_r,i_r+1} \beta_{i_r+1}.
+\]
+We eliminate a term if there is not a left or right end point.
+
+So the algorithm is:
+\begin{itemize}
+\item Set aside space for $P$.
+\item Set up $P$.
+\item Determine partition $\{k_i\}$.
+\item For each block:
+  \begin{itemize}
+  \item Set $\Omega_{11}$ using $P$.
+  \item Update $\Omega_{11}$ using $H$, via $\Omega = P-H$.
+  \item Calculate $b_1$ using $G$ and $F$.
+  \item Calculate $P_{12} \beta_2$ using $P$ and $\beta$.
+  \item Sample $\beta_1^*$.  Calc $\psi_1^*$.
+  \end{itemize}
+\end{itemize}
+We need to have $\ell$, $\ell'$, and $\ell''$ as functions available.  For the
+MH step, we need repeat the procedure, in the sense that we must do
+\begin{itemize}
+\item Using $\beta^*$, the proposal from a specific block:
+\item Calculate $\Omega_{11}^*$.
+\item Calculate $b_1^*$.
+\item Use that to get log likelihood $\log p_N(\beta^{(p)} ; m^*, C^*)$.
+\end{itemize}
+For the target distribution, which we get using the likelihood, we only need to
+use those terms that are potentially changing, i.e the $1$ terms.
+
+\subsection{$\omega$ algorithm}
+
+Let $H$, $G$, $A$, $D$, and $P$ be defined as above.  Let $L = A^{-1}$.  We know
+the form of $L$:
+\[
+L = 
+\begin{pmatrix}
+I & 0 & 0 & 0 & \ldots \\
+\Phi & I & 0 & 0 & \ldots \\
+\Phi^2 & \Phi & I & 0 & \ldots \\
+\Phi^3 & \Phi^2 & \Phi & I & \ddots \\
+\vdots & \vdots & \vdots & \ddots & \ddots
+\end{pmatrix}.
+\]
+Do a change of variables to $\omega = A \beta$.  The change of
+variables doesn't affect the likelihood.  Since this is a linear transformation
+and $A$ doesn't depend on anything we are sampling, the log-prior doesn't need
+to consider the Jacobian, that is the log-prior to consider is
+\[
+\omega' D \omega.  
+\]
+Let $\tilde H(\psi) = L' H(\psi) L$ and $\tilde G(\psi) = G(\psi) L$.  We can
+see that
+\[
+(LA(\beta-\beta^{(p)}))' H (LA(\beta-\beta^{(p)})) = (\omega - \omega^{(p)})' \tilde H
+(\omega - \omega^{(p)})
+\]
+and
+\[
+G (LA(\beta-\beta^{(p)}) = \tilde G (\omega - \omega^{(p)}).
+\]
+Above both $H$ and $G$ are evaluated at $\psi^{(p)}$.  Note that $\tilde H$ no longer
+has any special structure!  Let $\tilde \Omega = D - \tilde H$.  Let $\tilde
+F(\psi) = \omega' \tilde H = (L \omega)' H L = \beta' H L = F(\psi) L$.  Then
+$\tilde b(\psi) = \tilde G(\psi) - \tilde F(\psi)$.  Thus, the Taylor
+approximation of the likelihood is
+\begin{align*}
+\frac{1}{2} (\omega - \omega^{(p)})' \tilde H  (\omega - \omega^{(p)}) + \tilde G (\omega
+- \omega^{(p)})' 
+& = \frac{1}{2} \omega' \tilde H \omega - 
+(\omega^{(p)})' \tilde H \omega + \tilde G \omega \\
+& = \frac{1}{2} \omega' \tilde H \omega + (\tilde G - \tilde F) \omega.
+\end{align*}
+
+Then we know that
+\[
+\begin{cases}
+  \bbE[\omega_1 | \omega_2] =
+  - \tilde \Omega_{11}^{-1} [\tilde \Omega_{12} \omega_2 - \tilde b_1] \\
+  V(\omega_1 | \omega_2) = \tilde \Omega_{11}^{-1}.
+\end{cases}
+\]
+Remember that when updating $\omega_1$ we need to update all $\beta_i$ that are
+above the first entry in $\omega_1$.  This will be implemented like $\beta_{1+}
+= L_{1+,\cdot} \omega$.  Though we know that $\beta_i = \Phi \beta_{i-1} +
+\omega_i$.  So if $i_\ell$ is the first entry of $\beta_1$, then we can
+recursively calculate $\beta_i = \Phi \beta_{i-1} + \omega_i$ for $i \geq
+i_\ell$.
+
+To repeat: suppose $i_\ell$ is the first entry of the block.  Then we need to
+use all entries $i \geq i_\ell$ in $H$, $G$, and $F$ to form $\tilde H$, $\tilde
+G$, and $\tilde F$.  Thus we need to update $H_{ii}$, $G_i$, and $F_i$ for $i
+\geq i_\ell$.  For instance, $\tilde G_1 = G_{i_\ell:T} L_{i_\ell:T,1}$.  Let $U
+= L'$.  For $\tilde H$ we have that
+\[
+\tilde H_{kj} = \sum_{i=1}^T U_{ki} H_{ii} U_{ji}'.
+\]
+Since $U_{ki} = 0$ for $k > i$ we have
+\[
+\tilde H_{kj} = \sum_{i=\max\{k,j\}}^T U_{ki} H_{ii} U_{ji}'.
+\]
+So a compromise will be
+\[
+\tilde H_{i_\ell:i_r,i_\ell:i_r} = 
+\sum_{i=i_\ell}^T U_{i_\ell:i_r,i} H_{ii} U_{i_\ell:i_r,i}'.
+\]
+Actually, we can also consider $X = \diag(x_t)$ where $x_t$ is a column vector
+and then note that $H = X \Lambda X'$ where $\lambda_{i} = \ell''(\psi_i)$ and
+$\Lambda_{ii} = \lambda_i$.  Then $\tilde H = (X'L)' \Lambda (X'L)$.  Then $\Xi'
+= X'L$ is lower block triangular.  Then we can reprhase the above product as
+\[
+\tilde H_{kj} = \sum_{i=1}^T \Xi_{ki} \Lambda_{ii} \Xi_{ji}'
+\]
+where $\Xi_{ki}$ is a column block for the row index.  Since $\Xi$ is upper
+triangular, we can apply the same reasoning as above to get
+\[
+\tilde H_{i_\ell:i_r,i_\ell:i_r} = \sum_{i=i_\ell}^T \Xi_{i_\ell:i_r,i} \Lambda_{ii} \Xi_{i_\ell:i_r,i}'.
+\]
+Note, $\Lambda_{ii}$ is not a block so we can adapt this to the usual routines
+for matrix multiplication.
+
+Let $\eta = \ell'(\psi)$.  Similarly, $G_i = \eta_i x_i'$.  So 
+\[
+\tilde G_j = \sum_j \eta_i x_i' L_{ij}.
+\]
+If we let $\vec{x}$ be the vectorized version of $x$, then we have that
+\[
+\tilde G_j = \sum_i \eta_i (\Xi')_{ij}.
+\]
+Similarly,
+\[
+\tilde F_j = \sum_{i} (\psi_i \lambda_i) (\Xi')_{ij}.
+\]
+Again, we know that $(\Xi')_{ij}$ is lower triangular, so this sum can be taken
+over $i \geq j$, where $j$ indicates the row-block.
+
+It will be convenient to have two functions, one that takes the block of
+$\beta$'s and maps to either the starting block-index of that block or mapping
+to the ending block-index of that block and another that maps the block-index to
+the starting and ending indices.  For instance, let $\sigma$ map the block of
+beta's to the start of the block-index.  And let $\tau$ map the block of beta's
+to the end of the block-index.  Let $s$ map the block index to the start of the
+matrix index.  Let $t$ map the block index to the end of the matrix index.  Then
+if we have something like
+\[
+G_{j:j+k} = \sum_{i=j}^T \eta_i (\Xi')_{i,j:j+k}
+\]
+we can write
+\[
+\tilde G_{s(j):t(j+k)} = \sum_{i=j}^T \eta_i (\Xi')_{i,s(j):t(j+k)}
+\]
+where we are implicitly understanding that we are swithcing from block-index
+notation to matrix-index notation.  Similarly,
+\[
+\tilde H_{s(j_1):t(k_1),s(j_2):t(k_2)} 
+= \sum_{i=\max\{j_1, j_2\}}^T \Xi_{s(j_1):t(k_1),i} \lambda_{ii} (\Xi_{s(j_2):t(k_2),i})'.
+\]
+or
+\[
+\tilde H_{s(j_1):t(k_1),s(j_2):t(k_2)} 
+= \sum_{i=\max\{j_1, j_2\}}^T \Xi_{s(j_1):t(k_1),i} \lambda_{ii} (\Xi')_{i,s(j_2):t(k_2)}.
+\]
+It seems to me that it will be easiest to just update the vectors $\lambda_i$,
+$\eta_i$, and $\psi_i \lambda_i$ and then the appropriate $\tilde H$, $\tilde
+G$, etc.
+
+Let $\lambda(\psi) = \ell''(\psi)$, $\eta(\psi) = \ell'(\psi)$, and $\phi(\psi)
+= \psi \lambda(\psi)$.  Let $\Xi^L = X'L$.  Let $\Xi^U = L'X$.  Let $j_i$ be the
+start of block $i$ and let $k_i$ be the end of block $i$.  Then we can do the
+following:
+\begin{itemize}
+\item You have $\lambda$, $\eta$, and $\phi$.
+\item Let $I_i = j_i:k_i$.  Let $I_{-i} = -(j_i:k_i)$.
+\item Let $\tilde G_{I_i} = \eta' \Xi^L_{\cdot, I_i}$.
+\item Let $\tilde H_{I_i,\cdot} = \Xi^U_{I_i,\cdot} \Lambda \Xi^L_{\cdot,
+    \cdot}$.
+\item Let $\tilde F_{I_i} = \phi' \Xi^L_{\cdot, I_i}$.
+\item Set $\tilde H_{I_i, I_i}$ by above.
+\item Set $\tilde H_{I_i, I_{-i}}$ by above.
+\item Use that to get $\tilde \Omega_{I_i, I_i}$, $\tilde \Omega_{I_i, I_{-i}}$,
+  and $\tilde b_{I_i}$.
+\item From this we can sample $\omega_{I_i}^*$.
+\item Us $\omega_{I_i}^*$ to calculate a new $\psi^*$ vector.
+\item We use this new $\psi^*$ vector to generate $m^*, C^*$ to calculate the
+  likelihood of $p_N(\beta^{(p)}; m^*, C^*)$.
+\item In the likelihood of the MH check, we need to use $\psi_{j_i:T}$.
+\end{itemize}
+
+\subsection{LLH}
+
+\[
+\ell(\psi) = \psi y - n \log(1 + e^{\psi}).
+\]
+So
+\[
+\ell'(\psi) = y - n \frac{e^{\psi}}{1+e^{\psi}}
+\]
+and
+\[
+\ell''(\psi) = - n \frac{e^{\psi}}{1+e^{\psi}} + n \Big(\frac{e^{\psi}}{1+e^\psi}\Big)^2.
+\]
+If we let $p = e^{\psi} / (1 + e^{\psi})$ then
+\[
+\ell'(\psi) = y - n p
+\]
+and
+\[
+\ell''(\psi) = - n p + n p^2.
+\]
 
 \section{Question}
 
