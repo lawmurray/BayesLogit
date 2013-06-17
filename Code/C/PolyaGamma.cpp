@@ -7,7 +7,7 @@ using std::pow;
 			       // Constructors //
 ////////////////////////////////////////////////////////////////////////////////
 
-PolyaGamma::PolyaGamma(int trunc) : T(trunc), b(T)
+PolyaGamma::PolyaGamma(int trunc) : T(trunc), bvec(T)
 {
   set_trunc(T);
 } // PolyaGamma
@@ -28,14 +28,13 @@ void PolyaGamma::set_trunc(int trunc)
   #endif
   }
   
-
   T = trunc;
-  b.resize(T);
+  bvec.resize(T);
 
   for(int k=0; k < T; ++k){
     // + since we start indexing at 0.
     double d = ((double) k + 0.5);
-    b[k] = FOURPISQ * d * d;
+    bvec[k] = FOURPISQ * d * d;
   }
 } // set_trunc
 
@@ -145,7 +144,7 @@ double PolyaGamma::draw_sum_of_gammas(double n, double z, RNG& r)
   double x = 0;
   double kappa = z * z;
   for(int k=0; k < T; ++k)
-    x += r.gamma_scale(n, 1.0) / (b[k] + kappa);
+    x += r.gamma_scale(n, 1.0) / (bvec[k] + kappa);
   return 2.0 * x;
 } // draw_sum_of_gammas
 
