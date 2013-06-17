@@ -38,8 +38,7 @@ OPTS = -g -Wall -std=c++98  $(USE_R) ## -Wshadow
 ## Note: pedantic kills eigen.
 
 sobj = LogitWrapper.so FSF_nmix.so FFBS.so hh_lambda.so
-obj  = LogitWrapper.o FSF_nmix.o AR1.o CUBS.o CUBS_update.o PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o \
-	InvertY.o InvertY2.o FFBS.o hh_lambda.o RNG.o Matrix.o MatrixFrame.o $(DEP)
+obj  = LogitWrapper.o FSF_nmix.o AR1.o CUBS.o CUBS_update.o PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o InvertY.o InvertY2.o FFBS.o hh_lambda.o RNG.o Matrix.o MatrixFrame.o DynExpFamMH.o $(DEP)
 
 ## TESTS -- set USE_R = ""
 
@@ -52,8 +51,8 @@ test3: test3.cpp
 test_pgpar : test_pgpar.cpp PolyaGamma.hpp PolyaGammaPar.hpp
 	g++ -o test_pgpar BayesLogit.so test_pgpar.cpp $(OPTS) $(INC) -fopenmp $(LNK)
 
-test_logit : test_logit.cpp Logit.hpp MatRNG.so
-	g++ -o test_logit MatRNG.so test_logit.cpp $(OPTS) $(INC) $(LNK)
+test_logit : test_logit.cpp Logit.hpp MatRNG.so PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o InvertY.o InvertY2.o
+	g++ -o test_logit MatRNG.so PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o InvertY.o InvertY2.o test_logit.cpp $(OPTS) $(INC) $(LNK)
 
 test_cubs : CUBS_update.cpp CUBS_update.h 
 	g++ -DCUBS_UPDATE_MAIN -o test_cubs CUBS_update.cpp $(OPTS) $(INC) $(LNK)
@@ -64,20 +63,26 @@ test_pgalt : test_pgalt.c PolyaGammaAlt.hpp BayesLogit.so
 test_pgsp : test_pgsp.c PolyaGammaSP.hpp BayesLogit.so 
 	g++ -o test_pgsp BayesLogit.so test_pgsp.c $(OPTS) $(INC) $(LNK)
 
-################################################################################
+test_dynmh : test_dynmh.cpp DynExpFamMH.o MatRNG.so
+	g++ -o test_dynmh MatRNG.so DynExpFamMH.o test_dynmh.cpp $(OPTS) $(INC) $(LNK)
 
-MatRNG.so : Matrix.o RNG.o
-	g++ $(OPTS) $(INC) -o MatRNG.so Matrix.o MatrixFrame.o RNG.o $(DEP) -fPIC -shared $(LNK)
+################################################################################
 
 ## Link gsl last so that we will use R libraries when compiling for R.
 BayesLogit.so : $(obj)
 	g++ -o BayesLogit.so $(obj) $(OPTS) -shared -fPIC $(LNK) $(GLIB) -lgsl
+
+MatRNG.so : Matrix.o RNG.o
+	g++ $(OPTS) $(INC) -o MatRNG.so Matrix.o MatrixFrame.o RNG.o $(DEP) -fPIC -shared $(LNK)
 
 LogitWrapper.o : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o LogitWrapper.o -c LogitWrapper.cpp
 
 FSF_nmix.o : FSF_nmix.hpp FSF_nmix.cpp
 	g++ $(OPTS) $(INC) -fPIC -o FSF_nmix.o -c FSF_nmix.cpp 
+
+DynExpFamMH.o : DynExpFamMH.hpp DynExpFamMH.cpp
+	g++ $(OPTS) $(INC) -fPIC -o DynExpFamMH.o -c DynExpFamMH.cpp
 
 AR1.o : AR1.h AR1.cpp
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o AR1.o -c AR1.cpp
