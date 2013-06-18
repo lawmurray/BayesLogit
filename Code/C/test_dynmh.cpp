@@ -119,8 +119,8 @@ void test_laplace_omega()
   VectorXd omega_vec = omega.array();
 
   laplace_omega(nbp, omega_vec, llh,
-		y, Xi, prior_prec,
-		block_start, num_blocks);
+				y, Xi, prior_prec,
+				block_start, num_blocks);
 
   RNG r;
 
@@ -141,7 +141,8 @@ void test_draw_omega_block()
   int block_start = 0;
   int num_blocks  = num;
 
-  int ntrials = 1;
+  VectorXd ntrials(num); ntrials.fill(1);
+  // int ntrials = 1;
 
   VectorXd phi(bsize);
   phi << 0.8, 0.9;
@@ -167,8 +168,9 @@ void test_draw_omega_block()
 
   omega_to_dyn_beta(beta, Phi, omega, 0);
 
-  dyn_beta_to_psi(llh.psi, tX, beta, 0);
-  log_logit_likelihood(y, ntrials, llh, 0);
+  dyn_beta_to_psi(llh.psi_dyn, tX, beta, 0);
+  llh.psi_stc.fill(0.0);
+  log_logit_likelihood(&y(0), &ntrials(0), llh, 0);
 
   cout << "Call draw omega block.\n";
 
@@ -177,11 +179,11 @@ void test_draw_omega_block()
   VectorXd offset(nb); offset.fill(0.0);
   
   draw_omega_block(omega, beta, llh,
-  		   y, tX, ntrials, offset,
-  		   Xi, L,
-  		   prior_prec, Phi,
-  		   block_start, num_blocks, 
-  		   r);
+				   y, tX, ntrials, offset,
+				   Xi, L,
+				   prior_prec, Phi,
+				   block_start, num_blocks, 
+				   r, &log_logit_likelihood);
 
   cout << "omega:\n" << omega << "\n";
 
@@ -193,7 +195,7 @@ void test_draw_omega(int reps=1)
   int bsize = 2;
   int nb   = num * bsize;
 
-  int ntrials = 1;
+  VectorXd ntrials(num); ntrials.fill(1);
 
   VectorXd phi(bsize);
   phi << 0.8, 0.9;
@@ -219,8 +221,9 @@ void test_draw_omega(int reps=1)
 
   omega_to_dyn_beta(beta, Phi, omega, 0);
 
-  dyn_beta_to_psi(llh.psi, tX, beta, 0);
-  log_logit_likelihood(y, ntrials, llh, 0);
+  dyn_beta_to_psi(llh.psi_dyn, tX, beta, 0);
+  llh.psi_stc.fill(0.0);
+  log_logit_likelihood(&y(0), &ntrials(0), llh, 0);
 
   cout << "Call draw omega.\n";
 
@@ -235,11 +238,11 @@ void test_draw_omega(int reps=1)
 
   for (int i=0; i<reps; i++) {
     draw_omega(omega, beta, llh,
-	       y, tX, ntrials, offset,
-	       Xi, L,
-	       prior_prec, Phi,
-	       starts, 
-	       r, true);
+			   y, tX, ntrials, offset,
+			   Xi, L,
+			   prior_prec, Phi,
+			   starts, 
+			   r, &log_logit_likelihood, true);
     cout << "omega:\n" << omega << "\n";
   }
 
@@ -257,7 +260,8 @@ void test_draw_omega_wrapper(int reps=1)
   int bsize = 2;
   int nb   = num * bsize;
 
-  int ntrials = 1;
+  VectorXd ntrials(num); ntrials.fill(1.0);
+  // int ntrials = 1;
 
   VectorXd phi(bsize);
   phi << 0.8, 0.9;
@@ -279,8 +283,9 @@ void test_draw_omega_wrapper(int reps=1)
 
   omega_to_dyn_beta(beta, Phi, omega, 0);
 
-  dyn_beta_to_psi(llh.psi, tX, beta, 0);
-  log_logit_likelihood(y, ntrials, llh, 0);
+  dyn_beta_to_psi(llh.psi_dyn, tX, beta, 0);
+  llh.psi_stc.fill(0.0);
+  log_logit_likelihood(&y(0), &ntrials(0), llh, 0);
 
   cout << "Call draw omega wrapper.\n";
 
@@ -299,10 +304,11 @@ void test_draw_omega_wrapper(int reps=1)
 
   for (int i=0; i<reps; i++) {
     draw_omega(&omega(0), &beta(0), 
-	       &llh.psi(0), &llh.l0(0), &llh.l1(0), &llh.l2(0), &llh.pl2(0),
-	       &y(0), &tX(0), &ntrials, &offset(0),
-	       &prior_prec(0), &phi(0),
-	       &starts(0), &num, &bsize, &nstarts, &naccept, &just_max);
+			   &llh.psi_dyn(0), &llh.psi_stc(0),
+			   &llh.psi(0), &llh.l0(0), &llh.l1(0), &llh.l2(0), &llh.pl2(0),
+			   &y(0), &tX(0), &ntrials(0), &offset(0),
+			   &prior_prec(0), &phi(0),
+			   &starts(0), &num, &bsize, &nstarts, &naccept, &just_max);
     cout << "omega:\n" << omega << "\n";
   }
 
@@ -320,7 +326,8 @@ void test_draw_omega_real_data(int reps=1)
   int bsize = 1;
   int nb   = num * bsize;
 
-  int ntrials = 20;
+  VectorXd ntrials(num); ntrials.fill(20.0);
+  // int ntrials = 20;
 
   VectorXd phi(bsize);
   phi << 0.9;
@@ -348,8 +355,9 @@ void test_draw_omega_real_data(int reps=1)
 
   omega_to_dyn_beta(beta, Phi, omega, 0);
 
-  dyn_beta_to_psi(llh.psi, tX, beta, 0);
-  log_logit_likelihood(y, ntrials, llh, 0);
+  dyn_beta_to_psi(llh.psi_dyn, tX, beta, 0);
+  llh.psi_stc.fill(0.0);
+  log_logit_likelihood(&y(0), &ntrials(0), llh, 0);
 
   cout << "Call draw omega with real data.\n";
 
@@ -366,11 +374,11 @@ void test_draw_omega_real_data(int reps=1)
     cout << "omega: " << omega << "\n";
     // cout << "beta: " << beta << "\n";
     draw_omega(omega, beta, llh,
-  	       y, tX, ntrials, offset,
-  	       Xi, L,
-  	       prior_prec, Phi,
-  	       starts, 
-  	       r, true);
+			   y, tX, ntrials, offset,
+			   Xi, L,
+			   prior_prec, Phi,
+			   starts, 
+			   r, &log_logit_likelihood, true);
   }
 
   cout << "omega: " << omega << "\n";
@@ -385,7 +393,8 @@ void test_draw_omega_wrapper_real_data(int reps=1)
   int bsize = 1;
   int nb   = num * bsize;
 
-  int ntrials = 20;
+  VectorXd ntrials(num); ntrials.fill(20.0);
+  // int ntrials = 20;
 
   VectorXd phi(bsize);
   phi << 0.9;
@@ -413,8 +422,9 @@ void test_draw_omega_wrapper_real_data(int reps=1)
 
   omega_to_dyn_beta(beta, Phi, omega, 0);
 
-  dyn_beta_to_psi(llh.psi, tX, beta, 0);
-  log_logit_likelihood(y, ntrials, llh, 0);
+  dyn_beta_to_psi(llh.psi_dyn, tX, beta, 0);
+  llh.psi_stc.fill(0.0);
+  log_logit_likelihood(&y(0), &ntrials(0), llh, 0);
 
   cout << "Call draw omega wrapper with real data.\n";
 
@@ -433,10 +443,11 @@ void test_draw_omega_wrapper_real_data(int reps=1)
   for (int i=0; i<reps; i++) {
     cout << "omega:\n" << omega << "\n";
     draw_omega(&omega(0), &beta(0), 
-	       &llh.psi(0), &llh.l0(0), &llh.l1(0), &llh.l2(0), &llh.pl2(0),
-	       &y(0), &tX(0), &ntrials, &offset(0),
-	       &prior_prec(0), &phi(0),
-	       &starts(0), &num, &bsize, &nstarts, &naccept, &just_max);
+			   &llh.psi_dyn(0), &llh.psi_stc(0),
+			   &llh.psi(0), &llh.l0(0), &llh.l1(0), &llh.l2(0), &llh.pl2(0),
+			   &y(0), &tX(0), &ntrials(0), &offset(0),
+			   &prior_prec(0), &phi(0),
+			   &starts(0), &num, &bsize, &nstarts, &naccept, &just_max);
   }
 
   cout << "omega:\n" << omega << "\n";

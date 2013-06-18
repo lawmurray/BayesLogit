@@ -82,7 +82,7 @@ FSF_nmix.o : FSF_nmix.hpp FSF_nmix.cpp
 	g++ $(OPTS) $(INC) -fPIC -o FSF_nmix.o -c FSF_nmix.cpp 
 
 DynExpFamMH.o : DynExpFamMH.hpp DynExpFamMH.cpp
-	g++ $(OPTS) $(INC) -fPIC -o DynExpFamMH.o -c DynExpFamMH.cpp
+	g++ $(OPTS) $(INC) $(GINC) -fPIC -o DynExpFamMH.o -c DynExpFamMH.cpp
 
 AR1.o : AR1.h AR1.cpp
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o AR1.o -c AR1.cpp

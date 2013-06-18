@@ -485,7 +485,7 @@ if (FALSE) {
 
   ## starts = c(1,5)
   starts = c(1,6);
-  samp = 20000
+  samp = 4000
   burn = 1000
   verbose = 1000
   just.max = FALSE

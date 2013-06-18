@@ -25,6 +25,71 @@ using Eigen::MatrixBase;
 // using std::cout;
 // using std::cerr;
 
+class llh_view {
+public:
+  double* psi_dyn;
+  double* psi_stc;
+  double* psi;
+  double* l0;
+  double* l1;
+  double* l2;
+  double* pl2;
+  unsigned int N;
+
+  llh_view(const llh_view& l)
+  : psi_dyn(l.psi_dyn)
+  , psi_stc(l.psi_stc)
+  , psi(l.psi)
+  , l0(l.l0)
+  , l1(l.l1)
+  , l2(l.l2)
+  , pl2(l.pl2)
+  , N(l.N) {};
+
+  llh_view(double* psi_dyn_,
+		   double* psi_stc_,
+		   double* psi_,
+		   double* l0_,
+		   double* l1_,
+		   double* l2_,
+		   double* pl2_,
+		   unsigned int N_)
+  : psi_dyn(psi_dyn_)
+  , psi_stc(psi_stc_)
+  , psi(psi_)
+  , l0(l0_)
+  , l1(l1_)
+  , l2(l2_)
+  , pl2(pl2_)
+  , N(N_) {};
+
+  void copy(llh_view& l) {
+	N = l.N;
+	size_t amount = N * sizeof(double);
+	memcpy(psi_dyn, l.psi_dyn, amount);
+	memcpy(psi_stc, l.psi_stc, amount);
+	memcpy(psi    , l.psi    , amount);
+	memcpy(l0     , l.l0     , amount);
+	memcpy(l1     , l.l1     , amount);
+	memcpy(l2     , l.l2     , amount);
+	memcpy(pl2    , l.pl2    , amount);
+  }
+
+  void copy(llh_view& l, unsigned int start) {
+	N = l.N;
+	unsigned int num = N - start;
+	size_t amount = num * sizeof(double);
+	memcpy(psi_dyn + start, l.psi_dyn + start, amount);
+	memcpy(psi_stc + start, l.psi_stc + start, amount);
+	memcpy(psi + start    , l.psi + start   , amount);
+	memcpy(l0 + start     , l.l0 + start     , amount);
+	memcpy(l1 + start     , l.l1 + start     , amount);
+	memcpy(l2 + start     , l.l2 + start     , amount);
+	memcpy(pl2 + start    , l.pl2 + start    , amount);
+  }
+  
+};
+
 class llh_struct {
 public:
   VectorXd psi;
@@ -117,12 +182,23 @@ void make_A(MatrixXd& A, const MatrixXd& G, const unsigned int num);
 // 		      int block_start, int num_blocks, 
 // 		      RNG& r);
 
+void log_logit_likelihood(const double* y, const double* ntrials, llh_view& llh, int total_blocks, int block_start, int num_blocks);
+void log_logit_likelihood(const double* y, const double* ntrials, llh_view& llh, int block_start);
+
+void log_logit_likelihood(const double* y, const double* ntrials, llh_struct& llh, int total_blocks, int block_start, int num_blocks);
+void log_logit_likelihood(const double* y, const double* ntrials, llh_struct& llh, int block_start);
+
+void log_nbinom_likelihood(const double* y, const double* ntrials, llh_struct& llh, int total_blocks, int block_start, int num_blocks);
+void log_nbinom_likelihood(const double* y, const double* ntrials, llh_struct& llh, int block_start);
+
+typedef void (*log_likelihood)(const double* y, const double* p1, llh_struct& llh, int block_start);
+
 extern "C" {
 
   void draw_omega(double* omega, double* beta,
 		  double* psi_dyn, double* psi_stc,
 		  double* psi, double* l0, double* l1, double* l2, double* pl2,
-		  double* y, double* tX, int* ntrials, double* offset,
+		  double* y, double* tX, double* ntrials, double* offset,
 		  double* prior_prec, double* Phi,
 		  int* starts,  const int* N_,  const int* B_,  const int* num_starts, 
 		  int* naccept, bool* just_maximize);
@@ -130,7 +206,7 @@ extern "C" {
   void draw_stc_beta(double* beta,
 		     double* psi_dyn, double* psi_stc,
 		     double* psi, double* l0, double* l1, double* l2, double* pl2,
-		     double*y, double* X, int* ntrials, double* offset, 
+		     double*y, double* X, double* ntrials, double* offset, 
 		     double* b0, double* P0,
 		     const int* N_, const int* B_,
 		     int* naccept, bool* just_maximize);
@@ -181,41 +257,79 @@ double rNorm(MatrixBase<dV>& d, const Gaussian& nbp, RNG& r)
   return ldens;
 }
 
-template<typename dV1, typename dV2>
-void log_logit_likelihood(const MatrixBase<dV1>& y,
-			  const MatrixBase<dV2>& ntrials,
-			  llh_struct& llh,
-			  const int block_start,
-			  const int num_blocks)
-{
-  // Assume psi_stc and psi_dyn are set correct.
-  // int nsize = y.size();
+// template<typename dV1>
+// void log_logit_likelihood(const MatrixBase<dV1>& y,
+// 			  const MatrixBase<dV1>& ntrials,
+// 			  llh_struct& llh,
+// 			  const int block_start,
+// 			  const int num_blocks)
+// {
+//   // Assume psi_stc and psi_dyn are set correct.
+//   // int nsize = y.size();
   
-  int block_end = block_start + num_blocks;
+//   int block_end = block_start + num_blocks;
 
-  for (int i = block_start; i < block_end; i++) {
-    double ntrialsd = (double) ntrials[i];
-    llh.psi[i]  = llh.psi_stc[i] + llh.psi_dyn[i];
-    double psi  = llh.psi[i];
-    double epsi = exp(psi);
-    double p    = epsi / (1 + epsi);
-    llh.l0[i]   = psi * y[i] - ntrialsd * log(1.0 + epsi);
-    llh.l1[i]   = y[i] - ntrialsd * p;
-    llh.l2[i]   = -1.0 * ntrialsd * (p - p*p);
-    llh.pl2[i]  = psi * llh.l2[i];
-    // printf("i: %2i, psi: %3.2g, y: %3.2g, l0: %3.2g, l1: %3.2g, l2: %3.2g\n", i, psi, y[i], llh.l0[i], llh.l1[i], llh.l2[i]);
-  }
+//   for (int i = block_start; i < block_end; i++) {
+//     double ntrialsd = (double) ntrials[i];
+//     llh.psi[i]  = llh.psi_stc[i] + llh.psi_dyn[i];
+//     double psi  = llh.psi[i];
+//     double epsi = exp(psi);
+//     double p    = epsi / (1 + epsi);
+//     llh.l0[i]   = psi * y[i] - ntrialsd * log(1.0 + epsi);
+//     llh.l1[i]   = y[i] - ntrialsd * p;
+//     llh.l2[i]   = -1.0 * ntrialsd * (p - p*p);
+//     llh.pl2[i]  = psi * llh.l2[i];
+//     // printf("i: %2i, psi: %3.2g, y: %3.2g, l0: %3.2g, l1: %3.2g, l2: %3.2g\n", i, psi, y[i], llh.l0[i], llh.l1[i], llh.l2[i]);
+//   }
+
+// }
+
+// template<typename dV1>
+// void log_logit_likelihood(const MatrixBase<dV1>& y,
+// 			  const MatrixBase<dV1>& ntrials,
+// 			  llh_struct& llh,
+// 			  const int block_start)
+// {
+//   int nsize = y.size();
+//   log_logit_likelihood(y, ntrials, llh, block_start, nsize - block_start);
+// }
+
+//------------------------------------------------------------------------------
+
+template<typename dV2, typename dM1, typename dM2>
+void dyn_beta_to_psi(double* psi_, 
+		     const MatrixBase<dM1>& tX, const MatrixBase<dM2>& beta, const MatrixBase<dV2>& offset,
+		     const int block_start, const int num_blocks)
+{
+  int B = beta.rows();
+  int N = beta.cols();
+  // std::cout << "offset:\n" << offset.transpose() << "\n";
+
+  Map<VectorXd> psi(psi_, N);
+
+  MatrixXd tXbeta_vec;
+  tXbeta_vec = tX.block(0, block_start, B, num_blocks).array() *
+    beta.block(0, block_start, B, num_blocks).array();
+
+  Map<MatrixXd> tXbeta(&tXbeta_vec(0), B, num_blocks);
+
+  // cout << "tXbeta:\n" << tXbeta << "\n";
+  
+  psi.segment(block_start, num_blocks) = tXbeta.colwise().sum();
+  psi.segment(block_start, num_blocks) += offset.segment(block_start, num_blocks);
 
 }
 
-template<typename dV1, typename dV2>
-void log_logit_likelihood(const MatrixBase<dV1>& y,
-			  const MatrixBase<dV2>& ntrials,
-			  llh_struct& llh,
-			  const int block_start)
+template<typename dV2, typename dM1, typename dM2>
+void dyn_beta_to_psi(double* psi, 
+		     const MatrixBase<dM1>& tX, const MatrixBase<dM2>& beta, const MatrixBase<dV2>& offset,
+		     const int block_start)
 {
-  int nsize = y.size();
-  log_logit_likelihood(y, ntrials, llh, block_start, nsize - block_start);
+  int N = tX.cols();
+
+  int num_blocks = N - block_start;
+
+  dyn_beta_to_psi(psi, tX, beta, offset, block_start, num_blocks);
 }
 
 template<typename dV1, typename dV2, typename dM1, typename dM2>
@@ -308,9 +422,9 @@ void laplace_stc_beta(Gaussian& nbp, const MatrixBase<dV1>& beta, const llh_stru
 
 }
 
-template <typename dM, typename dV1, typename dV2, typename dV3>
+template <typename dM, typename dV1, typename dV2>
 bool draw_stc_beta(MatrixBase<dV2>& beta, llh_struct& llh,
-		   MatrixBase<dV1>& y, MatrixBase<dM>& X, MatrixBase<dV3>& ntrials, 
+		   MatrixBase<dV1>& y, MatrixBase<dM>& X, MatrixBase<dV1>& ntrials, 
 		   MatrixBase<dV1>& offset, 
 		   MatrixBase<dV1>& b0, MatrixBase<dM>& P0,
 		   RNG& r, bool just_maximize=false)
@@ -347,8 +461,8 @@ bool draw_stc_beta(MatrixBase<dV2>& beta, llh_struct& llh,
   llh_struct llh_new(llh);
   llh_new.psi_stc = X * beta_new;
   llh_new.psi_dyn = offset;
-  //stc_beta_to_psi(llh_new.psi, X, beta_new, block_start);
-  log_logit_likelihood(y, ntrials, llh_new, block_start);
+  // log_logit_likelihood(y, ntrials, llh_new, block_start);
+  log_logit_likelihood(&y(0), &ntrials(0), llh_new, block_start);
 
   double llike_new  = llh_new.l0.sum();
 
@@ -561,13 +675,13 @@ void laplace_omega(Gaussian& nbp, const MatrixBase<dV1>& omega, const llh_struct
 
 }
 
-template <typename dM, typename dV, typename dV2>
+template <typename dM, typename dV>
 bool draw_omega_block(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& llh,
-		      MatrixBase<dV>& y, MatrixBase<dM>& tX, MatrixBase<dV2>& ntrials, MatrixBase<dV>& offset,
-		      MatrixBase<dM>& Xi, MatrixBase<dM>& L,
-		      MatrixBase<dM>& prior_prec, MatrixBase<dM>& Phi,
-		      int block_start, int num_blocks, 
-		      RNG& r, bool just_maximize=false)
+					  MatrixBase<dV>& y, MatrixBase<dM>& tX, MatrixBase<dV>& ntrials, MatrixBase<dV>& offset,
+					  MatrixBase<dM>& Xi, MatrixBase<dM>& L,
+					  MatrixBase<dM>& prior_prec, MatrixBase<dM>& Phi,
+					  int block_start, int num_blocks, 
+					  RNG& r, log_likelihood log_like, bool just_maximize=false)
 {
   int N  = Xi.rows();
   int NB = Xi.cols();
@@ -604,11 +718,15 @@ bool draw_omega_block(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& l
 
   llh_struct llh_new(llh);
 
+  // dyn_beta_to_psi(llh_new.psi_dyn, tX, beta_new, block_start);
+  // llh_new.psi_stc = offset;
+  // log_logit_likelihood(y, ntrials, llh_new, block_start);
+
   dyn_beta_to_psi(llh_new.psi_dyn, tX, beta_new, block_start);
   llh_new.psi_stc = offset;
-  log_logit_likelihood(y, ntrials, llh_new, block_start);
+  // log_logit_likelihood(&y(0), &ntrials(0), llh_new, block_start);
+  log_like(&y(0), &ntrials(0), llh_new, block_start);
 
-  
   double llike_new  = llh_new.l0.sum();
 
   double lprior_new = draw_new.transpose() * 
@@ -664,13 +782,13 @@ bool draw_omega_block(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& l
   return accept;
 }
 
-template<typename dM, typename dV, typename dV2>
+template<typename dM, typename dV>
 int draw_omega(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& llh,
-	       MatrixBase<dV>& y, MatrixBase<dM>& tX, MatrixBase<dV2>& ntrials, MatrixBase<dV>& offset,
-	       MatrixBase<dM>& Xi, MatrixBase<dM>& L,
-	       MatrixBase<dM>& prior_prec, MatrixBase<dM>& Phi,
-	       MatrixXi& starts,
-	       RNG& r, bool just_maximize=false)
+			   MatrixBase<dV>& y, MatrixBase<dM>& tX, MatrixBase<dV>& ntrials, MatrixBase<dV>& offset,
+			   MatrixBase<dM>& Xi, MatrixBase<dM>& L,
+			   MatrixBase<dM>& prior_prec, MatrixBase<dM>& Phi,
+			   MatrixXi& starts,
+			   RNG& r, log_likelihood log_like, bool just_maximize=false)
 {
   int nsize = y.size();
   int ssize = starts.size();
@@ -703,7 +821,9 @@ int draw_omega(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& llh,
   for (int i=0; i<ssize; i++) {
     int num_blocks = the_breaks(i+1) - the_breaks(i);
     naccept +=
-      draw_omega_block(omega, beta, llh, y, tX, ntrials, offset, Xi, L, prior_prec, Phi, starts(i), num_blocks, r, just_maximize);
+      draw_omega_block(omega, beta, llh, y, tX, ntrials, 
+					   offset, Xi, L, prior_prec, Phi, starts(i), num_blocks, 
+					   r, log_like, just_maximize);
   }
 
   return naccept;
