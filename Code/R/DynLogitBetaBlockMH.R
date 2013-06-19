@@ -42,6 +42,20 @@ logit.llh.3 <- function(y, psi.dyn, psi.stc, n=1)
   out
 }
 
+nb.mu.llh.3 <- function(y, psi.dyn, psi.stc, d=1)
+{
+  psi = psi.dyn + psi.stc
+  epsi = exp(psi)
+  bexpon = y + d
+  p  = epsi / (d + epsi);
+  l0 = psi * y - bexpon * log(d+epsi);
+  l1 = y - bexpon * p
+  l2 = -bexpon * (p - p^2)
+  pl2 = psi * l2
+  out = data.frame("psi"=psi, "psi.dyn"=psi.dyn, "psi.stc"=psi.stc, "l0"=l0, "l1"=l1, "l2"=l2, "pl2"=pl2)
+  out
+}
+
 get.laplace.1 <- function(beta, Prec, X, df, block.start, block.end)
 {
   ## Assume X is T x P in the form of a design matrix.
@@ -219,7 +233,7 @@ if (FALSE) {
   y = rbinom(N, n, prob=p.t);
 
   plot(y)
-  lines(n*p, col=2);
+  lines(n*p.t, col=2);
 
   ## Make precision matrix
   D = matrix(0, N*P, N*P);
