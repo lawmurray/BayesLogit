@@ -6,6 +6,7 @@ source("Benchmark-Utilities.R")
 source("DynNBPG.R")
 source("DynNBFS-2009.R")
 source("DynNBCUBS.R")
+source("DynNBOmegaBlock.R")
 
 ################################################################################
                                   ## SETUP ##
@@ -17,7 +18,7 @@ run <- list("flu"   =FALSE,
             "synth3"=FALSE,
             "allsynth"=TRUE)
 
-methods = c("PG", "FS", "CUBS")
+methods = c("PG", "FS", "CUBS", "OmegaBlock")
 
 write.dir = "Bench-Dyn-03" # Used in file.path
 
@@ -25,12 +26,14 @@ write.it = FALSE
 plot.it  = FALSE
 read.it = FALSE
 
-run.idc = 1:2
+run.idc = 1:4
 
-samp = 10000
-burn  = 2000
-verbose = 1000
-ntrials = 10
+samp = 10
+burn  = 0
+verbose = 10
+ntrials = 2
+
+options = list("just.max"=FALSE, "starts"=1);
 
 ################################################################################
                              ## Dyn NB Benchmark ##
@@ -45,7 +48,7 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
                              W.a0=NULL, W.b0=NULL,
                              d.true=NULL,
                              beta.true=NULL, iota.true=NULL,
-                             mu.true=NULL, phi.true=NULL, W.true=NULL)
+                             mu.true=NULL, phi.true=NULL, W.true=NULL, options=NULL)
 {
   ## n is total number of trials per observation - not vectorized, i.e. the same for each i.
   cat("Will benchmark", method[1], "using", dset.name, "dataset for variable(s)", var.names, "\n");
@@ -70,6 +73,7 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
                       d.true=d.true, w.true=NULL,
                       beta.true=beta.true, iota.true=iota.true,
                       mu.true=mu.true, phi.true=phi.true, W.true=W.true);
+      gb$beta = gb$beta[,,-1,drop=FALSE]
       gb$a.rate = 1
     } else if (method=="FS") {
       gb <- dyn.NB.FS(y=y, X.dyn=X.dyn, X.stc=X.stc,
@@ -81,6 +85,7 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
                       d.true=d.true, lambda.true=NULL, r.true=NULL,
                       beta.true=beta.true, iota.true=iota.true,
                       mu.true=mu.true, phi.true=phi.true, W.true=W.true)
+      gb$beta = gb$beta[,,-1,drop=FALSE]
       gb$a.rate=1
     } else if (method=="CUBS") {
       gb <- dyn.NB.CUBS(y=y, X.dyn=X.dyn, m0=m.0, C0=C.0,
@@ -89,7 +94,33 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
                         phi.m0=phi.m0, phi.P0=phi.P0,
                         W.a0=W.a0, W.b0=W.b0, X.stc=X.stc,
                         mu.true = mu.true, phi.true=phi.true, W.true=W.true, d.true=d.true)
+      gb$beta = gb$beta[,,-1,drop=FALSE]
       gb$a.rate = gb$ac.rate[samp]
+    } else if (method=="OmegaBlock") {
+      m0.stc = NULL
+      C0.stc = NULL
+      m0.dyn = m.0
+      C0.dyn = C.0
+      if (!is.null(X.stc)) {
+        P.a = ncol(X.stc)
+        P.b = ncol(X.dyn)
+        idc.a = 1:P.a
+        idc.b = (P.a+1):(P.a+P.b)
+        m0.stc = m.0[idc.a]
+        C0.stc = C.0[idc.a, idc.a]
+        m0.dyn = m.0[idc.b]
+        C0.dyn = C.0[idc.b,idc.b]
+      }
+      gb <- dyn.nb.om(y=y, X.dyn=X.dyn, m0=m0.dyn, C0=C0.dyn,
+                      samp=samp, burn=burn, verbose=verbose, starts=options$starts,
+                      mu.m0=mu.m0, mu.P0=mu.P0,
+                      phi.m0=phi.m0, phi.P0=phi.P0,
+                      W.a0=W.a0, W.b0=W.b0,
+                      X.stc=X.stc, m0.stc=m0.stc, C0.stc=C0.stc,
+                      mu.true = mu.true, phi.true=phi.true, W.true=W.true,
+                      alpha.true=NULL, beta.true = NULL, d.true=d.true,
+                      just.max=options$just.max)
+      gb$options = options
     } else {
       print("Unknown method.")
       return(NA);
@@ -107,7 +138,7 @@ benchmark.dyn.NB <- function(y, X.dyn, X.stc=NULL,
         if (length(dim(gb[[nm]])) ==2) sstat[[nm]][[i]] = sum.stat(gb[[nm]], gb$ess.time[3], thin=1);
       }
       
-      arate[i]    = gb$a.rate
+      arate[i]    = gb$a.rate[1]
       ess.time[i] = gb$ess.time[3]
       
     }
@@ -215,6 +246,9 @@ if (run$synth1) {
   y = dyn.nb.1$y;
   X.dyn = dyn.nb.1$X;
   P = 1
+  N.y = length(y)
+  
+  options$starts=seq(1, N.y, 2)
 
   ## Prior
   b.m0 = 3.0;
@@ -230,11 +264,11 @@ if (run$synth1) {
     ## source("Benchmark-DynNB.R")
     nm = methods[i];
     bench.synth1[[nm]] <- benchmark.dyn.NB(y, X.dyn=X.dyn, X.stc=NULL, 
-                                     samp=samp, burn=burn, ntrials=1, verbose=verbose,
+                                     samp=samp, burn=burn, ntrials=ntrials, verbose=verbose,
                                      method=nm, var.names="beta", dset.name="Synth1",
                                      m.0=b.m0, C.0=b.C0,
                                      W.a0=W.a0, W.b0=W.b0,
-                                     mu.true=0.0, phi.true=1.0, d.true=NULL);
+                                     mu.true=0.0, phi.true=1.0, d.true=4, options=options);
   }
   
   synth1.table = setup.table.dyn(bench.synth1, "beta")
@@ -273,7 +307,7 @@ if (run$synth2) {
                                      method=nm, var.names="beta", dset.name="Synth2",
                                      m.0=b.m0, C.0=b.C0,
                                      W.a0=W.a0, W.b0=W.b0,
-                                     mu.true=0.0, phi.true=1.0);
+                                     mu.true=0.0, phi.true=1.0, options=options);
   }
   
   synth2.table = setup.table.dyn(bench.synth2, "beta")
@@ -293,7 +327,10 @@ if (run$synth3) {
 
   y = y;
   X.dyn = X.dyn;
+  Ny = length(y)
 
+  options$starts = c(1, Ny, 50)
+  
   ## Prior
   b.m0 = 0.0;
   b.C0 = 3.0;
@@ -316,7 +353,7 @@ if (run$synth3) {
                                      method=nm, var.names="beta", dset.name="Synth3",
                                      m.0=b.m0, C.0=b.C0,
                                      W.a0=W.a0, W.b0=W.b0,
-                                     mu.true=0.0, phi.true=1.0);
+                                     mu.true=0.0, phi.true=1.0, d.true = d, options=options);
   }
   
   synth3.table = setup.table.dyn(bench.synth3, "beta")
@@ -340,7 +377,7 @@ if (run$allsynth)
   iter   = 0
   
   P = 2
-  nb.mean = 100
+  nb.mean = 10
   corr.type = "high"
   ## est.ar = "with.ar"
   est.ar = "with.ar"
@@ -363,6 +400,8 @@ if (run$allsynth)
   X.dyn = X
   X.stc = matrix(1, nrow=T, ncol=1)
   P = ncol(X.dyn)
+
+  options$starts = seq(1,T,50)
   
   ## Prior
   m0 = rep(0, P+1)
@@ -394,7 +433,7 @@ if (run$allsynth)
                                           m.0=m0, C.0=C0,
                                           phi.m0=phi.m0, phi.P0=1/phi.V0,
                                           W.a0=W.a0, W.b0=W.b0,
-                                          mu.true=mu.true, phi.true=phi.true, W.true=W.true, d.true=d.true);
+                                          mu.true=mu.true, phi.true=phi.true, W.true=W.true, d.true=d.true, options=options);
   }
   
   synth.table = setup.table.dyn(bench.synth, "beta")

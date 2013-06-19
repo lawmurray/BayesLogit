@@ -493,6 +493,7 @@ if (FALSE) {
   ## set.seed(1000);
   
   source("DynLogitOmegaBlock.R")
+  start.time = proc.time()
   output4 <- dyn.logit.om(y=y, X.dyn=X, n=n, m0=m0, C0=C0,
                       samp=samp, burn=burn, verbose=verbose, starts=starts,
                       mu.m0=NULL, mu.P0=NULL,
@@ -502,7 +503,9 @@ if (FALSE) {
                       mu.true = 0, phi.true=phi, W.true=W,
                       alpha.true=NULL, beta.true = NULL, 
                       just.max=just.max)
-
+  diff.time = proc.time() - start.time
+  print(diff.time)
+  
   ## plot(beta.t[1,], type="l")
   ## lines(output4$beta[samp,1,], col=2)
 

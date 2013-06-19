@@ -1,4 +1,5 @@
 
+source("DynLogitBetaBlockMH.R")
 
 dyn.logit.om <- function(y, X.dyn, n, m0, C0,
                          samp=1000, burn=100, verbose=100, starts=c(1),
@@ -62,8 +63,6 @@ dyn.logit.om <- function(y, X.dyn, n, m0, C0,
   psi.dyn = colSums(tX.dyn * beta);
   psi.stc = X.stc %*% alpha;
 
-  llh = logit.llh.3(y, psi.dyn, psi.stc, n=n)
-
   ## Check if known.
   know.phi <- know.mu <- know.W <- know.alpha <- know.beta <- FALSE
   
@@ -84,6 +83,8 @@ dyn.logit.om <- function(y, X.dyn, n, m0, C0,
     know.beta = TRUE
   }
 
+  llh = logit.llh.3(y, psi.dyn, psi.stc, n=n)
+
   ## Check
   ## cat("psi.stc", psi.stc, "\n");
     
@@ -100,8 +101,8 @@ dyn.logit.om <- function(y, X.dyn, n, m0, C0,
     
     ## Draw beta
     if (!know.beta) {
-      prior.prec = diag(1/W, N.b * N);
-      prior.prec[1:N.b,1:N.b] = solve(diag(W, N.b) + diag(phi,P) %*% C0 %*% diag(phi,P));
+      prior.prec = diag(1/W, N.b * T);
+      prior.prec[1:N.b,1:N.b] = solve(diag(W, N.b) + diag(phi,N.b) %*% C0 %*% diag(phi,N.b));
       draw = draw.omega.mh(omega, beta, llh, y, tX.dyn, ntrials=n, prior.prec, phi, starts, just.max=just.max, offset=psi.stc);
       omega   = draw$omega;
       beta    = draw$beta;

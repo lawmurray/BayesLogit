@@ -8,6 +8,7 @@ source("Benchmark-Utilities.R");
 source("DynLogitPG.R")
 source("DynLogitdRUM.R")
 source("DynLogitCUBS.R")
+source("DynLogitOmegaBlock.R")
 ## source("CUBS-MH.R")
 
 ################################################################################
@@ -19,7 +20,7 @@ run <- list("tokyo"=FALSE,
             "low.4"=FALSE,
             "high.2"=FALSE,
             "high.4"=FALSE,
-            "allsynth"=FALSE)
+            "allsynth"=TRUE)
 
 write.dir = "./"
 
@@ -28,14 +29,16 @@ plot.it  = FALSE
 print.it = FALSE
 read.it  = FALSE
 
-methods = c("PG", "dRUM", "CUBS", "FS2010");
+methods = c("PG", "dRUM", "CUBS", "FS2010", "OmegaBlock");
 
-run.idc = 1:3
+run.idc = c(1:3, 5);
 
-samp = 10000
-burn  = 2000
-verbose = 1000
+samp = 10
+burn  = 0
+verbose = 10
 ntrials = 2
+
+options = list("just.max"=FALSE, "starts"=1);
 
 ################################################################################
                            ## Dyn Logit Benchmark ##
@@ -49,7 +52,8 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
                                 phi.m0=NULL, phi.P0=NULL,
                                 W.a0=NULL, W.b0=NULL,
                                 beta.true=NULL, iota.true=NULL,
-                                mu.true=NULL, phi.true=NULL, W.true=NULL)
+                                mu.true=NULL, phi.true=NULL, W.true=NULL,
+                                options=NULL)
 {
   T = length(y)
   ## n is total number of trials per observation - not vectorized, i.e. the same for each i.
@@ -70,6 +74,7 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
                          W.a0=W.a0, W.b0=W.b0,
                          beta.true=beta.true, iota.true=iota.true, w.true=NULL,
                          mu.true=mu.true, phi.true=phi.true, W.true=W.true)
+      gb$beta = gb$beta[,,-1,drop=FALSE]
       gb$a.rate = 1
     } else if (method=="dRUM") {
       gb <- dyn.logit.dRUM(y=y, X.dyn=X.dyn, n=n, X.stc=X.stc,
@@ -81,6 +86,7 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
                          z.true=NULL, r.true=NULL,
                          beta.true=beta.true, iota.true=iota.true,
                          mu.true=mu.true, phi.true=phi.true, W.true=W.true)
+      gb$beta = gb$beta[,,-1,drop=FALSE]
       gb$a.rate = 1
     } else if (method=="CUBS") {
       gb <- dyn.logit.CUBS(y=y, X.dyn=X.dyn, n=rep(n,T), m0=m.0, C0=C.0,
@@ -89,6 +95,7 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
                            phi.m0=phi.m0, phi.P0=phi.P0,
                            W.a0=W.a0, W.b0=W.b0, X.stc=X.stc,
                            mu.true = mu.true, phi.true=phi.true, W.true=W.true)
+      gb$beta = gb$beta[,,-1,drop=FALSE]
       gb$a.rate = gb$ac.rate[samp]
     } else if (method=="FS2010") {
       gb <- dyn.logit.FS(y, X.dyn=X.dyn, n=n[1], X.stc=X.tc, ## assume n[i] = n[1].
@@ -100,6 +107,30 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
                          z.true=NULL, r.true=NULL,
                          beta.true=beta.true, iota.true=iota.true,
                          mu.true=mu.true, phi.true=phi.true, W.true=W.true)
+    } else if (method=="OmegaBlock") {
+      m0.stc = NULL
+      C0.stc = NULL
+      m0.dyn = m.0
+      C0.dyn = C.0
+      if (!is.null(X.stc)) {
+        P.a = ncol(X.stc)
+        P.b = ncol(X.dyn)
+        idc.a = 1:P.a
+        idc.b = (P.a+1):(P.a+P.b)
+        m0.stc = m.0[idc.a]
+        C0.stc = C.0[idc.a, idc.a]
+        m0.dyn = m.0[idc.b]
+        C0.dyn = C.0[idc.b,idc.b]
+      }
+      gb <- dyn.logit.om(y=y, X.dyn=X.dyn, n=n, m0=m0.dyn, C0=C0.dyn,
+                         samp=samp, burn=burn, verbose=verbose, starts=options$starts,
+                         mu.m0=mu.m0, mu.P0=mu.P0,
+                         phi.m0=phi.m0, phi.P0=phi.P0,
+                         W.a0=W.a0, W.b0=W.b0,
+                         X.stc=X.stc, m0.stc=m0.stc, C0.stc=C0.stc,
+                         mu.true = mu.true, phi.true=phi.true, W.true=W.true,
+                         alpha.true=iota.true, beta.true = beta.true, 
+                         just.max=options$just.max)
     } else {
       print("Unknown method.")
       return(NA);
@@ -110,7 +141,7 @@ benchmark.dyn.logit <- function(y, X.dyn, n, X.stc=NULL,
       if (length(dim(gb[[nm]])) ==2) sstat[[nm]][[i]] = sum.stat(gb[[nm]], gb$ess.time[3], thin=1);
     }
 
-    arate[i]    = gb$a.rate
+    arate[i]    = gb$a.rate[1]
     ess.time[i] = gb$ess.time[3]
 
   }
@@ -140,6 +171,8 @@ if (run$tokyo) {
   y = tkrain
   X = matrix(1, nrow=T, ncol=1)
   n = 2
+
+  options$starts = seq(1,T,100);
   
   ## Prior
   b.m0 = -1.0;
@@ -160,7 +193,7 @@ if (run$tokyo) {
                                      method=nm, var.names="beta", dset.name="Tokyo",
                                      m.0=b.m0, C.0=b.C0,
                                      W.a0=W.a0, W.b0=W.b0,
-                                     mu.true=0.0, phi.true=1.0);
+                                     mu.true=0.0, phi.true=1.0, options=options);
   }
   
   tokyo.table = setup.table.dyn(bench.tokyo, "beta")
@@ -460,6 +493,8 @@ if (run$allsynth)
   X.dyn = X
   X.stc = matrix(1, nrow=T, ncol=1)
   P = ncol(X.dyn)
+
+  options$start = seq(1, T, 100)
   
   ## Prior
   m0 = rep(0, P+1)
@@ -496,7 +531,7 @@ if (run$allsynth)
                                              m.0=m0, C.0=C0,
                                              phi.m0=phi.m0, phi.P0=1/phi.V0,
                                              W.a0=W.a0, W.b0=W.b0,
-                                             mu.true=mu.true, phi.true=phi.send, W.true=W.send);
+                                             mu.true=mu.true, phi.true=phi.send, W.true=W.send, options=options);
   }
   
   synth.table = setup.table.dyn(bench.synth, "beta")
