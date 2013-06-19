@@ -65,6 +65,7 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
     w    = array(0, dim=c(M, T)),
     beta = array(0, dim=c(M, P.b, T+1)),
     alpha= array(0, dim=c(M, 1)),
+    lmean= array(0, dim=c(M, T)),
     mu   = array(0, dim=c(M, P.b)),
     phi  = array(0, dim=c(M, P.b)),
     W    = array(0, dim=c(M, P.b))
@@ -144,13 +145,15 @@ dyn.NB.PG <- function(y, X.dyn, X.stc=NULL,
     
     # Record if we are past burn-in.
     if (j>burn) {
-      out$d[j-burn]      = d
-      out$w[j-burn,]     = w
-      out$alpha[j-burn,] = iota
-      out$beta[j-burn,,] = beta
-      out$mu[j-burn, ]   = mu;
-      out$phi[j-burn, ]  = phi;
-      out$W[j-burn, ]    = W;
+      jj = j - burn
+      out$d[jj]      = d
+      out$w[jj,]     = w
+      out$alpha[jj,] = iota
+      out$beta[jj,,] = beta
+      out$mu[jj, ]   = mu;
+      out$phi[jj, ]  = phi;
+      out$W[jj, ]    = W;
+      out$lmean[jj,] = log.mean;
     }
 
     if (j %% verbose == 0) { print(paste("Dyn NB PG: Iteration", j)); }
