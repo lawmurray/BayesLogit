@@ -76,14 +76,14 @@ void log_logit_likelihood(const double* y, const double* ntrials, llh_struct& ll
   log_logit_likelihood(y, ntrials, llh, block_start, llh.psi.size() - block_start);
 }
 
-void log_nbinom_likelihood(const double* y, const double* d, llh_view& llh, int block_start, int num_blocks)
+void log_nbinom_p_likelihood(const double* y, const double* d, llh_struct& llh, int block_start, int num_blocks)
 {
   int block_end = block_start + num_blocks;
 
-  if (block_end > (int)llh.N) fprintf(stderr, "Warning: log_logit_likelihood block_end out of bounds.\n");
+  if (block_end > llh.psi.size()) fprintf(stderr, "Warning: log_logit_likelihood block_end out of bounds.\n");
 
   for (int i = block_start; i < block_end; i++) {
-	double bexpon = y[i] + d[i];
+    double bexpon = y[i] + d[i];
     llh.psi[i]  = llh.psi_stc[i] + llh.psi_dyn[i];
     double psi  = llh.psi[i];
     double epsi = exp(psi);
@@ -96,9 +96,34 @@ void log_nbinom_likelihood(const double* y, const double* d, llh_view& llh, int 
   }
 }
 
-void log_nbinom_likelihood(const double* y, const double* d, llh_view& llh, int block_start)
+void log_nbinom_p_likelihood(const double* y, const double* d, llh_struct& llh, int block_start)
 {
-  log_logit_likelihood(y, d, llh, block_start, (int)llh.N - block_start);
+  log_nbinom_p_likelihood(y, d, llh, block_start, llh.psi.size() - block_start);
+}
+
+void log_nbinom_mu_likelihood(const double* y, const double* d, llh_struct& llh, int block_start, int num_blocks)
+{
+  int block_end = block_start + num_blocks;
+
+  if (block_end > llh.psi.size()) fprintf(stderr, "Warning: log_logit_likelihood block_end out of bounds.\n");
+
+  for (int i = block_start; i < block_end; i++) {
+    double bexpon = y[i] + d[i];
+    llh.psi[i]  = llh.psi_stc[i] + llh.psi_dyn[i];
+    double psi  = llh.psi[i];
+    double epsi = exp(psi);
+    double p    = epsi / (d[i] + epsi);
+    llh.l0[i]   = psi * y[i] - bexpon * log(d[i] + epsi);
+    llh.l1[i]   = y[i] - bexpon * p;
+    llh.l2[i]   = -1.0 * bexpon * (p - p*p);
+    llh.pl2[i]  = psi * llh.l2[i];
+    // printf("i: %2i, psi: %3.2g, y: %3.2g, l0: %3.2g, l1: %3.2g, l2: %3.2g\n", i, psi, y[i], llh.l0[i], llh.l1[i], llh.l2[i]);
+  }
+}
+
+void log_nbinom_mu_likelihood(const double* y, const double* d, llh_struct& llh, int block_start)
+{
+  log_nbinom_mu_likelihood(y, d, llh, block_start, llh.psi.size() - block_start);
 }
 
 void draw_norm_upper_prec(double* draw_, double* m_, double* U_, const int* n_) 
@@ -127,9 +152,8 @@ void draw_omega(double* omega, double* beta,
 		double* y, double* tX, double* ntrials, double* offset,
 		double* prior_prec, double* phi,
 		int* starts,  const int* N_,  const int* B_,  const int* num_starts, 
-		int* naccept, bool* just_maximize)
+		int* naccept, bool* just_maximize, int *type)
 {
-  RNG r;
   const int N = *N_;
   const int B = *B_;
   int NB = N * B;
@@ -182,16 +206,23 @@ void draw_omega(double* omega, double* beta,
   llh.l2  = l2_m;
   llh.pl2 = pl2_m;
 
+  RNG r;
+
+  // Overloading confusing ? : expression.
+  // log_likelihood function_call = *type == 'L' ? &log_logit_likelihood : &log_nbinom_mu_likelihood;
+  log_likelihood function_call = &log_logit_likelihood;
+  if (*type == 1) function_call = &log_nbinom_mu_likelihood;
+
   #ifdef USE_R
   GetRNGstate();
   #endif
 
   *naccept = 0;
   *naccept = draw_omega(omega_m, beta_m, llh,
-						y_m, tX_m, ntrials_m, offset_m,
-						Xi_m, L_m, 
-						prior_prec_m, Phi_m,
-						starts_mat, r, &log_logit_likelihood, *just_maximize);
+			y_m, tX_m, ntrials_m, offset_m,
+			Xi_m, L_m, 
+			prior_prec_m, Phi_m,
+			starts_mat, r, function_call, *just_maximize);
 
   #ifdef USE_R
   PutRNGstate();
@@ -213,7 +244,7 @@ void draw_stc_beta(double* beta,
 		   double*y, double* X, double* ntrials, double* offset,
 		   double* b0, double* P0,
 		   const int* N_, const int* B_,
-		   int* naccept, bool* just_maximize)
+		   int* naccept, bool* just_maximize, int* type)
 {
   int N = *N_;
   int B = *B_;
@@ -246,12 +277,15 @@ void draw_stc_beta(double* beta,
 
   RNG r;
 
+  log_likelihood function_call = &log_logit_likelihood;
+  if (*type == 1) function_call = &log_nbinom_mu_likelihood;
+
   #ifdef USE_R
   GetRNGstate();
   #endif
 
   *naccept = 0;
-  *naccept = draw_stc_beta(beta_m, llh, y_m, X_m, ntrials_m, offset_m, b0_m, P0_m, r, *just_maximize);
+  *naccept = draw_stc_beta(beta_m, llh, y_m, X_m, ntrials_m, offset_m, b0_m, P0_m, r, function_call, *just_maximize);
 
   #ifdef USE_R
   PutRNGstate();

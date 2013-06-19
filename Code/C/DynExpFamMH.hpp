@@ -201,7 +201,7 @@ extern "C" {
 		  double* y, double* tX, double* ntrials, double* offset,
 		  double* prior_prec, double* Phi,
 		  int* starts,  const int* N_,  const int* B_,  const int* num_starts, 
-		  int* naccept, bool* just_maximize);
+		  int* naccept, bool* just_maximize, int *type);
 
   void draw_stc_beta(double* beta,
 		     double* psi_dyn, double* psi_stc,
@@ -209,7 +209,7 @@ extern "C" {
 		     double*y, double* X, double* ntrials, double* offset, 
 		     double* b0, double* P0,
 		     const int* N_, const int* B_,
-		     int* naccept, bool* just_maximize);
+		     int* naccept, bool* just_maximize, int *type);
 
 }
 
@@ -427,7 +427,7 @@ bool draw_stc_beta(MatrixBase<dV2>& beta, llh_struct& llh,
 		   MatrixBase<dV1>& y, MatrixBase<dM>& X, MatrixBase<dV1>& ntrials, 
 		   MatrixBase<dV1>& offset, 
 		   MatrixBase<dV1>& b0, MatrixBase<dM>& P0,
-		   RNG& r, bool just_maximize=false)
+		   RNG& r, log_likelihood log_like, bool just_maximize=false)
 {
 
   // std::cout << "y:\n" << y.transpose() << "\n";
@@ -462,7 +462,8 @@ bool draw_stc_beta(MatrixBase<dV2>& beta, llh_struct& llh,
   llh_new.psi_stc = X * beta_new;
   llh_new.psi_dyn = offset;
   // log_logit_likelihood(y, ntrials, llh_new, block_start);
-  log_logit_likelihood(&y(0), &ntrials(0), llh_new, block_start);
+  // log_logit_likelihood(&y(0), &ntrials(0), llh_new, block_start);
+  log_like(&y(0), &ntrials(0), llh_new, block_start);
 
   double llike_new  = llh_new.l0.sum();
 
@@ -765,6 +766,7 @@ bool draw_omega_block(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& l
   // printf("llike_new: %g, llike_old: %g, diff: %g\n", llike_new, llike_old, llike_new - llike_old);
   // printf("lpp_new: %g, lpp_old: %g, diff: %g\n", lppsl_new, lppsl_old, lppsl_new - lppsl_old);
   // printf("lprior_new: %g, lprior_old: %g, diff: %g\n", lprior_new, lprior_old, lprior_new - lprior_old);
+  // printf("block_start: %i, lratio: %g\n", block_start, lratio);
 
   if (accept) {
     omega  = omega_new;
@@ -822,8 +824,8 @@ int draw_omega(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& llh,
     int num_blocks = the_breaks(i+1) - the_breaks(i);
     naccept +=
       draw_omega_block(omega, beta, llh, y, tX, ntrials, 
-					   offset, Xi, L, prior_prec, Phi, starts(i), num_blocks, 
-					   r, log_like, just_maximize);
+		       offset, Xi, L, prior_prec, Phi, starts(i), num_blocks, 
+		       r, log_like, just_maximize);
   }
 
   return naccept;
@@ -841,3 +843,5 @@ int draw_omega(MatrixBase<dM>& omega, MatrixBase<dM>& beta, llh_struct& llh,
 // APPENDIX
 
 // Having too many or too few template parameters can create problems.
+
+// I had problems when trying to pass a character to an R wrapping function!
