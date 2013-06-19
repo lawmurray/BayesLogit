@@ -1,5 +1,5 @@
 
-draw.omega.mh <- function(omega, beta, llh, y, tX, ntrials, prior.prec, phi, starts, just.max=FALSE, offset=0)
+draw.omega.mh <- function(omega, beta, llh, y, tX, ntrials, prior.prec, phi, starts, just.max=FALSE, offset=0, type=0)
 {
   ## omega: previous innovations values, B x N matrix.
   ## beta:  previous beta values... starting at 1, B x N matrix.
@@ -64,7 +64,7 @@ draw.omega.mh <- function(omega, beta, llh, y, tX, ntrials, prior.prec, phi, sta
             as.double(y), tX, as.double(ntrials), as.double(offset),
             prior.prec, phi,
             as.integer(starts), as.integer(N), as.integer(B), as.integer(length(starts)),
-            as.integer(naccept), as.integer(just.max),
+            as.integer(naccept), as.integer(just.max), as.integer(type[1]),
             PACKAGE="BayesLogit");
 
   out <- list("omega" = OUT[[1]],
@@ -82,7 +82,7 @@ draw.omega.mh <- function(omega, beta, llh, y, tX, ntrials, prior.prec, phi, sta
   out
 }
 
-draw.stc.beta.mh <- function(beta, llh, y, X, ntrials, b0=NULL, P0=NULL, just.max=FALSE, offset=0)
+draw.stc.beta.mh <- function(beta, llh, y, X, ntrials, b0=NULL, P0=NULL, just.max=FALSE, offset=0, type=0)
 {
   ## beta:  previous beta values... B-vec.
   ## llh:   previous data frame with l0, l1, l2, psi, pl2
@@ -144,7 +144,7 @@ draw.stc.beta.mh <- function(beta, llh, y, X, ntrials, b0=NULL, P0=NULL, just.ma
             as.double(y), as.double(X), as.double(ntrials), as.double(offset),
             as.double(b0), as.double(P0),
             as.integer(N), as.integer(B),
-            as.integer(naccept), as.integer(just.max),
+            as.integer(naccept), as.integer(just.max), as.integer(type[1]),
             PACKAGE="BayesLogit")
 
   out <- list("beta"  = OUT[[1]],
