@@ -16,22 +16,22 @@ run <- list("flu"   =FALSE,
             "synth1"=FALSE,
             "synth2"=FALSE,
             "synth3"=FALSE,
-            "allsynth"=TRUE)
+            "allsynth"=FALSE)
 
 methods = c("PG", "FS", "CUBS", "OmegaBlock")
 
-write.dir = "Bench-Dyn-03" # Used in file.path
+write.dir = "Bench-Dyn-06" # Used in file.path
 
 write.it = FALSE
 plot.it  = FALSE
 read.it = FALSE
 
-run.idc = 1:4
+run.idc = 1:3
 
-samp = 10
-burn  = 0
-verbose = 10
-ntrials = 2
+samp = 10000
+burn  = 2000
+verbose = 1000
+ntrials = 10
 
 options = list("just.max"=FALSE, "starts"=1);
 
@@ -420,7 +420,7 @@ if (run$allsynth)
   }    
   
   bench.synth = list();
-  if (read.it) load(filename)
+  if (read.it) load(file.path(write.dir, filename))
   
   ## source("Benchmark-DynNB.R")
   for (i in run.idc) {
@@ -472,7 +472,7 @@ if (FALSE) {
     for (nb.mean in c(10,100)) {
       for (corr.type in c("low", "high")) {
         
-        cat("AR:", est.ar, "\n");
+        cat("AR:", est.ar, "P:", P, "nb.mean:", nb.mean, "corr:", corr.type, "\n");
         
         dset.name = paste(corr.type, "-", P, "-mu-", nb.mean, sep="");
         source.file = paste("DynNB-synth-", dset.name, ".RData", sep="")
@@ -481,28 +481,41 @@ if (FALSE) {
         table.file  = paste("table.", bench.base, sep="");
                   
         load(file.path("Benchmark-DataSets", source.file))
-        load(file.path("Bench-Dyn-02", bench.data))
+        load(file.path(write.dir, bench.data))
 
         ## cat("phi.true", phi.true, "\n");
         ## cat("W.true:", W.true, "\n");
         
         the.table = synth.table$table
-        the.table[3,2] = mean(bench.synth$CUBS$arate)
+        the.table[3,2] = mean(bench.synth$CUBS$arate) ## CUBS
         
         write.table(the.table, file=table.file, row.names=TRUE, col.names=TRUE);
 
-        par(mfrow=c(P,1))
+        par(mfrow=c(P+1,1))
         for (i in 1:P) {
           plot(beta[i,], col=1, type="l")
           ## plot(synth.table$ave.sstat[i,,1,1], type="l", col=2)
-          lines(synth.table$ave.sstat[i,,1,1], col=2)
-          lines(synth.table$ave.sstat[i,,1,2], col=3)
-          lines(synth.table$ave.sstat[i,,1,3], col=4)
+          lines(synth.table$ave.sstat[i,,1,1], col=2, lty=2)
+          lines(synth.table$ave.sstat[i,,1,2], col=3, lty=3)
+          lines(synth.table$ave.sstat[i,,1,3], col=4, lty=4) ## CUBS
 
         }
-        ## readline("<ENTER>")
-        
 
+        alpha.pg = mean(bench.synth$PG$gb$alpha);
+        alpha.fs = mean(bench.synth$FS$gb$alpha);
+        alpha.cb = mean(bench.synth$CUBS$gb$alpha); ## CUBS
+
+        lmean.pg = apply((synth.table$ave.sstat[,,1,1]) * t(X), 2, sum) + alpha.pg
+        lmean.fs = apply((synth.table$ave.sstat[,,1,2]) * t(X), 2, sum) + alpha.fs
+        lmean.cb = apply((synth.table$ave.sstat[,,1,3]) * t(X), 2, sum) + alpha.cb ## CUBS
+        
+        plot(y, cex=0.5)
+        lines(exp(log.mean))
+        lines(exp(lmean.pg), col=2, lty=2)
+        lines(exp(lmean.fs), col=3, lty=3)
+        lines(exp(lmean.cb), col=4, lty=4) ## CUBS
+
+        readline("<ENTER>")
       }}}
   
 }

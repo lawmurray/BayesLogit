@@ -20,9 +20,9 @@ run <- list("tokyo"=FALSE,
             "low.4"=FALSE,
             "high.2"=FALSE,
             "high.4"=FALSE,
-            "allsynth"=TRUE)
+            "allsynth"=FALSE)
 
-write.dir = "./"
+write.dir = "./Bench-Dyn-06"
 
 write.it = FALSE
 plot.it  = FALSE
@@ -31,12 +31,12 @@ read.it  = FALSE
 
 methods = c("PG", "dRUM", "CUBS", "FS2010", "OmegaBlock");
 
-run.idc = c(1:3, 5);
+run.idc = 1:3;
 
-samp = 10
-burn  = 0
-verbose = 10
-ntrials = 2
+samp = 10000
+burn  = 2000
+verbose = 1000
+ntrials = 10 ## Ambiguous languge.  Repetitions of MCMC.
 
 options = list("just.max"=FALSE, "starts"=1);
 
@@ -470,14 +470,14 @@ if (run$allsynth)
   ## source("Benchmark-DynLogit.R")
 
   P = 2
-  nt = 1
+  nt = 10
   corr.type = "low"
   est.ar = "with.ar"
   ## est.ar = "wout.ar"
 
-  ## for (est.ar in c("wout.ar", "with.ar")) {
+  for (est.ar in c("wout.ar", "with.ar")) {
     ## for (P in c(2,4)) {
-      for (nt in c(1,10)) {
+      for (nt in c(1,20)) {
         for (corr.type in c("low", "high")) {
 
 
@@ -494,7 +494,14 @@ if (run$allsynth)
   X.stc = matrix(1, nrow=T, ncol=1)
   P = ncol(X.dyn)
 
-  options$start = seq(1, T, 100)
+  ## print("WARNING: TRUNCATING DATA")
+  ## T = 400;
+  ## y = y[1:T]
+  ## X.dyn = X.dyn[1:T,,drop=FALSE]
+  ## X.stc = X.stc[1:T,,drop=FALSE]
+
+  ## starts (PLURAL!)
+  options$starts = seq(1, T, 10)
   
   ## Prior
   m0 = rep(0, P+1)
@@ -517,7 +524,7 @@ if (run$allsynth)
   }
 
   bench.synth = list();
-  if (read.it) load(filename)
+  if (read.it) load(file.path(write.dir, filename))
   
   ## source("Benchmark-DynLogit.R")
   for (i in run.idc) {
@@ -539,7 +546,7 @@ if (run$allsynth)
   ## if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X, n=n, bmark1=pg, bmark2=fs); }
   if (write.it) save(bench.synth, synth.table, dset.name, file=file.path(write.dir, filename))
 
-}}#}}
+}}}#}
   
 }
 
@@ -554,7 +561,7 @@ if (FALSE) {
   
   for (est.ar in c("wout.ar", "with.ar")) {
     ## for (P in c(2,4)) {
-    for (nt in c(1,10)) {
+    for (nt in c(1,20)) {
       for (corr.type in c("low", "high")) {
         
         dset.name = paste(corr.type, "-", P, "-n-", nt, sep="");
@@ -566,38 +573,55 @@ if (FALSE) {
         cat("AR:", est.ar, dset.name, "\n");        
         
         load(file.path("Benchmark-DataSets", source.file))
-        load(file.path("Bench-Dyn-02", bench.data))
+        load(file.path("Bench-Dyn-05", bench.data))
         
         the.table = synth.table$table
-        the.table[3,2] = mean(bench.synth$CUBS$arate)
+        the.table[3,2] = mean(bench.synth$CUBS$arate) ## CUBS
         
         write.table(the.table, file=table.file, row.names=TRUE, col.names=TRUE);
         
         par(mfrow=c(P+1,1))
         for (i in 1:P) {
-          plot(beta[i,], col=1, type="l")
+          plot(beta[i,-1], col=1, type="l")
           ## plot(synth.table$ave.sstat[i,,1,1], type="l", col=2)
-          lines(synth.table$ave.sstat[i,,1,1,drop=FALSE], col=2)
-          lines(synth.table$ave.sstat[i,,1,2,drop=FALSE], col=3)
-          ## lines(synth.table$ave.sstat[i,,1,3,drop=FALSE], col=4)
+          lines(synth.table$ave.sstat[i,,1,1,drop=FALSE], col=2, lty=2)
+          lines(synth.table$ave.sstat[i,,1,2,drop=FALSE], col=3, lty=3)
+          lines(synth.table$ave.sstat[i,,1,3,drop=FALSE], col=4, lty=4)  ## CUBS
+          ## lines(synth.table$ave.sstat[i,,1,4,drop=FALSE], col=5, lty=5);
         }
 
         alpha.pg = mean(bench.synth$PG$gb$alpha);
         alpha.fs = mean(bench.synth$dRUM$gb$alpha);
+        alpha.cb = mean(bench.synth$CUBS$gb$alpha);
+
+        ## For older Benchmark-DynLogit.R that recorded beta_0.
+        ## psi.pg = apply((synth.table$ave.sstat[,-1,1,1]) * t(X), 2, sum) + alpha.pg
+        ## psi.fs = apply((synth.table$ave.sstat[,-1,1,2]) * t(X), 2, sum) + alpha.fs
+
+        psi.pg = apply((synth.table$ave.sstat[,,1,1]) * t(X), 2, sum) + alpha.pg
+        psi.fs = apply((synth.table$ave.sstat[,,1,2]) * t(X), 2, sum) + alpha.fs
+        psi.cb = apply((synth.table$ave.sstat[,,1,3]) * t(X), 2, sum) + alpha.cb ## CUBS
         
-        psi.pg = apply((synth.table$ave.sstat[,-1,1,1]) * t(X), 2, sum) + alpha.pg
-        psi.fs = apply((synth.table$ave.sstat[,-1,1,2]) * t(X), 2, sum) + alpha.fs
+        ## psi.max = max(psi)
+        ## psi.min = min(psi)
+        ## ymax = max(c(psi.pg, psi.max))
+        ## ymin = min(c(psi.pg, psi.min))
+        ## ytil = (y / nt) * (ymax - ymin) + ymin;
+        ## plot(ytil, ylim=c(ymin,ymax))
+        ## lines(psi, col=1)
+        ## lines(psi.pg, col=2)
+        ## lines(psi.fs, col=3)
+
+        p.t  = 1 / (1 + exp(-psi));
+        p.pg = 1 / (1 + exp(-psi.pg));
+        p.fs = 1 / (1 + exp(-psi.fs));
+        p.cb = 1 / (1 + exp(-psi.cb)); ## CUBS
         
-        psi.max = max(psi)
-        psi.min = min(psi)
-        ymax = max(c(psi.pg, psi.max))
-        ymin = min(c(psi.pg, psi.min))
-        ytil = (y / nt) * (ymax - ymin) + ymin;
-        
-        plot(ytil, ylim=c(ymin,ymax))
-        lines(psi, col=5)
-        lines(psi.pg, col=2)
-        lines(psi.fs, col=3)
+        plot(y/nt);
+        lines(p.t);
+        lines(p.pg, col=2, lty=2);
+        lines(p.fs, col=3, lty=3);
+        lines(p.cb, col=4, lty=4); ## CUBS
         
         readline("<ENTER>")
         
