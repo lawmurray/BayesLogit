@@ -61,8 +61,8 @@ draw.omega.mh <- function(omega, beta, llh, y, tX, ntrials, prior.prec, phi, sta
   OUT <- .C("draw_omega", omega, beta,
             psi.dyn, psi.stc,
             psi, l0, l1, l2, pl2,
-            as.double(y), tX, as.double(ntrials), as.double(offset),
-            prior.prec, phi,
+            as.double(y), as.double(tX), as.double(ntrials), as.double(offset),
+            as.double(prior.prec), as.double(phi),
             as.integer(starts), as.integer(N), as.integer(B), as.integer(length(starts)),
             as.integer(naccept), as.integer(just.max), as.integer(type[1]),
             PACKAGE="BayesLogit");
