@@ -3,6 +3,7 @@
 # Include for Matrix and GSL.
 UINC = -I./include -I./include/Matrix -I./include/RNG
 
+# If you have manually installed GSL, set these to the appropriate directories.
 GINC = -I$(HOME)/Code/include
 GLIB = -L$(HOME)/Code/lib
 
