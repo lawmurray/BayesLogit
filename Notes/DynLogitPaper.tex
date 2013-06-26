@@ -223,46 +223,28 @@ herein.
 
 The \Polya-Gamma data augmentation technique \citep{polson-etal-2013} has a
 single layer of latent variables and yields conditionally Gaussian posterior
-distributions when working with binomial likelihoods. 
-
-The two common models
-considered here are the binomial logistic model with identical number of trials,
-whose observation probability mass function is
+distributions when working with binomial likelihoods.  DGLMs with binomial
+likelihoods have probability mass functions of the form
 \[
-p(y_i | p_i) \propto p_i^{y_i} (1-p_i)^{n - y_i},
-\]
-and negative binomial models for count data, whose observation probability mass
-function is \( p(y_i | p_i) \propto p_i^{y_i} (1-p_i)^{d}.  \) In either case,
-one may use the log-odds scale, $\psi_i = \log \frac{p_i}{1-p_i}$, for
-regression.  Under this coordinate system, the measurement density of the
-binomial observations is
-\[
-p(y_i | \psi_i) \propto \frac{(e^{\psi_i})^{y_i}}{(1+e^{\psi_i})^{n_i}}.
-\]
-A similar form emerges in the case of negative binomial observations.  In
-general, 
-
-DGLMs with binomial likelihoods have densities of the form
-\[
-p(y, \bbeta) = c(y) \Big[ \prod_{i=1}^n
+p(y | \bbeta) = c(y) \Big[ \prod_{i=1}^n
 \frac{(e^{\psi_i})^{a_i}}{(1+e^{\psi_i})^{b_i}} \bbI \{\psi_i = x_i \beta_i\}
 \Big] p(\bbeta)
 \]
-where $a_i$ and $b_i$ may be functions of $y$ or $\theta$, $\theta$ a set of
+where $a_i$ and $b_i$ may be functions of $y$ or $\theta$, $\theta$ is a set of
 parameters that we suppress from the notation above and below; $\bbeta =
 \{\beta_t\}$; and $p(\bbeta)$ governs the dynamics of $\bbeta$.  For instance,
-$p(\bbeta)$ might be the density of an VAR(1) process.  As shown in
-\cite{polson-etal-2012}, if $p(\bbeta)$ is a Gaussian ``prior'' and if one
+$p(\bbeta)$ might be the density of an AR(1) process.  As shown in
+\cite{polson-etal-2012}, if $p(\bbeta)$ is a Gaussian prior and if one
 augments this density with
 \begin{equation}
 \label{eqn:augmentation}
 p(\omega | y, \bbeta) = \prod_{i=1}^n \Big[ p(\omega_i | b_i, \psi_i)
 \Big]
 \end{equation}
-where $\omega_i \sim \PG(b_i, \psi_i)$, then the complete conditional posterior
-distribution for $\bbeta$ will be Gaussian.  In particular, $p(\omega_i | b_i,
-\psi_i) \propto \cosh^{b_i}(\psi_i/2) e^{-\omega_i \psi_i^2 / 2} p(\omega_i |
-b_i, 0)$ so that
+where $\omega_i \sim \PG(b_i, \psi_i)$, PG the \Polya-Gammd distribution, then
+the complete conditional posterior distribution for $\bbeta$ will be Gaussian.
+In particular, $p(\omega_i | b_i, \psi_i) \propto \cosh^{b_i}(\psi_i/2)
+e^{-\omega_i \psi_i^2 / 2} p(\omega_i | b_i, 0)$ so that
 % \[
 % p(\beta | y, \omega) \propto 
 % \Big[ \prod_{i=1}^n e^{\kappa_i \psi_i - \frac{\omega_i}{2} \psi_i^2}
@@ -286,11 +268,11 @@ p(\bbeta | y, \omega)
 \Big(-\frac{\omega_i}{2} \Big(\frac{\kappa_i}{\omega_i} - \psi_i\Big)^2 \Big)
 \bbI \{\psi_i = x_i' \beta\} \Big] p(\bbeta)
 \]
-where $\kappa_i = a_i - b_i / 2$.  A single term from the product is identical
-to the likelihood of a pseudo-data point $z_i = \kappa_i / \omega_i$ drawn from
-$z_i \sim N(\psi_i, 1/\omega_i)$.  Thus, if $p(\bbeta)$ specifies that $\bbeta$
-is a Gaussian VAR(1) process, then sampling complete conditional for $\bbeta$ is
-equivalent to sampling $\bbeta$ from the DLM
+where $\kappa_i = a_i - b_i / 2$.  A single term from the product above is
+identical to the likelihood of a pseudo-data point $z_i = \kappa_i / \omega_i$
+drawn from $z_i \sim N(\psi_i, 1/\omega_i)$.  Thus, if $p(\bbeta)$ specifies
+that $\bbeta$ is a Gaussian AR(1) process, then sampling complete conditional
+for $\bbeta$ is equivalent to sampling $\bbeta$ from the DLM
 \[
 \begin{cases}
 z_t = \psi_t + \nu_t, & \nu_t \sim N(0, 1/\omega_t) \\
@@ -298,6 +280,13 @@ z_t = \psi_t + \nu_t, & \nu_t \sim N(0, 1/\omega_t) \\
 \beta_t = \mu + \Phi (\beta_{t-1} - \mu) + \omega_t, & \omega_t \sim N(0, W).
 \end{cases}
 \]
+
+Thus, for the dynamic binomial or negative binomial model, posterior samples may
+be generated via Gibbs sampling: the states $\bbeta$ via the FFBS, the parameters
+of the AR(1) process via standard conjugate updating procedures, and $(\omega |
+\bbeta, y)$ via (\ref{eqn:augmentation}).  \cite{polson-etal-2012} describe how
+to sample from $\PG$ distributions and implement this sampler in the \texttt{R}
+package \texttt{BayesLogit}.
 
 \begin{example}
 Suppose one observes a binomial outcome $y_t$ where $P(y_t = 1) = p_t$ out of
@@ -313,17 +302,17 @@ where $\kappa_t = y_t - n_t / 2$.
 
 
 \begin{example}
-Suppose that one observes counts according to $y_t \sim \NB(h, p_t)$ where $h$
-is the number of ``failures'' before observing $y_t$ successes and $p_t$ is the
-probability of observing a success.  Letting $\psi_t$ be the log-odds, the data
-generating distribution is
+  Suppose that one observes counts according to $y_t \sim \NB(d, p_t)$ where $d$
+  is the number of ``failures'' before observing $y_t$ successes, or dispersion,
+  and $p_t$ is the probability of observing a success.  Letting $\psi_t$ be the
+  log-odds, the data generating distribution is
 \[
-p(y_t | \psi_t) = c(y_t, h) \frac{(e^{\psi_t})^{y_t}}{(1+e^{\psi_t})^{y_t+h}}.
+p(y_t | \psi_t) = c(y_t, d) \frac{(e^{\psi_t})^{y_t}}{(1+e^{\psi_t})^{y_t+d}}.
 \]
 In negative binomial regression, it is common to model the log-mean, $\lambda_t
 = \psi_t + \log(h) = x_t \beta_t$, instead of the log-odds.  This requires only
 a slight modification.  Following the work above, the complete conditional
-$(\omega_t | \beta_t, h)$ is $\PG(b_t, \psi_t)$ where $b_t = y_t + h$.  However,
+$(\omega_t | \beta_t, h)$ is $\PG(b_t, \psi_t)$ where $b_t = y_t + d$.  However,
 the DLM used to estimate $\bbeta$ is now
 % \[
 % \begin{cases}
@@ -342,13 +331,6 @@ z_t = \lambda_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
 \]
 where $z_t = \kappa_t / \omega_t + \log(d)$ and $\kappa_t = (y_t - d) / 2$.
 \end{example}
-
-For either model, posterior samples may be generated via Gibbs sampling.  One
-can estimate the parameters of the VAR(1) process using standard conjugate
-updating procedures and the complete conditional $(\omega | \bbeta, y)$, is
-identical to (\ref{eqn:augmentation}).  \cite{polson-etal-2012} describe how to
-sample from $\PG$ distributions and implement this sampler in the \texttt{R}
-package \texttt{BayesLogit}.  
 
 % To estimate $d$ in dynamic negative binomial regression one may use a
 % Metropolis-Hastings step (Appendix \ref{sec:sample-d}).
@@ -377,13 +359,12 @@ relative to the Poisson.
 % \psi_t &=& \alpha + \gamma_t  \; , \quad \gamma_t = \phi \gamma_{t-1} + \epsilon_t \\
 % \epsilon_t &\sim& N(0, \sigma^2) \, .
 % \end{eqnarray*}
-Figure \ref{fig:nb-ar1} shows the results of the fit.  One may sample from this
-model by combining the \Polya-Gamma framework with forward filter backwards
-sampling.  For simplicity, we assumed an improper uniform prior on the
-dispersion parameter $h$, and fixed $\phi$ and $\sigma^2$ to $0.98$ and 1,
-respectively, but it is straightforward to place hyper-priors upon each
-parameter, and to sample them in a hierarchical fashion.  It is also
-straightforward to incorporate fixed effects in the form of regressors.
+Figure \ref{fig:nb-ar1} shows the results of the fit. For simplicity, we assumed
+an improper uniform prior on the dispersion parameter $d$, and fixed $\phi$ and
+$\sigma^2$ to $0.98$ and 1, respectively, but it is straightforward to place
+hyper-priors upon each parameter, and to sample them in a hierarchical fashion.
+It is also straightforward to incorporate fixed effects in the form of
+regressors.
 
 % We emphasize that there are many ways to handle the over-dispersion present in
 % this data set, and that we do not intend our model to be taken as a definitive
