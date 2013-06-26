@@ -33,12 +33,19 @@ DEP = RRNG.o
 endif
 
 OPTS = -O2 $(USE_R) -g -DNDEBUG
-OPTS = -g -Wall -std=c++98  $(USE_R) ## -Wshadow
+## OPTS = -g -Wall -std=c++98  $(USE_R) ## -Wshadow
 ## OPTS = -g -Wall -pedantic $(USE_R)
 ## Note: pedantic kills eigen.
 
+obj.neigen = LogitWrapper.o FSF_nmix.o PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o InvertY.o InvertY2.o hh_lambda.o RNG.o Matrix.o MatrixFrame.o $(DEP)
+obj.weigen = DynExpFamMH.o  FFBS.o AR1.o CUBS.o CUBS_update.o 
+
+# Include Eigen stuff.
+# obj = $(obj.neigen) $(obj.weigen)
+# Don't include.
+obj = $(obj.neigen)
+
 sobj = LogitWrapper.so FSF_nmix.so FFBS.so hh_lambda.so
-obj  = LogitWrapper.o FSF_nmix.o AR1.o CUBS.o CUBS_update.o PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o InvertY.o InvertY2.o FFBS.o hh_lambda.o RNG.o Matrix.o MatrixFrame.o DynExpFamMH.o $(DEP)
 
 ## TESTS -- set USE_R = ""
 
@@ -146,7 +153,7 @@ cleandebug:
 ## I believe the way that I am making BayesLogit.so is now more in line with how
 ## R does things.
 
-## You can created a shared object with any name and use it in R via dyn.load.
-## However, R will created a shared object with the same name as the package.
+## You can create a shared object with any name and use it in R via dyn.load.
+## However, R will create a shared object with the same name as the package.
 ## Thus you might as well do the same thing so that your wrapper functions use
 ## the correct parameters.
