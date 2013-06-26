@@ -22,6 +22,10 @@ To generate the C library manually.
 
   - Unzip the files.
 
+  - Remove the -master suffix 
+    $ mv Matrix-master Matrix
+    $ mv RNG-master RNG
+
 3) Compile 
 
   - cd to BayesLogit/Code/C
