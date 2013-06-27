@@ -379,13 +379,13 @@ regressors.
 % regression are common models.  Hence, it is important to understand which
 % methods work best for each model.
 
-Since Markov Chains produce correlated samples we compare methods by measuring
-how fast each MCMC produces \emph{nearly} independent samples, that is we
+Since Markov Chains generate correlated samples we compare methods by measuring
+how fast each procedure produces \emph{nearly} independent samples, that is we
 measure the effective sampling rate (ESR).  To that end, we employ the effective
 sample size (ESS), which approximates the number of ``independent'' draws
-produced by a sample of $M$ correlated draws---in other words, it is an estimate
-of the number of samples produced after having thinned the $M$ correlated
-samples so that remaining draws appear independent.  From
+produced by a sample of $M$ correlated draws.  One may view the ESS as an
+estimate of the number of samples produced after having thinned the $M$
+correlated samples so that remaining draws appear independent.  From
 \cite{holmes-held-2006}, who follow \cite{geyer-1992}, the effective sample size
 is
 \[
@@ -394,43 +394,51 @@ ESS_{it} = M / \Big( 1 + 2 \sum_{k=1}^\ell \rho_k(\beta_{it}) \Big)
 where $\rho_k(\beta_{it})$ is the $k$th lagged autocorrelation of the chain
 corresponding to the $i$th component of $\{\beta_t\}_{t=1}^T$.  The effective
 sampling rate is the ratio of the effective sample size to the time taken to
-generate the post-burn-in samples; thus, it approximates the rate at which the
+generate the post-burn-in samples; thus, it measures the rate at which the
 Markov Chain produces independent draws after initialization and burn-in.
 
-To mitigate sample variation, 10 batches of 12,000 samples are taken and the
-last 10,000 draws recorded.  For batch $m$, we compute the component-wise
-effective sample size $ESS_{it}^{m}$ corresponding to the univariate chain for
-$\beta_{it}$.  Taking the mean over batches produces the average, component-wise
-effective sample size $\overline{ESS}_{it}$ and, normalizing by time, the
-average, component-wise effective sampling rate $\overline{ESR}_{it}$.
-Following, \cite{fruhwirth-schnatter-fruhwirth-2010}, the primary metric of
-comparison is the median effective sampling rate,
+To mitigate MCMC sample variation, 10 batches of 12,000 samples are taken and
+the last 10,000 draws are recorded.  For batch $m$, we compute the
+component-wise effective sample size $ESS_{it}^{m}$ corresponding to the
+univariate chain for $\beta_{it}$.  Taking the mean over batches produces the
+average, component-wise effective sample size $\overline{ESS}_{it}$ and,
+normalizing by time, the average, component-wise effective sampling rate
+$\overline{ESR}_{it}$.  Following, \cite{fruhwirth-schnatter-fruhwirth-2010},
+the primary metric of comparison is the median effective sampling rate,
 \[
 \text{med} \; \Big\{ \overline{ESR}_{it} : i=1, \ldots, P; \;  t=1, \ldots, T \Big\}.
 \]
 
-Since this is an empirical, as opposed to theoretical assessment, we attempt to
-consider data sets with a variety of characteristics.  For binomial logistic
+We consider data sets with a variety of characteristics since this is an
+empirical, as opposed to theoretical assessment.  For dynamic binomial logistic
 regression, we consider log odds of the form $\alpha + x_t' \beta_t$ where
-$\alpha$ is a scalar, $\beta_t$ is a 2-dimensional AR(1) process with large
-autocorrelation.  Four different synthetic data sets are constructed, allowing
-for low and high correlation within $x_t$ and responses generated using either
-$n=1$ or $n=20$ trials.  For negative binomial regression, we consider log means
-of the same form, using $x_t$ that possess low and high correlation and for
-which the true log-mean is 10 and 100, yielding four different synthetic data
-sets as well.  Further details may be found in \S \ref{sec:benchmark-details}.
+$\alpha$ is a scalar and $\{\beta_t\}_{t=1}^T$ is a 2-dimensional AR(1) process
+with large autocorrelation.  Four different synthetic data sets are constructed,
+allowing for low and high correlation amongst $x_t$ and responses, $y_t \sim
+\text{Binom}(p_t, n), t=1, \ldots, T$, with either $n=1$ or $n=20$ trials.  The
+setup is almost identical for dynamic binomial regression except that we model
+the log-mean as $\alpha + x_t \beta_t$ and consider responses with $\alpha =
+\log(10)$ or $\alpha = \log(100)$ corresponding to average count sizes of
+roughly 10 or 100.  Further details may be found in Appendix
+\ref{sec:benchmark-details}.
 
-As the effective sampling rate is sensitive to the exact implementation, some
-caution is warranted when comparing methods. The code is written primarily in R.
-Some tasks were burdensome in R, and hence we wrote wrappers to C to speed up
-the MCMC.  In particular, both data augmentation methods implement forward
-filtering and backward sampling using a C wrapper.  The \Polya-Gamma method
-calls C code to sample \Polya-Gamma random variates using version 0.2-4 of the
+Some caution is warranted when comparing methods as the effective sampling rate
+of a routine is sensitive to its implementation and the hardware on which it is
+run. The code is written primarily in R.  We use code from
+\cite{binomlogit-2012} and \cite{fruhwirth-schnatter-book-2007} for the discrete
+mixture of normals methods.  All benchmarks are carried out on a Ubuntu machine
+with Intel Core i5-3570 3.4GHz processor and 8GB of RAM.  Some computations were
+burdensome in R, and hence we wrote wrappers to C to speed up the MCMC
+simulation.  In particular, both data augmentation methods implement forward
+filtering and backward sampling using a C wrapper.  The PG technique calls C
+code to sample \Polya-Gamma random variates using version 0.2-4 of the
 \texttt{BayesLogit} package \citep{bayeslogit-2013}.  The
 \cite{ravines-etal-2006} approach implements the conjugate updating and
 backwards sampling using C.  Having a C wrapper to forward filter and backwards
 sample is particularly important, as our C implementation is much faster than
-the corresponding R code.
+the corresponding R code.  Were we to use the slower R version, our results
+would favor the PG method, as it has better effective sample sizes and would
+spend less time, proportionally, sampling the \Polya-Gamma random variates.
 
 \cite{polson-etal-2013} outline the expected performance of the \Polya-Gamma
 data augmentation technique, which depends heavily on how quickly one can
@@ -440,14 +448,12 @@ but slow when $b$ is large. \cite{windle-thesis-2013} provides an improved
 method for sampling $\PG(b,\psi)$; however, even using that improvement,
 sampling large $b$ is still slower than sampling small $b$.  These differences
 in computational cost are important, as one must sample $\omega_i \sim \PG(b_i,
-\psi_i), i=1,\ldots,T$ for each MCMC sample under \Polya-Gamma data
-augmentation.  In binomial logistic regression, $b_i$ is the number of trials at
-each response $y_i$.  Hence, in binary logistic regression $b_i = 1$ for $i=1,
-\ldots, T$, and the PG method will most likely do well.  When the number of
-trials is larger, for instance $b_i = 20$, it will most likely do worse.  In
-negative binomial regression $b_i = y_i + d_i$ where $y_i$ is a response and
-$d_i$ is a dispersion.  Thus, larger average responses will correspond to longer
-MCMC simulations.
+\psi_i), i=1,\ldots,T$ for each MCMC iteration under \Polya-Gamma data
+augmentation.  In binomial logistic regression, $b_i = n_i$, the number of
+trials at each response $y_i$.  Hence, when $n_i$ is small the PG method will do
+well.  In negative binomial regression, $b_i = y_i + d_i$ where $y_i$ is a
+response and $d_i$ is the dispersion.  Thus, larger average responses should
+lead to longer MCMC simulations.
 
 In general, we find these principles to hold.  The \Polya-Gamma data
 augmentation technique performs well for dynamic binomial logistic regression
@@ -457,18 +463,19 @@ Similarly, the \Polya-Gamma technique outperforms
 \cite{fruhwirth-schnatter-etal-2009} in negative binomial regression when the
 average number of counts is small, but loses when the average number of counts
 is large.  The Metropolis-Hastings approach of \cite{ravines-etal-2006} performs
-the worst in all of our tests.  Part of its poor performance is due to a
+the worst in all of the tests.  Part of its poor performance is due to a
 non-linear solve that must be performed for each $t=1, \ldots, T$ when filtering
 forward.  We did not attempt to optimize the performance of this non-linear
 solver, and hence some improvement may be possible, though the disparity in
 performance suggests that any improvement would not be enough to compete with
 either data augmentation approach.  As a check upon \cite{ravines-etal-2006}, we
 also implemented a Metropolis-Hastings sampler that draws blocks of disturbances
-using Laplace approximations.  This fared worse still.  Of note, the
-\Polya-Gamma method almost always has superior effective sample sizes.  Hence
-faster \Polya-Gamma samplers could push the \Polya-Gamma data augmentation
-technique to the top for several or all of the models considered.  Table
-\ref{tab:benchmark-summary} provides a summary of the benchmarks;  Tables
+using Laplace approximations.  This fared worse still. 
+
+Of note, the \Polya-Gamma method almost always has superior effective sample
+sizes.  Hence faster \Polya-Gamma samplers could push the \Polya-Gamma data
+augmentation technique to the top for several or all of the models considered.
+Table \ref{tab:benchmark-summary} provides a summary of the benchmarks; Tables
 \ref{tab:dynlogit-detail} and \ref{tab:dynnb-detail} provide a more detailed
 account of each benchmark.
 
@@ -588,7 +595,8 @@ $100$ & high & yes & 0.78 \\
   of \cite{fussl-etal-2013} and \cite{fruhwirth-schnatter-etal-2009}.  A higher
   ratio corresponds to the PG method doing better than the best alternative.  The
   PG method always beats the CUBS approach and it does better than the discrete
-  mixture of normals approach when the number of trials is small and when the log
+  mixture of normals approach in dynamic binomial logistic regression when the number of
+  trials is small and in dynamic negative binomial regression when the 
   mean is small.  $n$ corresponds to the number of trials for the binomial
   response while $\mu$ corresponds to the mean for the negative binomial
   response.  $f$ determines whether there is a low or high amount of correlation
@@ -958,11 +966,11 @@ the R Packages \texttt{BayesLogit}, to generate posterior samples.
                               %% 06 Benchmarks %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-For both binomial responses and negative binomial responses, we created four
+For both binomial responses and negative binomial responses, we create four
 synthetic data sets whose log-odds and log-mean, respectively, take the form
 \begin{equation}
 \label{eqn:synth-psi}
-\psi_i = \alpha + x_i \beta_i, \; i = 1, \ldots, T
+\psi_i = \alpha + x_i' \beta_i, \; i = 1, \ldots, T
 \end{equation}
 with
 \[
@@ -986,25 +994,25 @@ is
 y_i \sim \text{Nbinom}(d, \mu_i)
 \]
 where $d=4$, $\mu_i = e^{\psi_i}$, and $\alpha$ from (\ref{eqn:synth-psi}) is
-either $\log(10)$ or $\log(100)$.  Thus, for the dynamic binomial logistic
-regression, we created the four data sets by varying $n$ and $f$, and for the
-dynamic negative binomial regression, we created four data sets by varying $f$
-and $\alpha$.
+either $\log(10)$ or $\log(100)$.  Thus, for dynamic binomial logistic
+regression, we create four data sets by varying $n$ and $f$, and for dynamic
+negative binomial regression, we create four data sets by varying $f$ and
+$\alpha$.
 
-For each data set and each method, we ran MCMC simulations assuming that the
-parameters of the AR model were known or unknown.  When the parameters are
+For each data set and each method, we run MCMC simulations assuming that the
+parameters of the AR model are known and unknown.  When the parameters are
 unknown, both $\Phi$ and $W$ are assumed to be diagonal; the prior for $\Phi$ is
 $\Phi_{ii} \sim N(0.95, 0.1) \bbI_{(0,1)}$ and the prior for $W$ is $W_{ii} \sim
-Ga(300/2, 30/2)$.  The prior for $\alpha$ is $N(0, 100)$ and the prior for
-$\beta_0$ is $N(0, 100 I_2)$.  For the negative binomial benchmarks, $d$ was
-taken to be known.
+Ga(300/2, 30/2)$.  For all simulations, the prior for $\alpha$ is $N(0, 100)$
+and the prior for $\beta_0$ is $N(0, 100 I_2)$.  For the negative binomial
+benchmarks, $d$ is taken to be known.
 %% My note: $d$ unknown will ``hurt'' results in that it will induce extra
 %% correlation, which presumably will hurt PG,mu=10 results.
 
-Four different data sets for each type of response, along with two different
-prior structures yields eight different MCMC simulations for each method of
-posterior inference.  Tables \ref{tab:dynlogit-detail} and
-\ref{tab:dynnb-detail} provide a complete summary of the results.
+Four data sets for each type of response, along with two prior structures yields
+eight MCMC simulations for each method of posterior inference.  Tables
+\ref{tab:dynlogit-detail} and \ref{tab:dynnb-detail} provide a complete summary
+of the results.
 
 %-------------------------------------------------------------------------------
 % dyn logit
