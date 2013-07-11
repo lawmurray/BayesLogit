@@ -21,6 +21,8 @@
 \newcommand{\eqd}{\,{\buildrel d \over =}\,}
 \newcommand{\KS}{\text{KS}}
 \newcommand{\bbeta}{\boldsymbol{\beta}}
+\newcommand{\oomega}{\boldsymbol{\omega}}
+\newcommand{\yy}{\boldsymbol{y}}
 
 \newcommand{\point}{\noindent $\bullet$ }
 
@@ -39,10 +41,11 @@
 
 \title{\Polya-Gamma Data Augmentation for Dynamic Models}
 \author{
+Jesse Windle\footnote{jwindle@ices.utexas.edu} ,
 Carlos M. Carvalho\footnote{carlos.carvalho@mccombs.utexas.edu},
 James G. Scott\footnote{james.scott@mccombs.utexas.edu}, 
 Liang Sun\footnote{sallylia@gmail.com}, 
-Jesse Windle\footnote{jwindle@ices.utexas.edu} \\
+\\
 \textit{The Univeristy of Texas at Austin}
 }
 
@@ -50,27 +53,24 @@ Jesse Windle\footnote{jwindle@ices.utexas.edu} \\
 
 \maketitle
 
-\abstract{ Dynamic linear models with Gaussian observations and Gaussian states
+\abstract{Dynamic linear models with Gaussian observations and Gaussian states
   lead to closed-form formulas for posterior simulation.  However, these
   closed-form formulas break down when the response or state evolution ceases to
   be Gaussian.  Dynamic, generalized linear models (DGLMs) exemplify a class of
   models for which this is the case, and include, amongst other models, dynamic
-  binomial logistic regression and dynamic negative binomial regression.  It is
-  important to appraise the preeminent posterior simulation techniques for these
-  models as they find use across a range of fields, such as ecology,
-  epidemiology, and neuroscience.  In this paper, we compare the performance of
-  the \Polya-Gamma data augmentation technique of \cite{polson-etal-2012} with
-  the discrete mixture of normals approach based of
+  binomial logistic regression and dynamic negative binomial regression.
+  Finding and appraising posterior simulation techniques for these models is
+  important as they find use across a range of fields, such as ecology,
+  epidemiology, and neuroscience.  In this paper, we present one such technique,
+  \Polya-Gamma data augmentation, and compare it with
+  the discrete mixture of normals approach of Fr\"uhwirth-Schnatter
   \cite{fruhwirth-schnatter-etal-2009} and \cite{fussl-etal-2013}, and the
-  Metropolis-Hastings based approach of \cite{ravines-etal-2006}.  We find that
-  the \Polya-Gamma approach works well for dynamic binomial logistic regression
-  when the number of trials for each response is small, and that the technique
-  of \cite{fruhwirth-schnatter-etal-2009} works well for dynamic negative
-  binomial regression.
+  Metropolis-Hastings approach of \cite{ravines-etal-2006}.  We find that the
+  \Polya-Gamma approach works well for dynamic logistic regression and for
+  dynamic negative binomial regression when the count sizes are small.
 
-  \smallskip
-  \textbf{Keywords:} {binomial, dynamic generalized linear models, negative binomial}
-}
+  \smallskip \textbf{Keywords:} {binomial, dynamic generalized linear models,
+    logistic regression, negative binomial regression} }
 
 %\tableofcontents
 %\newpage
@@ -79,62 +79,93 @@ Jesse Windle\footnote{jwindle@ices.utexas.edu} \\
 
 \section{Introduction}
 
-Generalized linear models (GLMs) consider responses, $y_t \sim P(\psi_t)$, with
-expectations that depend on the linear combination of predictors $\psi_t = x_t'
-\beta$ in a non-linear way \citep{mccullagh-nelder-1989}.  Extensions to the
-dynamic case are straightforward via a dynamic regression coefficient: $\psi_t =
-x_t' \beta_t$, where one must specify the dynamics of $\{\beta_t\}_{t=1}^T$ to
-complete the model.  Unlike Gaussian, linear models, most likelihoods found in
-generalized linear models lead to inconvenient posterior distributions for
-$\beta$ or $\{\beta_t\}_{t=1}^T$.  Thus, when generating posterior samples one
-must appeal to Metropolis-Hastings, Gibbs sampling with data augmentation, or
+%The method presented herein is useful for generating posterior samples for
+%state-space models with categorical or integral responses and linear, Gaussian
+%evolution equations.
+
+Linear models possess a rigid structure that enforces an affine relationship
+between the expectation of the response, $\bbE[y_t]$, and the covariates, $x_t
+\in \bbR^P$.  Generalized linear models (GLMs) allow a non-linear relationship
+between the expectation and a linear combination of the predictors, $\psi_t =
+x_t' \beta$.  This flexibility is useful when modeling categories, counts,
+proportions, and positive quantities \citep{mccullagh-nelder-1989}.  Strictly
+speaking, one need not specify the distribution of the response, just its first
+two moments, but since we are interested in Bayesian inference we will restrict
+our attention to situations in which the likelihood, $f(y_t | \psi_t)$, is
+specified, focusing on binomial likelihoods.  When the likelihood comes from the
+exponential family of distributions, one may easily calculate the posterior mode
+and associated error estimates \citep{wedderburn-1974}; however, most
+likelihoods lead to posterior distributions which are difficult to sample,
+requiring Metropolis-Hastings sampling, Gibbs sampling via data augmentation, or
 some other MCMC method.
 
-The challenge of generating posterior samples is exacerbated for dynamic models
-since there are many more unknown quantities to estimate than in the static
-case, which makes, for instance, direct extensions of Metropolis-Hastings
-samplers difficult.  This is the case for GLMs with binomial likelihoods, a
-subclass of GLMs that have probability mass functions of the form
-\[
-p(y | \psi) \propto h(y) \prod_{t=1}^T
-\frac{(e^{\psi_t})^{a_t(y)}}{(1+e^{\psi_t})^{b_t(y)}} \, ,
-\]
-and for which \Polya-Gamma data augmentation is applicable.  Such likelihoods
-arise when modeling proportions on the log-odds scale, a common choice for
-categorical or count data.  Two ubiquitous models, binomial logistic regression and
-negative binomial regression, fit within this framework.  Dynamic versions of
-these models are used in economics [McFadden], epidemiology [cite Lauren],
-ecology [cite Lauren], and neuroscience [cite Jonathan and Larry] amongst
-others.  Hence, it is important to know the most efficient methods for
-generating posterior samples for such models.
+Dynamic generalized linear models (DGLMs) permit an evolving relationship
+between the response and the covariates via time-varying regression
+coefficients, $\{\beta_t\}_{t=1}^T$, so that $\psi_t = x_t' \beta_t$.  One must
+specify a prior for $\{\beta_t\}_{t=1}^T$ to complete the model.  The prior
+controls how quickly $\beta_t$ may change.  It is common to let
+$\{\beta_t\}_{t=1}^T$ be an AR(1) process or a random walk, both with Gaussian
+innovations.  In either case, one recovers a state-space model characterized by
+the observation distribution $f(y_t | \psi_t)$ for the response and the
+Markovian evolution distribution $g(\beta_t | \beta_{t-1})$ for the hidden
+states.
 
-This paper examines the relative strengths of three approaches for posterior
-inference in dynamic generalized linear models (DGLMs) with binomial
-likelihoods: conjugate updating and backward sampling with a Metroplis-Hastings
-step \citep{ravines-etal-2006}, forward filter and backwards sampling using data
+To clarify the challenge of simulating $(\{\beta_t\}_{t=1}^T | \{y_t\}_{t=1}^T)$
+for dynamic generlized linear models, it is helpful to consider more and less
+tractable state-space models.  State-space models with non-Gaussian, non-linear
+responses and non-linear evolution equations are less tractable.  One may
+efficiently approximate the filtered distributions of such models, $p(\beta_t |
+D_t)$, using sequential methods, but the lack of structure makes sampling from
+the posterior of $\{\beta_t\}_{t=1}^T$ difficult.  Dynamic linear models (DLMs)
+with Gaussian states and Gaussian observations are more tractable: one may
+sample the posterior distribution of the states using the foward filter backward
+sample (FFBS) algorithm \citep{carter-kohn-1994, fruhwirth-schnatter-1994}, a
+procedure that is linear in the number of observations and thus quite efficient.
+However, the FFBS algorithm breaks down outside of these vary narrow
+assumptions.  Dynamic generalized linear models that have Gaussian, linear
+evolution equations, but non-Gaussian, non-linear response distributions sit
+between these extremes.  Within this class, the FFBS algorithm is not
+immediately applicable, but the linear evolution equations give one hope of
+finding a clever way to reintroduce it.  Many approaches follow this path,
+combining techniques used for generalized linear models with the FFBS algorithm.
+However, these amalgamations are not always as effective as their constituent
+parts.  In particular, Metropolis-Hastings based techniques for GLMs do not
+translate well to the dyanmic setting as $\{\beta_t\}_{t=1}^T$ is of much higher
+dimension than $\beta$.  Data augmentation techniques for GLMs that lead to a
+Gaussian complete conditional for $\beta$ provide a preferable approach since
+the corresponding complete conditional for $\{\beta_t\}_{t=1}^T$ will coincide
+with the likelihood of a DLM and hence the FFBS algorithm.  But such data
+augmentation tricks are difficult to find.  Recently, \cite{polson-etal-2013}
+introduced a data augmentation trick for GLMs with binomial likelihoods and that
+is what we exploit here.
+
+This paper presents \Polya-Gamma data augmentation for dynamic regression models
+with binomial likelihoods and compares it to a pair of other approaches:
+conjugate updating and backward sampling with a Metroplis-Hastings step
+\citep{ravines-etal-2006} and forward filter and backward sampling using data
 augmentation and a discrete mixture of normals approximation
-\citep{fruhwirth-schnatter-etal-2009, fussl-etal-2013}, and forward filter and
-backwards sampling using the \Polya-Gamma data augmentation scheme.  We show
-that the \Polya-Gamma technique always surpasses the other techniques in terms of
-effective sample size and often surpasses the other techniques in terms of
-effective sampling rate.  In particular, the \Polya-Gamma method is the best
-choice for dynamic binomial logistic regression when the number of trials is
-small or dynamic negative binomial regression when the mean response is small.
-This is because the pace at which \Polya-Gamma random variates are generated
-depends on the attributes of the response.
+\citep{fruhwirth-schnatter-etal-2009, fussl-etal-2013}.  Our method is pleasing
+because of its parsimony, ease of implementation, and efficiency.  These models
+arise across a range of disciplines, including ecology (damien), economics (fs),
+epidemiology (lauren), and neuroscience (jonathan, larry).  Hence, having a
+guide to the most efficient techniques is important for practictioners.  To that
+end, we benchmark two dynamic generalized linear models and show that the
+\Polya-Gamma approach is the best choice for dyanmic logistic regression and
+dynamic negative binomial regression when the count size is small.
 
 The outline of the paper is as follows: Section 2 reviews other methods of
-inference for dynamic regression for exponential families; Section 3 shows how
-one may use the \Polya-Gamma data augmentation technique in the dynamic setting;
-Section 4 presents the benchmarking results; Section 5 concludes.
+inference for dynamic generalized linear models; Section 3 shows how one may use
+the \Polya-Gamma data augmentation technique in the dynamic setting; Section 4
+presents the benchmarking results; Section 5 concludes.
 
 \section{Previous Efforts}
+\label{sec:previous-efforts}
 
-Bayesian inference for dynamic generalized linear models dates back to at least
-\cite{west-etal-1985} who used conjugate updating with backwards sampling (CUBS)
-to sample the dynamic regression coefficients of DGLMs when the observation
-$(y_t | \psi_t)$ comes from an exponential family; but their method is only
-approximate.  Much effort has been devoted to developing exact posterior
+Bayesian inference for dynamic generalized linear models dates back to
+at least \cite{west-etal-1985} who used conjugate updating with backwards
+sampling (CUBS) to sample the dynamic regression coefficients of DGLMs when the
+observation $(y_t | \psi_t)$ comes from an exponential family; but their method
+is only approximate.  Much effort has been devoted to developing exact posterior
 samplers, though none has proved to be completely satisfactory.  A primary goal
 of any such sampler is to sample states jointly, like the forward filter
 backwards sampling (FFBS) of \cite{fruhwirth-schnatter-1994} and
@@ -230,28 +261,42 @@ herein.
 
 \section{\Polya-Gamma Data Augmentation}
 
-The \Polya-Gamma data augmentation technique \citep{polson-etal-2013} has a
-single layer of latent variables and yields conditionally Gaussian posterior
-distributions when working with binomial likelihoods.  DGLMs with binomial
-likelihoods have posterior distributions of the form
+We consider DGLMs with binomial likelihoods:
+\(
+f(y_t | p_t) = c(y_t) p_t^{a_t} (1-p_t)^{d_t},
+\)
+where $a_t$ and $d_t$ do not depend upon $p_t$.  Logistic regression and
+negative binomial regression are two common models that fit within this regime.
+It is preferable to express this likelihood in terms of the log odds, $\psi_t =
+\log \frac{p_t}{1-p_t}$, since this is the scale on which we linearly model the
+covaraites:
 \[
-p(\bbeta | y) = c(y) \Big[ \prod_{t=1}^T
-\frac{(e^{\psi_t})^{a_t}}{(1+e^{\psi_t})^{b_t}} \bbI \{\psi_t = x_t \beta_t\}
-\Big] p(\bbeta)
+f(y_t | \psi_t) = c(y_t) \, \frac{(e^{\psi_t})^{a_t}}{(1+e^{\psi_t})^{b_t}},
 \]
-where $a_t$ and $b_t$ may be functions of $y$ and other parameters; $\bbeta =
-\{\beta_t\}_{t=1}^T$; and $p(\bbeta)$ governs the dynamics of $\bbeta$.  For
-instance, $p(\bbeta)$ might be the density of an AR(1) process.  Using
-\cite{polson-etal-2013}, if $p(\bbeta)$ is a Gaussian prior and if one augments
-this density with
-\begin{equation}
-\label{eqn:augmentation}
-p(\omega | y, \bbeta) = \prod_{t=1}^T \Big[ p(\omega_t | b_t, \psi_t)
-\Big]
-\end{equation}
-where $\omega_t \sim \PG(b_t, \psi_t)$, PG denoting the \Polya-Gamma
-distribution, then the complete conditional posterior distribution for $\bbeta$
-will be Gaussian.  In particular,
+where $b_t = a_t + d_t$.  Given a collection of observations $\yy =
+\{y_t\}_{t=1}^T$, the posterior distribution a DGLM with a binomial likelihood
+is
+\[
+p(\bbeta | \yy) = c(\yy) \Big[ \prod_{t=1}^T
+\frac{(e^{\psi_t})^{a_t}}{(1+e^{\psi_t})^{b_t}}
+ \Big] p(\bbeta),
+\]
+where $\psi_t = x_t' \beta_t$ and $\bbeta = \{\beta_t\}_{t=1}^T$.  Following
+\cite{polson-etal-2013}, one may introduce \Polya-Gamma random variates $\oomega
+= \{\omega_t\}_{t=1}^T$, $\omega_t \sim \PG(b_t, \psi_t)$ for $t=1, \ldots, T$
+to construct the joint distribution 
+\[
+p(\bbeta, \oomega | \yy) = c(\yy) \Big[ \prod_{t=1}^T
+\frac{(e^{\psi_t})^{a_t}}{(1+e^{\psi_t})^{b_t}} p(\omega_t | b_t, \psi_t)
+\Big] p(\bbeta) \, .
+\]
+via the conditional structure $p(\bbeta, \oomega | \yy) = p(\oomega | \bbeta,
+\yy) p(\bbeta | \yy)$.  The \Polya-Gamma density possesses the special form
+\[
+p(\omega_t | b_t, \psi_t) = \cosh^{-b_t}(\psi_t/2) e^{- \omega_t \psi_t^2 / 2}
+p(\omega_t),
+\]
+so that the complete conditional of $\bbeta$ is
 % \[
 % p(\beta | y, \omega) \propto 
 % \Big[ \prod_{t=1}^n e^{\kappa_t \psi_t - \frac{\omega_t}{2} \psi_t^2}
@@ -269,17 +314,16 @@ will be Gaussian.  In particular,
 % z_t \sim N(x_t' \beta, \omega_{i}^{-1}).
 % \]
 \[
-p(\bbeta | y, \omega) 
-\propto 
-\Big[ \prod_{t=1}^T \exp 
-\Big(-\frac{\omega_t}{2} \Big(\frac{\kappa_t}{\omega_t} - \psi_t\Big)^2 \Big)
-\bbI \{\psi_t = x_t' \beta_t\} \Big] p(\bbeta)
+p(\bbeta | \oomega, \yy) \propto \Big[ \prod_{t=1}^T \exp \Big(-\frac{\omega_t}{2}
+\Big(\frac{\kappa_t}{\omega_t} - \psi_t\Big)^2 \Big) \Big] p(\bbeta), \; \psi_t
+= x_t' \beta_t,
 \]
 where $\kappa_t = a_t - b_t / 2$.  A single term from the product above is
 identical to the likelihood of a pseudo-data point $z_t = \kappa_t / \omega_t$
 drawn from $z_t \sim N(\psi_t, 1/\omega_t)$.  Thus, if $p(\bbeta)$ specifies
 that $\bbeta$ is a Gaussian AR(1) process, then sampling the complete
-conditional for $\bbeta$ is equivalent to sampling $\bbeta$ from the DLM
+conditional for $\bbeta$ is equivalent to sampling $(\bbeta | \{z_t\}_{t=1}^T)$
+from the DLM
 \[
 \begin{cases}
 z_t = \psi_t + \nu_t, & \nu_t \sim N(0, 1/\omega_t) \\
@@ -288,17 +332,19 @@ z_t = \psi_t + \nu_t, & \nu_t \sim N(0, 1/\omega_t) \\
 \end{cases}
 \]
 
-Thus, for the dynamic binomial or negative binomial model, posterior samples may
-be generated via Gibbs sampling: the states $(\bbeta| y, \omega)$ via the FFBS,
-$(\omega | \bbeta, y)$ via (\ref{eqn:augmentation}), and the parameters of the
-AR(1) process via standard conjugate updating procedures.
-\cite{polson-etal-2012} describe how to sample from $\PG$ distributions and
-implement this sampler in the \texttt{R} package \texttt{BayesLogit}.
+Collecting these two complete conditionals, one finds that posterior samples may
+be generated via Gibbs sampling: the states $(\bbeta|\oomega, \yy)$ via the FFBS
+algorithm and $(\oomega | \bbeta, \yy)$ by taking independent samples $\omega_t
+\sim \PG(b_t, \psi_t)$ for $t=1, \ldots, T$.  \cite{polson-etal-2013} describe
+how to sample from $\PG$ distributions and implement this sampler in the
+\texttt{R} package \texttt{BayesLogit}.  Sampling any hyperparameters, like the
+autocorrelation coefficient or the innovation variance of the AR(1) process,
+follows using standard conjugate or MCMC techniques.
 
 \begin{example}
-  Suppose one observes a binomial outcome $y_t$ where $P(y_t = 1) = p_t$ from
-  $n_t$ trials at time $i$.  Letting $\psi_t$ be the log-odds, the data
-  generating distribution is
+  Suppose one observes a binomial outcome $y_t \sim \text{Binom}(n_t, p_t)$ at
+  time $t$.  Letting $\psi_t$ be the log-odds, the data generating distribution
+  is
 \[
 p(y_t | \psi_t) = c(y_t) \frac{(e^\psi_t)^{y_t}}{(1+e^{\psi_t})^{n_t}}.
 \]
@@ -418,42 +464,43 @@ We consider synthetic data sets with a variety of characteristics.
 % since this is an empirical, as opposed to theoretical assessment.  
 For dynamic binomial logistic regression, we consider log odds of the form
 $\alpha + x_t' \beta_t$ where $\alpha$ is a scalar and $\{\beta_t\}_{t=1}^T$ is
-a 2-dimensional AR(1) process with large autocorrelation.  Four different
-synthetic data sets are constructed, allowing for low and high correlation
-amongst $\{x_t\}_{t=1}^T$ and responses, $y_t \sim \text{Binom}(p_t, n), t=1,
-\ldots, T$, with either $n=1$ or $n=20$ trials.  The setup is almost identical
-for dynamic binomial regression except that we model the log-mean as $\alpha +
-x_t' \beta_t$ and consider responses with $\alpha = \log(10)$ or $\alpha =
-\log(100)$ corresponding to average count sizes of roughly 10 or 100.  Further
-details may be found in Appendix \ref{sec:benchmark-details}.
+a 2-dimensional AR(1) process with autocorrelation $\Phi = 0.95 I_2$.  Four
+different synthetic data sets are constructed, allowing for low and high
+correlation amongst $\{x_t\}_{t=1}^T$ and responses, $y_t \sim \text{Binom}(n,
+p_t), t=1, \ldots, T$, with either $n=1$ or $n=20$ trials.  The setup is almost
+identical for dynamic negative binomial regression except that we model the
+log-mean as $\alpha + x_t' \beta_t$ and consider responses with $\alpha =
+\log(10)$ or $\alpha = \log(100)$ corresponding to average count sizes of
+roughly 10 or 100.  Further details may be found in Appendix
+\ref{sec:benchmark-details}.
 
 Some caution is warranted when comparing methods as the effective sampling rate
-of a routine is sensitive to its implementation and the hardware on which it is
-run. The code is written primarily in R.  We use code from
+is sensitive to a procedure's implementation and the hardware on which it is
+run. The routines are written primarily in R.  We use code from
 \cite{binomlogit-2012} and \cite{fruhwirth-schnatter-book-2007} for the discrete
-mixture of normals methods.  All benchmarks are carried out on a Ubuntu machine
+mixture of normals methods.  All benchmarks are carried out on an Ubuntu machine
 with Intel Core i5-3570 3.4GHz processor and 8GB of RAM.  Some computations were
 burdensome in R, and hence we wrote wrappers to C to speed up the MCMC
 simulations.  In particular, both data augmentation methods implement forward
-filtering and backward sampling using a C wrapper.  The PG technique calls C
-code to sample \Polya-Gamma random variates using version 0.2-4 of the
+filtering and backward sampling using a C wrapper.  The \Polya-Gamma technique
+calls C code to sample random variates using version 0.2-4 of the
 \texttt{BayesLogit} package \citep{bayeslogit-2013}.  The conjugate updating and
-backwards sampling used in \cite{ravines-etal-2006} is done in C.  Having a C
-wrapper to forward filter and backwards sample is particularly important, as our
-C implementation is much faster than the corresponding R code.  Were we to use
-the slower R version, our results would favor the PG method, as it has better
-effective sample sizes and would spend less time, proportionally, sampling the
-\Polya-Gamma random variates.
+backwards sampling of \cite{ravines-etal-2006} is done in C.  Having a C wrapper
+to forward filter and backwards sample is particularly important, as our C
+implementation is much faster than the corresponding R code.  Were we to use the
+slower R version, our results would favor the \Polya-Gamma method, as it has
+better effective sample sizes and would spend less time, proportionally,
+sampling the latent random variates.
 
 \cite{polson-etal-2013} outline the expected performance of the \Polya-Gamma
 data augmentation technique, which depends heavily on how quickly one can
 generate \Polya-Gamma random variates.  In their original algorithm, sampling
-\Polya-Gamma random variates $\PG(b,\psi)$ is fast when $b$ is a small integer,
-but slow when $b$ is large. \cite{windle-thesis-2013} provides an improved
-method for sampling $\PG(b,\psi)$; however sampling large $b$ is still slower
-than sampling small $b$.  These differences in computational cost are important,
-as one must sample $\omega_t \sim \PG(b_t, \psi_t), t=1,\ldots,T$ for each MCMC
-iteration under \Polya-Gamma data augmentation.  In binomial logistic
+\Polya-Gamma random variates from $\PG(b,\psi)$ is fast when $b$ is a small
+integer, but slow when $b$ is large. \cite{windle-thesis-2013} provides an
+improved method for sampling $\PG(b,\psi)$; however sampling large $b$ is still
+slower than sampling small $b$.  These differences in computational cost are
+important, as one must sample $\omega_t \sim \PG(b_t, \psi_t), t=1,\ldots,T$ for
+each MCMC iteration under \Polya-Gamma data augmentation.  In binomial logistic
 regression, $b_t = n_t$ where $n_t$ is the number of trials at each response
 $y_t$.  Hence, when $n_t$ is small the PG method will do well.  In negative
 binomial regression, $b_t = y_t + d_t$ where $y_t$ is a response and $d_t$ is
@@ -628,7 +675,12 @@ using the \Polya-Gamma approach since it is easily incorporated into bespoke
 dynamic models thanks to its conditionally Gaussian form and single layer of
 latent variables.  This form ensures that all of the machinery from Gaussian
 models apply and that one only need a \Polya-Gamma sampler, as is provided by
-the R Packages \texttt{BayesLogit}, to generate posterior samples.
+the R Package \texttt{BayesLogit}, to generate posterior samples.  For all
+models benchmarked herein, the \Polya-Gamma technique has superior effective
+sampling size, so that more efficient \Polya-Gamma samplers will diminish any
+gaps in performance.  Users of the \Polya-Gamma technique need not make any
+changes to their code to take advantage of such improvements as they will be
+quarantined within the \texttt{rpg} function of the \texttt{BayesLogit} package.
 
 \appendix
 
