@@ -84,39 +84,59 @@ Liang Sun\footnote{sallylia@gmail.com},
 %state-space models with categorical or integral responses and linear, Gaussian
 %evolution equations.
 
-This paper presents a data augmentation technique that may be used to produce
-posterior samples from state-space models with binomial or negative binomial
-observations and linear, Gaussian evolution equations.  We begin with a brief
-overview of the modeling scenario, starting with the static analog, building the
-dynamic model, and then describing the challenges faced when generating
+There are a variety of settings in which one wants to model non real-valued
+data.  For instance, integral data may be found in ecology or epidemiology when
+modeling populations of species or outbreaks of infections and in neuroscience
+when modeling brain activity in terms of the discrete neural impulses.
+Categorical data is similarly ubiquitious, arising, for example, in medicine to
+describe a successful treatment and in economics to denote the default on a
+loan.  Further, such data may be temporily correlated, in which case setting up
+some sort of autoregressive-like structure is helpful, though at the cost of
+making posterior inference more difficult.  This paper presents a data
+augmentation technique that produces posterior samples for state-space models
+with binomial or negative binomial observations and linear, Gaussian evolution
+equations, which are useful in the aforementioned circumstances.  We begin with
+a brief overview of the setup, starting with the static analog, building the
+dynamic models, and then describing the challenges faced when generating
 posterior samples.
 
-A linear model enforces an affine relationship between the expectation of the
-response, $\bbE[y_t]$, and the covariates, $x_t \in \bbR^P$ for $t=1, \ldots,
-T$.  A generalized linear model (GLM) allows a non-linear relationship between
-the expectation and a linear combination of the predictors, $\psi_t = x_t'
-\beta$.  This flexibility is useful when modeling categories, counts,
-proportions, and positive quantities \citep{mccullagh-nelder-1989}.  Strictly
-speaking, one need not specify the distribution of the response, just its first
-two moments, but since we are interested in Bayesian inference we will restrict
-our attention to situations in which the likelihood, $f(y_t | \psi_t)$, is
-specified, focusing on binomial likelihoods.  When the likelihood comes from the
-exponential family of distributions, one may easily calculate the posterior mode
-and associated error estimates \citep{wedderburn-1974}; however, most
-likelihoods lead to posterior distributions which are difficult to sample,
-requiring Metropolis-Hastings sampling, Gibbs sampling via data augmentation, or
-some other MCMC method.
+When there is a linear relationship between the expectation of the response and
+the covariates and the variance of the response is constant, that is when one is
+doing linear regression, the Gauss-Markov theorem ensures that ordinary least
+squares produces the best unbiased minimum variance estimator, a frequentist way
+of saying that the model has a ``nice'' solution.  Assuming that the respnose is
+normally distributed leads to a closed-form posterior distribution that is easy
+to sample from, which is the Bayesian equivalent of ``niceness.''  When modeling
+counts or categories, ordinary least squares no longer has this property and
+convenient posterior distributions are not gaurenteed.
+
+Generalized linear models (GLMs) partially address this deficiency.  In
+particular, parameterizing the expectation and variance of the response in terms
+of a linear combination of the predictors, $\psi_t = x_t' \beta$ leads to
+tractable models for counts, categories, and other non-real valued data
+\citep{mccullagh-nelder-1989, wedderburn-1974}.  Strictly speaking, one need not
+specify the distribution of the response, just its first two moments, but since
+we are interested in Bayesian inference we will restrict our attention to
+situations in which the likelihood, $f(y_t | \psi_t)$, is specified, focusing on
+binomial likelihoods.  When the likelihood comes from the exponential family of
+distributions, ``tractable'' means that one may easily calculate the posterior
+mode and associated error estimates; however, most likelihoods lead to posterior
+distributions which are difficult to sample, requiring Metropolis-Hastings
+sampling, Gibbs sampling via data augmentation, or some other MCMC method.
 
 Dynamic generalized linear models (DGLMs) permit an evolving relationship
 between the response and the covariates via time-varying regression
-coefficients, $\{\beta_t\}_{t=1}^T$, so that the log odds at time $t$ is $\psi_t
-= x_t' \beta_t$.  One must specify a prior for $\{\beta_t\}_{t=1}^T$ to complete
-the model.  The prior controls how quickly $\{\beta_t\}_{t=1}^T$ may change.  It
-is common to let $\{\beta_t\}_{t=1}^T$ be an AR(1) process or a random walk,
-both with Gaussian innovations.  In either case, one recovers a state-space
-model characterized by the observation distribution $f(y_t | \psi_t)$ for the
-response and the Markovian evolution distribution $g(\beta_t | \beta_{t-1})$ for
-the hidden states.
+coefficients, $\{\beta_t\}_{t=1}^T$, so that at time $t$ is $\psi_t = x_t'
+\beta_t$ while response is still distributed as $f(y_t | \psi_t)$.  One must
+specify a prior for $\{\beta_t\}_{t=1}^T$ to complete the model.  The prior
+controls how quickly $\{\beta_t\}_{t=1}^T$ may change.  It is common to let
+$\{\beta_t\}_{t=1}^T$ be an AR(1) process or a random walk, both with Gaussian
+innovations.  In either case, one recovers a state-space model characterized by
+the observation distribution $f(y_t | \psi_t)$ for the response and the
+Markovian evolution distribution $g(\beta_t | \beta_{t-1})$ for the hidden
+states.  Moving from the static to the dynamic model is a small step
+conceptually but a big step practically.  In particular, it becomes much more
+difficult to generate posterior samples.
 
 To clarify the challenge of simulating $(\{\beta_t\}_{t=1}^T | \{y_t\}_{t=1}^T)$
 for dynamic generalized linear models, it is helpful to consider more and less
@@ -156,12 +176,12 @@ augmentation and a discrete mixture of normals approximation
 because of its parsimony, ease of implementation, and efficiency.  
 
 Dynamic models of counts or categories, like the ones studied herein, may arise
-across a range of disciplines, such as ecology, epidemiology, neuroscience,
-economics, and medicine.  Hence, having a guide to the most efficient posterior
-simulation techniques for these models is important for practitioners.  To that
-end, we benchmark two dynamic generalized linear models and show that the
-\Polya-Gamma approach is the best choice for dynamic logistic regression and
-dynamic negative binomial regression when the count size is small.
+across a range of disciplines, as noted above.  Hence, having a guide to the
+most efficient posterior simulation techniques for these models is important for
+practitioners.  To that end, we benchmark two dynamic generalized linear models
+and show that the \Polya-Gamma approach is the best choice for dynamic logistic
+regression and dynamic negative binomial regression when the count size is
+small.
 
 The outline of the paper is as follows: Section 2 reviews other methods of
 inference for dynamic generalized linear models; Section 3 shows how one may use
