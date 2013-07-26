@@ -60,14 +60,15 @@ Liang Sun\footnote{sallylia@gmail.com},
   models for which this is the case, and include, amongst other models, dynamic
   binomial logistic regression and dynamic negative binomial regression.
   Finding and appraising posterior simulation techniques for these models is
-  important as they find use across a range of fields, such as ecology,
-  epidemiology, and neuroscience.  In this paper, we present one such technique,
-  \Polya-Gamma data augmentation, and compare it with
-  the discrete mixture of normals approach of Fr\"uhwirth-Schnatter
-  \cite{fruhwirth-schnatter-etal-2009} and \cite{fussl-etal-2013}, and the
-  Metropolis-Hastings approach of \cite{ravines-etal-2006}.  We find that the
-  \Polya-Gamma approach works well for dynamic logistic regression and for
-  dynamic negative binomial regression when the count sizes are small.
+  important since modeling temporally correlated categories or counts is useful
+  in a variety of disciplines, including ecology, economics, epidemiology,
+  medicine, and neuroscience.  In this paper, we present one such technique,
+  \Polya-Gamma data augmentation, and compare it with the discrete mixture of
+  normals approach of Fr\"uhwirth-Schnatter \cite{fruhwirth-schnatter-etal-2009}
+  and \cite{fussl-etal-2013}, and the Metropolis-Hastings approach of
+  \cite{ravines-etal-2006}.  We find that the \Polya-Gamma approach works well
+  for dynamic logistic regression and for dynamic negative binomial regression
+  when the count sizes are small.
 
   \smallskip \textbf{Keywords:} {binomial, dynamic generalized linear models,
     logistic regression, negative binomial regression} }
@@ -83,11 +84,18 @@ Liang Sun\footnote{sallylia@gmail.com},
 %state-space models with categorical or integral responses and linear, Gaussian
 %evolution equations.
 
-Linear models possess a rigid structure that enforces an affine relationship
-between the expectation of the response, $\bbE[y_t]$, and the covariates, $x_t
-\in \bbR^P$.  Generalized linear models (GLMs) allow a non-linear relationship
-between the expectation and a linear combination of the predictors, $\psi_t =
-x_t' \beta$.  This flexibility is useful when modeling categories, counts,
+This paper presents a data augmentation technique that may be used to produce
+posterior samples from state-space models with binomial or negative binomial
+observations and linear, Gaussian evolution equations.  We begin with a brief
+overview of the modeling scenario, starting with the static analog, building the
+dynamic model, and then describing the challenges faced when generating
+posterior samples.
+
+A linear model enforces an affine relationship between the expectation of the
+response, $\bbE[y_t]$, and the covariates, $x_t \in \bbR^P$ for $t=1, \ldots,
+T$.  A generalized linear model (GLM) allows a non-linear relationship between
+the expectation and a linear combination of the predictors, $\psi_t = x_t'
+\beta$.  This flexibility is useful when modeling categories, counts,
 proportions, and positive quantities \citep{mccullagh-nelder-1989}.  Strictly
 speaking, one need not specify the distribution of the response, just its first
 two moments, but since we are interested in Bayesian inference we will restrict
@@ -101,43 +109,43 @@ some other MCMC method.
 
 Dynamic generalized linear models (DGLMs) permit an evolving relationship
 between the response and the covariates via time-varying regression
-coefficients, $\{\beta_t\}_{t=1}^T$, so that $\psi_t = x_t' \beta_t$.  One must
-specify a prior for $\{\beta_t\}_{t=1}^T$ to complete the model.  The prior
-controls how quickly $\beta_t$ may change.  It is common to let
-$\{\beta_t\}_{t=1}^T$ be an AR(1) process or a random walk, both with Gaussian
-innovations.  In either case, one recovers a state-space model characterized by
-the observation distribution $f(y_t | \psi_t)$ for the response and the
-Markovian evolution distribution $g(\beta_t | \beta_{t-1})$ for the hidden
-states.
+coefficients, $\{\beta_t\}_{t=1}^T$, so that the log odds at time $t$ is $\psi_t
+= x_t' \beta_t$.  One must specify a prior for $\{\beta_t\}_{t=1}^T$ to complete
+the model.  The prior controls how quickly $\{\beta_t\}_{t=1}^T$ may change.  It
+is common to let $\{\beta_t\}_{t=1}^T$ be an AR(1) process or a random walk,
+both with Gaussian innovations.  In either case, one recovers a state-space
+model characterized by the observation distribution $f(y_t | \psi_t)$ for the
+response and the Markovian evolution distribution $g(\beta_t | \beta_{t-1})$ for
+the hidden states.
 
 To clarify the challenge of simulating $(\{\beta_t\}_{t=1}^T | \{y_t\}_{t=1}^T)$
-for dynamic generlized linear models, it is helpful to consider more and less
+for dynamic generalized linear models, it is helpful to consider more and less
 tractable state-space models.  State-space models with non-Gaussian, non-linear
 responses and non-linear evolution equations are less tractable.  One may
 efficiently approximate the filtered distributions of such models, $p(\beta_t |
-D_t)$, using sequential methods, but the lack of structure makes sampling from
-the posterior of $\{\beta_t\}_{t=1}^T$ difficult.  Dynamic linear models (DLMs)
-with Gaussian states and Gaussian observations are more tractable: one may
-sample the posterior distribution of the states using the foward filter backward
-sample (FFBS) algorithm \citep{carter-kohn-1994, fruhwirth-schnatter-1994}, a
-procedure that is linear in the number of observations and thus quite efficient.
-However, the FFBS algorithm breaks down outside of these vary narrow
-assumptions.  Dynamic generalized linear models that have Gaussian, linear
-evolution equations, but non-Gaussian, non-linear response distributions sit
-between these extremes.  Within this class, the FFBS algorithm is not
-immediately applicable, but the linear evolution equations give one hope of
-finding a clever way to reintroduce it.  Many approaches follow this path,
-combining techniques used for generalized linear models with the FFBS algorithm.
-However, these amalgamations are not always as effective as their constituent
-parts.  In particular, Metropolis-Hastings based techniques for GLMs do not
-translate well to the dyanmic setting as $\{\beta_t\}_{t=1}^T$ is of much higher
-dimension than $\beta$.  Data augmentation techniques for GLMs that lead to a
-Gaussian complete conditional for $\beta$ provide a preferable approach since
-the corresponding complete conditional for $\{\beta_t\}_{t=1}^T$ will coincide
-with the likelihood of a DLM and hence the FFBS algorithm.  But such data
-augmentation tricks are difficult to find.  Recently, \cite{polson-etal-2013}
-introduced a data augmentation trick for GLMs with binomial likelihoods and that
-is what we exploit here.
+\{y_s\}_{s=1}^t) d\beta_t$, using sequential methods, but the lack of structure
+makes sampling from the posterior of $\{\beta_t\}_{t=1}^T$ difficult.  Dynamic
+linear models (DLMs) with Gaussian states and Gaussian observations are more
+tractable: one may sample the posterior distribution of the states using the
+forward filter backward sample (FFBS) algorithm \citep{carter-kohn-1994,
+  fruhwirth-schnatter-1994}, a procedure that is linear in the number of
+observations and thus quite efficient.  However, the FFBS algorithm breaks down
+outside of these vary narrow assumptions.  Dynamic generalized linear models
+that have Gaussian, linear evolution equations, but non-Gaussian, non-linear
+response distributions sit between these extremes.  Within this class, the FFBS
+algorithm is not immediately applicable, but the linear evolution equations give
+one hope of finding a clever way to reintroduce it.  Many approaches follow this
+path, combining techniques used for generalized linear models with the FFBS
+algorithm.  However, these amalgamations are not always as effective as their
+constituent parts.  In particular, Metropolis-Hastings based techniques for GLMs
+do not translate well to the dynamic setting, as $\{\beta_t\}_{t=1}^T$ is of
+much higher dimension than $\beta$.  Data augmentation techniques for GLMs that
+lead to a Gaussian complete conditional for $\beta$ provide a preferable
+approach since the corresponding complete conditional for $\{\beta_t\}_{t=1}^T$
+will coincide with the likelihood of a DLM and hence the FFBS algorithm.  But
+such data augmentation tricks are difficult to find.  Recently,
+\cite{polson-etal-2013} introduced a data augmentation trick for GLMs with
+binomial likelihoods and that is what we exploit here.
 
 This paper presents \Polya-Gamma data augmentation for dynamic regression models
 with binomial likelihoods and compares it to a pair of other approaches:
@@ -145,12 +153,14 @@ conjugate updating and backward sampling with a Metroplis-Hastings step
 \citep{ravines-etal-2006} and forward filter and backward sampling using data
 augmentation and a discrete mixture of normals approximation
 \citep{fruhwirth-schnatter-etal-2009, fussl-etal-2013}.  Our method is pleasing
-because of its parsimony, ease of implementation, and efficiency.  These models
-arise across a range of disciplines, including ecology (damien), economics (fs),
-epidemiology (lauren), and neuroscience (jonathan, larry).  Hence, having a
-guide to the most efficient techniques is important for practictioners.  To that
+because of its parsimony, ease of implementation, and efficiency.  
+
+Dynamic models of counts or categories, like the ones studied herein, may arise
+across a range of disciplines, such as ecology, epidemiology, neuroscience,
+economics, and medicine.  Hence, having a guide to the most efficient posterior
+simulation techniques for these models is important for practitioners.  To that
 end, we benchmark two dynamic generalized linear models and show that the
-\Polya-Gamma approach is the best choice for dyanmic logistic regression and
+\Polya-Gamma approach is the best choice for dynamic logistic regression and
 dynamic negative binomial regression when the count size is small.
 
 The outline of the paper is as follows: Section 2 reviews other methods of
@@ -261,15 +271,12 @@ herein.
 
 \section{\Polya-Gamma Data Augmentation}
 
-We consider DGLMs with binomial likelihoods:
-\(
-f(y_t | p_t) = c(y_t) p_t^{a_t} (1-p_t)^{d_t},
-\)
-where $a_t$ and $d_t$ do not depend upon $p_t$.  Logistic regression and
-negative binomial regression are two common models that fit within this regime.
-It is preferable to express this likelihood in terms of the log odds, $\psi_t =
-\log \frac{p_t}{1-p_t}$, since this is the scale on which we linearly model the
-covaraites:
+We consider DGLMs with binomial likelihoods: \( f(y_t | p_t) = c(y_t) p_t^{a_t}
+(1-p_t)^{d_t}, \) where $a_t$ and $d_t$ do not depend upon $p_t$.  Logistic
+regression and negative binomial regression are two common models that fit
+within this regime.  It is preferable to express this likelihood in terms of the
+log odds, $\psi_t = \log \frac{p_t}{1-p_t}$, since this is the scale on which we
+linearly model the covariates:
 \[
 f(y_t | \psi_t) = c(y_t) \, \frac{(e^{\psi_t})^{a_t}}{(1+e^{\psi_t})^{b_t}},
 \]
