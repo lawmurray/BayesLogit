@@ -29,9 +29,9 @@
 \newcommand{\point}{\noindent $\bullet$ }
 
 \newcounter{parnum}
-\newcommand{\N}{%
+\newcommand{\npoint}{%
    \noindent\refstepcounter{parnum}%
-    \makebox[\parindent][l]{\textbf{\arabic{parnum}.}}}
+    \makebox[0.5in][c]{\textbf{\arabic{parnum}.}}}
 % Use a generous paragraph indent so numbers can be fit inside the
 % indentation space.
 % \setlength{\parindent}{2em}
@@ -117,15 +117,16 @@ data.  For instance, integral data may be found in ecology or epidemiology when
 modeling populations of species or outbreaks of infections and in neuroscience
 when modeling brain activity in terms of discrete neural impulses.  Categorical
 data is similarly ubiquitous, arising, for example, in medicine to describe a
-successful treatment and in economics to denote the default on a loan.  Further,
-such data may be temporally correlated, in which case setting up some sort of
+successful treatment and in economics to denote the default on a loan.  Such
+data may be temporally correlated as well, in which case setting up an
 autoregressive-like structure is helpful, though at the cost of making posterior
 inference more difficult.  This paper presents a data augmentation technique
-that produces posterior samples for state-space models with binomial or negative
-binomial observations and linear, Gaussian evolution equations, which are useful
-in the aforementioned scenarios.  We begin by setting up the problem, starting
-with the static analog, moving to the dynamic model, and then describing the
-challenge of generating posterior samples.
+that produces posterior samples for
+%state-space models with binomial or negative binomial observations and linear,
+%Gaussian evolution equations,
+models that are useful in the foregoing scenarios.  We begin by setting up the
+problem, starting with the static analog, moving to the dynamic model, and then
+describing the challenge of generating posterior samples.
 
 When there is a linear relationship between the expectation of the response and
 the covariates and the variance of the response is constant---that is when one
@@ -134,20 +135,21 @@ least squares (OLS) produces the best linear unbiased estimator, a frequentist
 way of saying that the model has a nice solution \citep{christensen-book-2001}.
 Further, assuming that the response is normally distributed and adopting a
 normal prior leads to a closed-form posterior distribution that is easy to
-sample from, which is the Bayesian equivalent of niceness.  When modeling counts
-or categories, the aforementioned necessary conditions do not apply and hence
-OLS does not lead to the best linear unbiased estimator and convenient posterior
+sample from, which is a Bayesian equivalent of niceness.  When modeling counts
+or categories, the aforementioned necessary conditions do not hold and hence OLS
+does not lead to the best linear unbiased estimator and convenient posterior
 distributions are not guaranteed.
 
-Generalized linear models (GLMs) partially address this deficiency.  In
+Generalized linear models (GLMs) partially address these deficiencies.  In
 particular, parameterizing the expectation and variance of the response in terms
 of a linear combination of the predictors, $\psi_t = \vx_t' \bbeta$, leads to
 tractable models for counts, categories, and other non-real valued data
 \citep{mccullagh-nelder-1989, wedderburn-1974}.  Strictly speaking, one need not
 specify the distribution of the response, just its first two moments, but since
 we are interested in Bayesian inference we will restrict our attention to
-situations in which the likelihood, $f(y_t | \psi_t)$, is specified, focusing on
-binomial likelihoods.  When the likelihood comes from the exponential family of
+situations in which the likelihood, $f(y_t | \psi_t)$, is specified.
+%, focusing on binomial likelihoods.  
+When the likelihood comes from the exponential family of
 distributions, tractable means that one may easily calculate the posterior mode
 and associated error estimates; however, most likelihoods lead to posterior
 distributions which are difficult to sample, requiring Metropolis-Hastings
@@ -213,112 +215,107 @@ regression and dynamic negative binomial regression when the count size is
 small.
 
 The outline of the paper is as follows: Section 2 reviews other methods of
-inference for dynamic generalized linear models; Section 3 shows how one may use
-the \Polya-Gamma data augmentation technique in the dynamic setting; Section 4
+posterior simulation for dynamic models; Section 3 shows how one may use the
+\Polya-Gamma data augmentation technique in the dynamic setting; Section 4
 presents the benchmarking results; Section 5 concludes.
 
 \section{Previous Efforts}
 \label{sec:previous-efforts}
 
-Bayesian inference for dynamic generalized linear models dates back to at least
-\cite{west-etal-1985} who used conjugate updating with backwards sampling (CUBS)
-to sample the dynamic regression coefficients of DGLMs when the observation
-$(y_t | \psi_t)$ comes from an exponential family; but their method is only
-approximate.  Much effort has been devoted to developing exact posterior
-samplers, though none has proved to be completely satisfactory.  A primary goal
-of any such sampler is to sample states jointly, like the forward filter
-backwards sampling of \cite{fruhwirth-schnatter-1994} and
-\cite{carter-kohn-1994}, since jointly sampling states usually results in less
-autocorrelation than sampling the states component-wise, an approach suggested
-by \cite{carlin-etal-1992} prior to the advent of the advent of the FFBS.
-However, the FFBS procedure requires Gaussian, linear state-space evolution and
-observation equations.  Outside of these assumptions, as is generally the case
-with DGLMs, the machinery of the FFBS breaks down.  To resurrect the FFBS, one
-may approximate the posterior with a DLM proposal density and then accept or
-reject using Metropolis-Hastings, or one may use data augmentation so that,
-conditionally, the observations and states are generated by a DLM.  Neither
-method is guaranteed to work well.
+\npoint Let us still assume that $y_t$ is the response, generated by some member
+of the exponential family according to $f(y_t | \psi_t)$ where $\psi_t = \vx_t'
+\bbeta_t$ for $t=1, \ldots, T$, and that the hidden states
+$\{\bbeta_t\}_{t=1}^T$ evolve according to an AR(1) or random walk process with
+Gaussian disturbances described by the transition density $g(\bbeta_t |
+\bbeta_{t-1})$.
 
-\cite{gamerman-1998} discusses various Metropolis-Hastings based approaches, all
-of which rely on the Laplace approximation \citep{robert-casella-2005-book}, and
-all of which are flawed: component-wise proposals have decent acceptance rates,
-though high autocorrelation between consecutive samples, while joint proposals
-suffer from unacceptably small acceptance rates.  Gamerman's solution is to
-transform the problem so that one samples the state disturbances
-component-wise using a Laplace approximation with Metropolis-Hastings update,
-arguing that the new coordinate system possesses less intrinsic correlation.
-But this approach is more computationally intensive since one must transform the
-proposals back to the original coordinate system at each iteration to evaluate
-the Metropolis-Hastings acceptance probability.
+\npoint \cite{carter-kohn-1994} and \cite{fruhwirth-schnatter-1994} showed that
+when $y_t \sim N(\psi_t | V_t)$ there is an algorithm, the FFBS, that generates
+posterior samples of $\{\beta_{t}\}_{t=1}^T$ in $\mcO(T)$ time as $T$ varies.
+When the response comes from some other distribution, like the binomial or
+negative binomial distributions, the FFBS breaks down.
 
-\cite{shephard-pitt-1997} attempt to strike a balance between the
-autocorrelation of consecutive samples and the acceptance probabilities of
-proposed samples by drawing blocks of disturbances.  One can proceed similarly
-by sampling blocks of states.  Sampling in larger blocks reduces Markov chain
-autocorrelation, while sampling smaller blocks encourages a reasonable
-Metropolis-Hastings acceptance probability.  However, sampling in blocks can
-still suffer from high autocorrelation between consecutive draws.  Sampling
-blocks of the disturbances presents similar problems to those discussed above,
-in particular, it is more computationally intensive than sampling blocks of
-states directly.
+\npoint Thus, one must appeal to approximate distributions, Metropolis-Hastings
+sampling, Gibbs sampling, or some other MCMC approach, like particle methods.
 
-More recently, techniques have emerged that generate joint draws of the entire
-set of states.  \cite{ravines-etal-2006} built upon \cite{west-etal-1985} by
-adding a Metropolis-Hastings step to sample the states exactly.  Though this at
-first would seem like a poor choice due to the high-dimensionality often
-encountered in time series, they find that, in fact, the technique results in
-improved acceptance rates over a global Laplace approximation.  We verified this
-assertion, implementing a Metropolis-Hastings scheme that sampled blocks of
-disturbances using the Laplace approximation and finding that it did not fare as
-well as the method of \cite{ravines-etal-2006}.
-% The fact that conjugate
-% update improves the Metropolis-Hastings proposal enough to allow for
-% ``efficient'' joint draws is somewhat surprising.
+\npoint Such attempts date back to at least \cite{west-etal-1985}, who employed
+a conjugate updating, backward sampling (CUBS) strategy to generate approximate
+posterior draws.  Their strategy is to use an approximation of the filtered
+distributions $(\bbeta_t | \{y_s\}_{s=1}^t)$ when backwards sampling.  The CUBS
+method is also $\mcO(T)$ as $T$ varies, but requires solving a non-linear
+equation at each time step, which is time consuming.
 
-Taking a different tack, Fr\"{u}hwirth-Schnatter and her colleagues have
-explored data augmentation techniques that rely upon discrete mixtures of
-normals to arrive at conditionally Gaussian posteriors in a variety of settings
-including binomial logistic regression and multinomial regression
-\citep{fruhwirth-schnatter-fruhwirth-2007, fruhwirth-schnatter-fruhwirth-2010,
-  fussl-etal-2013}, Poisson regression \citep{fruhwirth-schnatter-wagner-2006,
-  fruhwirth-schnatter-etal-2009}, and negative binomial regression for count
-data \citep{fruhwirth-schnatter-etal-2009}.  All of these techniques may be used
-in static and dynamic regressions.  While these methods work well, several rely
-upon precomputing large tables of weights, means, and variances for the
-components of a collection normal mixtures that approximate an entire family of
-distributions.  Further all of the discrete mixture of normal techniques make
-use of at least two layers of auxiliary variables.  One would prefer to avoid
-many layers of latents since this may inhibit traversing the posterior landscape
-and enlarges the memory footprint when storing the latent states. In the sequel,
-for dynamic binomial logistic regression, we will limit our comparison to
-\cite{fussl-etal-2013} since it appears to be the best choice within
-Fr\"{u}wirth-Schnatter et al.'s cornucopia of methods.
+\npoint Metropolis-Hastings based approaches can take approximate draws and make
+them exact by introducing an accept/reject step.  The challenge is to devise a
+good approximation so that the probability of accepting a proposal is
+reasonable.  As the dimension of the quantity one wants to sample increases,
+this becomes more difficult.  A potential solution is to break the
+high-dimensional quantity into pieces and sample the complete conditional of
+these pieces sequentially, that is to do Metropolis-Hastings within Gibbs
+sampling.  However, sampling the high-dimensional quantity in blocks tends to
+increase the correlation between the successive samples within the Markov chain.
+Thus, one must try to strike a balance between blocks that are too large,
+leading to poor acceptance rates, and blocks that are too small, leading to
+excessive autocorrelation.  One finds an extreme form of the blocking approach
+in \cite{carlin-etal-1992}, prior to the advent of the FFBS.
 
-As a historical note, much of this work can be traced back to
-\cite{albert-chib-1993}, who develop a data augmentation approach to probit
-regression, \cite{mcfadden-1974}, who provides a data augmentation scheme for
-logistic regression, and \cite{holmes-held-2006}, who produce another data
-augmentation scheme for logistic regression.
+\npoint Given this general strategy, one must still figure out how to pick a
+good proposal distribution.  Since $f$ comes from the exponential family, it is
+natural to use the Laplace approximation to arrive at a Gaussian proposal, as
+this coincides with the iteratively reweighted least squares procedure for
+generalized linear models \citep{gamerman-1997}.  One may follow a similar
+strategy by first doing a change of coordinates to sample the disturbances
+instead of the hidden states and then use a Laplace approximation
+\citep{gamerman-1998, shephard-pitt-1997}.  Advocates of this strategy suggest
+that the subsequent blocking possesses less intrinsic autocorrelation.
+\cite{ravines-etal-2006} find the CUBS approximation of \cite{west-etal-1985}
+works well.  We did our own comparison and found that, indeed, the approach of
+\cite{ravines-etal-2006} is superior to sampling blocks of disturbances.
+However, none of these Metropolis-Hastings are completely satisfactory.  In
+particular, \cite{ravines-etal-2006} is still time consuming, requiring $T$
+non-linear solves for each MCMC iteration.
 
-DGLMs can be cast within the more general framework of non-linear, non-Gaussian
-state-space models.  \cite{geweke-tanizaki-2001} highlight the various works of
-Kitagawa, Tanizaki, and Mariano, amongst others, for filtering, smoothing, or
-simulating states using numerical integration, resampling, or rejection sampling
-within this context.  However, the more general setting does not provide more
-insight into how one may jointly samples states in DGLMs.  Each of the
-approaches they review is unsatisfactory: numerical integration does not work
-well for any but the simplest settings, sampling marginally smoothed states
-using sequential methods is time consuming, and rejection sampling may have poor
-acceptance probabilities.  None of the methods cited by Geweke and Tanizaki are
-useful for generating posterior samples of the states jointly, an extremely
-desirable property.  Their solution is to sample the states component-wise using
-a Laplace approximation and a Metropolis-Hastings step, which in the case of
-exponential families returns us to the methods discussed by
-\citep{gamerman-1998}.  \cite{godsill-etal-2004} show how one may jointly sample
-states using particle methods; however, joint sampling using particle methods is
-far less efficient than generating filtered samples.  Recently,
-\cite{geweke-etal-2013} leveraged the power of GPUs for more efficient
-sequential simulation, an interesting avenue not considered herein.
+\npoint Data augmentation provides a preferable approach.  If one finds a data
+augmentation scheme for the static problem, that is when $\psi_t = \vx_t'
+\bbeta$, so that the complete conditional of $\bbeta$ is Gaussian, then the
+corresponding complete conditional of $\{\bbeta_t\}_{t=1}^T$ for the dynamic
+analog will coincide with a DLM so that one may make use of the FFBS.
+
+\npoint But finding such a scheme is difficult since it requires auxiliary
+variables that (1) yield a Gaussian complete conditional for $\bbeta$ and (2)
+can be sampled efficiently.  For instance, \cite{mcfadden-1974} provides an
+example where (1) is not met while \cite{holmes-held-2006} provide an example
+where (2) can be significantly improved.
+
+\npoint Fr\"{u}hwirth-Schnatter and her colleagues have developed fixes for
+these shortcomings that rely upon approximating one or several distributions
+using mixtures of Gaussians.  Their work has lead to data augmentation schemes
+that satisfy (1) and (2), in an approximate though accurate sense, for binomial
+and multinomial logistic regression \citep{fruhwirth-schnatter-fruhwirth-2007,
+  fruhwirth-schnatter-fruhwirth-2010, fussl-etal-2013}, Poisson regression
+\citep{fruhwirth-schnatter-wagner-2006, fruhwirth-schnatter-etal-2009}, and
+negative binomial regression \citep{fruhwirth-schnatter-etal-2009}.  (In the
+sequel, for dynamic binomial logistic regression, we will limit our comparison
+to \cite{fussl-etal-2013} since it appears to be the best choice within
+Fr\"{u}hwirth-Schnatter et al.'s cornucopia.)
+
+\npoint While their methods work well, several rely upon precomputing large
+tables of weights, means, and variances for the components of a collection of
+mixtures that approximate an entire family of distributions.  Further all of the
+discrete mixture of normal techniques make use of at least two layers of
+auxiliary variables.  One would prefer to avoid many layers of latents since
+this may inhibit traversing the posterior landscape and enlarges the memory
+footprint when storing the latent states.
+
+\npoint The situation is significantly harder once one abandons the structure we
+have assumed to this point.  \cite{geweke-tanizaki-2001} have reviewed a
+plethora of approaches within the more general setting of state-space models,
+none of which work that well.  \cite{godsill-etal-2004} show how to sample
+smoothed states, $(\{\bbeta_t\}_{t=1}^T | \{y_t\}_{t=1}^T)$, using particle
+methods; however, this is relatively expensive in comparison to filtering
+states.  Recently, \cite{geweke-etal-2013} leveraged the power of GPUs as a way
+to significantly speed up sequential Monte Carlo, an interesting avenue not
+considered herein.
 
 \section{\Polya-Gamma Data Augmentation}
 \label{sec:pg}
@@ -359,7 +356,9 @@ p(\omega_t),
 which is useful since the ratio
 \begin{equation}
   \label{eqn:pg-cancellation}
-  \exp({-\psi_t b_t/2}) \propto \cosh^{b_t}(\psi_t/2) / (1+\exp({\psi_t}))^{b_t}
+  \cosh^{b_t}(\psi_t/2) / (1+\exp({\psi_t}))^{b_t}
+  \propto
+  \exp({-\psi_t b_t/2}) 
 \end{equation}
 so that the complete conditional of $\bbeta$ is
 % \[
@@ -397,14 +396,14 @@ from the DLM
 \end{cases}
 \]
 
-Collecting these two complete conditionals, one finds that posterior samples may
-be generated via Gibbs sampling: the states $(\betap|\oomega, \yy)$ via the FFBS
-algorithm and $(\oomega | \betap, \yy)$ by taking independent samples $\omega_t
-\sim \PG(b_t, \psi_t)$ for $t=1, \ldots, T$.  \cite{polson-etal-2013} describe
-how to sample from $\PG$ distributions and implement this sampler in the
-\texttt{R} package \texttt{BayesLogit} \citep{bayeslogit-2013}.  Sampling any
-hyperparameters, like the autocorrelation coefficient or the innovation variance
-of the AR(1) process, follows using standard conjugate or MCMC techniques.
+Collecting these two complete conditionals leads to posterior simulation by
+Gibbs sampling: draw $(\betap|\oomega, \yy)$ using the FFBS algorithm and draw
+$(\oomega | \betap, \yy)$ using independent samples of $\omega_t \sim \PG(b_t,
+\psi_t)$ for $t=1, \ldots, T$.  \cite{polson-etal-2013} describe how to sample
+from $\PG$ distributions and implement this sampler in the \texttt{R} package
+\texttt{BayesLogit} \citep{bayeslogit-2013}.  Sampling any hyperparameters, like
+the autocorrelation coefficient of the AR(1) process or the innovation variance,
+follows using standard conjugate or MCMC techniques.
 
 \begin{example}
   Suppose that one observes a binomial outcome $y_t \sim \text{Binom}(n_t, q_t)$
@@ -718,16 +717,13 @@ account of each benchmark.
 
   NOTE: ESR PG/dRUM and ESR PG/FS report the ratio of the median effective
   sampling rate for the PG method compared to the best alternative, which in both
-  cases are the discrete mixture of normal approaches of \cite{fussl-etal-2013}
-  and \cite{fruhwirth-schnatter-etal-2009}.  A higher ratio corresponds to the PG
-  method doing better than the best alternative.  The PG method always beats the
-  CUBS approach and it does better than the discrete mixture of normals approach
-  in dynamic binomial logistic regression when the number of trials is small and
-  in dynamic negative binomial regression when the mean is small.  $n$ corresponds
-  to the number of trials for the binomial response while $\mu$ corresponds to the
-  approximate mean for the negative binomial response.  $f$ determines whether
-  there is a low or high amount of correlation between the covariates.  Est.\ AR
-  indicates whether the parameters of the AR process were estimated or not.
+  cases is the discrete mixture of normal approaches \citep{fussl-etal-2013,
+    fruhwirth-schnatter-etal-2009}.  A higher ratio corresponds to the PG method
+  doing better.  $n$ corresponds to the number of trials for the binomial response
+  while $\mu$ corresponds to the approximate mean for the negative binomial
+  response.  $f$ determines whether there is a low or high amount of correlation
+  between the covariates.  Est.\ AR indicates whether the parameters of the AR
+  process were estimated or not.
 
 \end{table}
 
@@ -745,30 +741,31 @@ the dynamic negative binomial regression is small, it may be better to use the
 Usability is as important as efficiency, if not more so, and from that vantage
 we recommend the \Polya-Gamma method in all cases.  The \Polya-Gamma approach,
 adhering to the first principle of engineering, is simple, in both concept and
-practice.  One need only understand an algebraic relationship (Equation
-\ref{eqn:pg-cancellation}) to follow its derivation, unlike the discrete mixture
-of normals approach, which is based upon the data generating process and hence
-the mixing of distributions.  One need only be comfortable with heteroscedastic
-Gaussian likelihoods for its implementation---familiar territory for most
-everyone---as the \Polya-Gamma auxiliary variables enter into the Gaussian form
-in terms of the variance and do not require another latent quantity like
-\cite{fruhwirth-schnatter-etal-2009} and \cite{fussl-etal-2013}.  These
-assertions hold not just for the dynamic models presented previously but for
-\emph{any} bespoke linear evolution equations, such as dynamic factor models.
-Since the requisite Gaussian machinery is well established, the only challenge
-is sampling the conditional distribution of the latent variables.  But, as seen
-above, this reduces to sampling \Polya-Gamma random variates, which requires a
-single call to the R Package \texttt{BayesLogit}.  Thus, the only novel aspect
-of implementing the \Polya-Gamma data augmentation approach is one line of code
-within an R script.  (The C code used by the \texttt{BayesLogit} package is
-freely available, so this applies equally well to any scripting language that
-can make calls to C.)  Further, for all models benchmarked herein, the
-\Polya-Gamma technique has superior effective sampling size, so that more
-efficient \Polya-Gamma samplers will diminish any gaps in performance.  When
-improved samplers arise, users of the \Polya-Gamma technique need not make any
-changes to their code, they can simply download the latest version of the R
-package.  The overwhelming simplicity and adaptability of the method makes it a
-good choice regardless of its efficiency.
+practice.  Conceptually, one need only understand an algebraic relationship
+(Equation \ref{eqn:pg-cancellation}) to follow its derivation, unlike the
+discrete mixture of normals approach, which is based upon the data generating
+process and hence the mixing of distributions.  Practically, one need only be
+comfortable with heteroscedastic Gaussian likelihoods for its
+implementation---familiar territory for most everyone---as the \Polya-Gamma
+auxiliary variables enter into the Gaussian form in terms of the variance and do
+not require another latent quantity like \cite{fruhwirth-schnatter-etal-2009}
+and \cite{fussl-etal-2013}.  These assertions hold, not just for the dynamic
+models presented previously, but for \emph{any} bespoke linear evolution
+equations, such as dynamic factor models.  Since the requisite Gaussian
+machinery is well established, the only challenge is sampling the conditional
+distribution of the latent variables, but this reduces to simulating
+\Polya-Gamma random variates, which has already been taken care of in the R
+Package \texttt{BayesLogit}.  Thus, the only novel aspect of implementing the
+\Polya-Gamma data augmentation approach is one line of code within an R script.
+(The C code used by the \texttt{BayesLogit} package is freely available, so this
+applies equally well to any scripting language that can make calls to external C
+routines.)  Further, for all models benchmarked herein, the \Polya-Gamma
+technique has superior effective sampling size, so that more efficient
+\Polya-Gamma samplers will diminish any gaps in performance.  When improved
+samplers arise, users of the \Polya-Gamma technique need not make any changes to
+their code, they can simply download the latest version of the R package.  The
+overwhelming simplicity and adaptability of the method makes it a good choice
+regardless of its efficiency.
 
 % \appendix
 \section*{Appendix: Benchmark Data Sets}
