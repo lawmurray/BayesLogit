@@ -16,50 +16,68 @@
 \newcommand{\bbeta}{\boldsymbol{\beta}}
 \newcommand{\oomega}{\boldsymbol{\omega}}
 \newcommand{\yy}{\boldsymbol{y}}
+\newcommand{\vx}{\boldsymbol{x}}
+%\newcommand{\betap}{\widetilde{\boldsymbol{\beta}}}
+\newcommand{\betap}{{\boldsymbol{B}}}
+\newcommand{\bW}{\boldsymbol{W}}
+\newcommand{\bPhi}{\boldsymbol{\Phi}}
+\newcommand{\bI}{\boldsymbol{I}}
+\newcommand{\vf}{\boldsymbol{f}}
+\newcommand{\bmu}{\boldsymbol{\mu}}
+\newcommand{\veta}{\boldsymbol{\eta}}
 
 \newcommand{\point}{\noindent $\bullet$ }
+
+\newcounter{parnum}
+\newcommand{\N}{%
+   \noindent\refstepcounter{parnum}%
+    \makebox[\parindent][l]{\textbf{\arabic{parnum}.}}}
+% Use a generous paragraph indent so numbers can be fit inside the
+% indentation space.
+% \setlength{\parindent}{2em}
 
 % Page Layout
 \setlength{\oddsidemargin}{0.0in}
 \setlength{\textwidth}{6.5in}
 \setlength{\textheight}{8in}
-%\parindent 0in
-%\parskip 12pt
+% \parindent 0in
+% \parskip 12pt
 
 % Set Fancy Style
-%\pagestyle{fancy}
+% \pagestyle{fancy}
 
-%\lhead{Left Header}
-%\rhead{Right Header}
+% \lhead{Left Header}
+% \rhead{Right Header}
 
 \title{\Polya-Gamma Data Augmentation for Dynamic Models}
-%
+% 
 \author{ %
-Jesse Windle %
-Carlos M. Carvalho %
-James G. Scott %
-Liang Sun %
-\footnote{ %
-Jesse Windle is a Post-Doc, Department of Statistical Science, Duke University,
-Box 90251, Durham NC 27708-0251 (E-mail: jesse.windle@gmail.com).  
-%
-Carlos M. Carvalho is Associate Professor of Statistics, Department of
-Information, Risk, and Operations Management, The University of Texas at Austin,
-2110 Speedway Stop B6500 Austin, TX 78712 (E-mail:
-carlos.carvalho@mccombs.utexas.edu).
-%
-James G. Scott is Assistant Professor of Statistics, Department of Information,
-Risk, and Operations Management, The University of Texas at Austin,
-2110 Speedway Stop B6500 Austin, TX 78712 (E-mail:
-james.scott@mccombs.utexas.edu).
-%
-Liang Sun is a graduate student in the Department of Operations Research \&
-Industrial Engineering, The University of Texas at Austin, 204 E. Dean Keeton
-St.  Austin, Texas 78712 (E-mail: sallylia@gmail.com).
-%
-},
-\\
-\textit{The Univeristy of Texas at Austin} }
+  Jesse Windle %
+  Carlos M. Carvalho %
+  James G. Scott %
+  Liang Sun %
+  \footnote{ %
+    Jesse Windle is a Post-Doc in the Department of Statistical Science, Duke
+    University, Box 90251, Durham NC 27708-0251 (E-mail:
+    jesse.windle@gmail.com).
+    % 
+    Carlos M. Carvalho is Associate Professor of Statistics, Department of
+    Information, Risk, and Operations Management, The University of Texas at Austin,
+    2110 Speedway Stop B6500 Austin, TX 78712 (E-mail:
+    carlos.carvalho@mccombs.utexas.edu).
+    % 
+    James G. Scott is Assistant Professor of Statistics, Department of Information,
+    Risk, and Operations Management, The University of Texas at Austin,
+    2110 Speedway Stop B6500 Austin, TX 78712 (E-mail:
+    james.scott@mccombs.utexas.edu).
+    % 
+    Liang Sun is a graduate student in the Department of Operations Research \&
+    Industrial Engineering, The University of Texas at Austin, 204 E. Dean Keeton
+    St.  Austin, Texas 78712 (E-mail: sallylia@gmail.com).
+    % 
+  },
+  \\
+  \textit{The Univeristy of Texas at Austin} }
 
 \begin{document}
 
@@ -83,16 +101,16 @@ St.  Austin, Texas 78712 (E-mail: sallylia@gmail.com).
   \smallskip \textit{Keywords:} {binomial likelihood, dynamic logistic
     regression, dynamic negative binomial regression} }
 
-%\tableofcontents
-%\newpage
+% \tableofcontents
+% \newpage
 
 \doublespace
 
 \section{Introduction}
 
-%The method presented herein is useful for generating posterior samples for
-%state-space models with categorical or integral responses and linear, Gaussian
-%evolution equations.
+% The method presented herein is useful for generating posterior samples for
+% state-space models with categorical or integral responses and linear, Gaussian
+% evolution equations.
 
 There are a variety of settings in which one wants to model non real-valued
 data.  For instance, integral data may be found in ecology or epidemiology when
@@ -123,7 +141,7 @@ distributions are not guaranteed.
 
 Generalized linear models (GLMs) partially address this deficiency.  In
 particular, parameterizing the expectation and variance of the response in terms
-of a linear combination of the predictors, $\psi_t = x_t' \beta$, leads to
+of a linear combination of the predictors, $\psi_t = \vx_t' \bbeta$, leads to
 tractable models for counts, categories, and other non-real valued data
 \citep{mccullagh-nelder-1989, wedderburn-1974}.  Strictly speaking, one need not
 specify the distribution of the response, just its first two moments, but since
@@ -137,30 +155,30 @@ sampling, Gibbs sampling via data augmentation, or some other MCMC method.
 
 Dynamic generalized linear models (DGLMs) permit an evolving relationship
 between the response and the covariates via time-varying regression
-coefficients, $\{\beta_t\}_{t=1}^T$, so that $\psi_t = x_t' \beta_t$ for $t=1,
-\ldots, T$.  One must specify a prior for $\{\beta_t\}_{t=1}^T$, which controls
-how quickly $\{\beta_t\}_{t=1}^T$ may change, to complete the model.  It is
-common to let the prior be an AR(1) process or a random walk, both with Gaussian
-innovations.  In either case, one recovers a state-space model characterized by
-the observation distribution $f(y_t | \psi_t)$ for the response and the
-Markovian evolution distribution $g(\beta_t | \beta_{t-1})$ for the hidden
-states.  Transitioning from the static to the dynamic model is a small step
-conceptually but a big step practically.  In particular, it becomes more
+coefficients, $\{\bbeta_t\}_{t=1}^T$, so that $\psi_t = \vx_t' \bbeta_t$ for
+$t=1, \ldots, T$.  One must specify a prior for $\{\bbeta_t\}_{t=1}^T$, which
+controls how quickly $\{\bbeta_t\}_{t=1}^T$ may change, to complete the model.
+It is common to let the prior be an AR(1) process or a random walk, both with
+Gaussian innovations.  In either case, one recovers a state-space model
+characterized by the observation distribution $f(y_t | \psi_t)$ for the response
+and the Markovian evolution distribution $g(\bbeta_t | \bbeta_{t-1})$ for the
+hidden states.  Transitioning from the static to the dynamic model is a small
+step conceptually but a big step practically.  In particular, it becomes more
 difficult to generate posterior samples.
 
-To clarify the challenge of simulating $(\{\beta_t\}_{t=1}^T | \{y_t\}_{t=1}^T)$
-for dynamic generalized linear models, it is helpful to consider more and less
-tractable state-space models.  State-space models with non-Gaussian, non-linear
-responses and non-linear evolution equations are less tractable.  One may
-efficiently approximate the filtered distributions of such models, $p(\beta_t |
-\{y_s\}_{s=1}^t) d\beta_t$, using sequential methods, but the lack of structure
-makes sampling from the posterior of $\{\beta_t\}_{t=1}^T$ difficult.  In
-contrast, dynamic linear models (DLMs) with Gaussian states and Gaussian
-observations are more tractable: one may sample the posterior distribution of
-the states using the forward filter backward sample (FFBS) algorithm
-\citep{carter-kohn-1994, fruhwirth-schnatter-1994}, a procedure that is linear
-in the number of observations and thus quite efficient.  However, the FFBS
-algorithm breaks down outside of these vary narrow assumptions.  Dynamic
+To clarify the challenge of simulating $(\{\bbeta_t\}_{t=1}^T |
+\{y_t\}_{t=1}^T)$ for dynamic generalized linear models, it is helpful to
+consider more and less tractable state-space models.  State-space models with
+non-Gaussian, non-linear responses and non-linear evolution equations are less
+tractable.  One may efficiently approximate the filtered distributions of such
+models, $p(\bbeta_t | \{y_s\}_{s=1}^t)$, using sequential methods, but the lack
+of structure makes sampling from the posterior of $\{\bbeta_t\}_{t=1}^T$
+difficult.  In contrast, dynamic linear models (DLMs) with Gaussian states and
+Gaussian observations are more tractable: one may sample the posterior
+distribution of the states using the forward filter backward sample (FFBS)
+algorithm \citep{carter-kohn-1994, fruhwirth-schnatter-1994}, a procedure that
+is linear in the number of observations and thus quite efficient.  However, the
+FFBS algorithm breaks down outside of these vary narrow assumptions.  Dynamic
 generalized linear models that have Gaussian, linear evolution equations, but
 non-Gaussian, non-linear response distributions sit between these extremes.
 Within this class, the FFBS algorithm is not immediately applicable, but the
@@ -169,10 +187,10 @@ it.  Many approaches follow this path, combining techniques used for generalized
 linear models with the FFBS algorithm.  However, these amalgamations are not
 always as effective as their constituent parts.  In particular,
 Metropolis-Hastings based techniques for GLMs do not translate well to the
-dynamic setting, as $\{\beta_t\}_{t=1}^T$ is of much higher dimension than
-$\beta$.  Data augmentation techniques for GLMs that lead to a Gaussian complete
-conditional for $\beta$ provide a preferable approach since the corresponding
-complete conditional for $\{\beta_t\}_{t=1}^T$ will coincide with the likelihood
+dynamic setting, as $\{\bbeta_t\}_{t=1}^T$ is of much higher dimension than
+$\bbeta$.  Data augmentation techniques for GLMs that lead to a Gaussian complete
+conditional for $\bbeta$ provide a preferable approach since the corresponding
+complete conditional for $\{\bbeta_t\}_{t=1}^T$ will coincide with the likelihood
 of a DLM and hence the FFBS algorithm.  (See section \ref{sec:pg} for details.)
 But such data augmentation tricks are difficult to find.  Recently,
 \cite{polson-etal-2013} introduced a data augmentation trick for GLMs with
@@ -184,7 +202,7 @@ conjugate updating and backward sampling with a Metroplis-Hastings step
 \citep{ravines-etal-2006} and forward filter and backward sampling using data
 augmentation and a discrete mixture of normals approximation
 \citep{fruhwirth-schnatter-etal-2009, fussl-etal-2013}.  Our method is pleasing
-because of its parsimony, ease of implementation, and efficiency.  
+because of its parsimony, ease of implementation, and efficiency.
 
 Dynamic models of counts or categories, like the ones studied herein, may arise
 across a range of disciplines, as noted above.  Hence, having a guide to the
@@ -317,37 +335,37 @@ f(y_t | \psi_t) = c(y_t) \, \frac{\exp(\psi_t)^{a_t}}{(1+\exp(\psi_t))^{b_t}},
 where $b_t = a_t + d_t$.  Given a collection of observations $\yy =
 \{y_t\}_{t=1}^T$, the posterior distribution is
 \[
-p(\bbeta | \yy) = c(\yy) \Big[ \prod_{t=1}^T
+p(\betap | \yy) = c(\yy) \Big[ \prod_{t=1}^T
 \frac{\exp({\psi_t})^{a_t}}{(1+\exp({\psi_t}))^{b_t}}
- \Big] p(\bbeta),
+\Big] p(\betap),
 \]
-where $\psi_t = x_t' \beta_t$ and $\bbeta = \{\beta_t\}_{t=1}^T$.  (We will use
+where $\psi_t = \vx_t' \bbeta_t$ and $\betap = \{\bbeta_t\}_{t=1}^T$.  (We will use
 the generic function $p$ to denote a probability density.)  Following
 \cite{polson-etal-2013}, one may introduce a collection of independent
 \Polya-Gamma random variates $\oomega = \{\omega_t\}_{t=1}^T$, $\omega_t \sim
 \PG(b_t, \psi_t)$ for $t=1, \ldots, T$, to construct the joint distribution
 \[
-p(\bbeta, \oomega | \yy) = c(\yy) \Big[ \prod_{t=1}^T
+p(\betap, \oomega | \yy) = c(\yy) \Big[ \prod_{t=1}^T
 \frac{\exp({\psi_t})^{a_t}}{(1+\exp({\psi_t}))^{b_t}} p(\omega_t | b_t, \psi_t)
-\Big] p(\bbeta) \, .
+\Big] p(\betap) \, .
 \]
-via the conditional structure $p(\bbeta, \oomega | \yy) = p(\oomega | \bbeta,
-\yy) p(\bbeta | \yy)$.  The $\PG{}(b_t, \psi_t)$ density possesses the special
+via the conditional structure $p(\betap, \oomega | \yy) = p(\oomega | \betap,
+\yy) p(\betap | \yy)$.  The $\PG{}(b_t, \psi_t)$ density possesses the special
 form
 \[
 p(\omega_t | b_t, \psi_t) = \cosh^{b_t}(\psi_t/2) \exp({- \omega_t \psi_t^2 / 2})
 p(\omega_t),
 \]
-which is useful since the ratio 
+which is useful since the ratio
 \begin{equation}
-\label{eqn:pg-cancellation}
-\exp({-\psi_t b_t/2}) \propto \cosh^{b_t}(\psi_t/2) / (1+\exp({\psi_t}))^{b_t}
+  \label{eqn:pg-cancellation}
+  \exp({-\psi_t b_t/2}) \propto \cosh^{b_t}(\psi_t/2) / (1+\exp({\psi_t}))^{b_t}
 \end{equation}
 so that the complete conditional of $\bbeta$ is
 % \[
-% p(\beta | y, \omega) \propto 
+% p(\beta | y, \omega) \propto
 % \Big[ \prod_{t=1}^n e^{\kappa_t \psi_t - \frac{\omega_t}{2} \psi_t^2}
-% \bbI \{\psi_t = x_t' \beta\} \Big] p(\beta)
+% \bbI \{\psi_t = \vx_t' \beta\} \Big] p(\beta)
 % \]
 % where $\kappa_t = a_t - b_t / 2$.  A single term from the product has
 % \[
@@ -358,30 +376,30 @@ so that the complete conditional of $\bbeta$ is
 % which is identical to the likelihood of an observation $z_t = \kappa_t /
 % \omega_t$ drawn from
 % \[
-% z_t \sim N(x_t' \beta, \omega_{i}^{-1}).
+% z_t \sim N(\vx_t' \beta, \omega_{i}^{-1}).
 % \]
 \[
-p(\bbeta | \oomega, \yy) \propto \Big[ \prod_{t=1}^T \exp \Big(-\frac{\omega_t}{2}
-\Big(\frac{\kappa_t}{\omega_t} - \psi_t\Big)^2 \Big) \Big] p(\bbeta), \; \psi_t
-= x_t' \beta_t,
+p(\betap | \oomega, \yy) \propto \Big[ \prod_{t=1}^T \exp \Big(-\frac{\omega_t}{2}
+\Big(\frac{\kappa_t}{\omega_t} - \psi_t\Big)^2 \Big) \Big] p(\betap), \; \psi_t
+= \vx_t' \bbeta_t,
 \]
 where $\kappa_t = a_t - b_t / 2$.  A single term from the product above is
 identical to the likelihood of a pseudo-data point $z_t = \kappa_t / \omega_t$
-drawn from $z_t \sim N(\psi_t, 1/\omega_t)$.  Thus, if $p(\bbeta)$ specifies
-that $\bbeta$ is a Gaussian AR(1) process, then sampling the complete
-conditional for $\bbeta$ is equivalent to sampling $(\bbeta | \{z_t\}_{t=1}^T)$
+drawn from $z_t \sim N(\psi_t, 1/\omega_t)$.  Thus, if $p(\betap)$ specifies
+that $\betap$ is a Gaussian AR(1) process, then sampling the complete
+conditional for $\betap$ is equivalent to sampling $(\betap | \{z_t\}_{t=1}^T)$
 from the DLM
 \[
 \begin{cases}
-z_t = \psi_t + \nu_t, & \nu_t \sim N(0, 1/\omega_t) \\
-\psi_t = x_t' \beta_t \\
-\beta_t = \mu + \Phi (\beta_{t-1} - \mu) + \omega_t, & \omega_t \sim N(0, W).
+  z_t = \psi_t + \nu_t, & \nu_t \sim N(0, 1/\omega_t) \\
+  \psi_t = \vx_t' \bbeta_t \\
+  \bbeta_t = \bmu + \bPhi (\bbeta_{t-1} - \bmu) + \veta_t, & \veta_t \sim N(0, \bW).
 \end{cases}
 \]
 
 Collecting these two complete conditionals, one finds that posterior samples may
-be generated via Gibbs sampling: the states $(\bbeta|\oomega, \yy)$ via the FFBS
-algorithm and $(\oomega | \bbeta, \yy)$ by taking independent samples $\omega_t
+be generated via Gibbs sampling: the states $(\betap|\oomega, \yy)$ via the FFBS
+algorithm and $(\oomega | \betap, \yy)$ by taking independent samples $\omega_t
 \sim \PG(b_t, \psi_t)$ for $t=1, \ldots, T$.  \cite{polson-etal-2013} describe
 how to sample from $\PG$ distributions and implement this sampler in the
 \texttt{R} package \texttt{BayesLogit} \citep{bayeslogit-2013}.  Sampling any
@@ -392,12 +410,12 @@ of the AR(1) process, follows using standard conjugate or MCMC techniques.
   Suppose that one observes a binomial outcome $y_t \sim \text{Binom}(n_t, q_t)$
   at time $t$.  Letting $\psi_t$ be the log-odds, the data generating
   distribution is
-\[
-p(y_t | \psi_t) = c(y_t) \frac{\exp(\psi_t)^{y_t}}{(1+\exp({\psi_t}))^{n_t}}.
-\]
-Thus the complete conditional $(\bbeta | y, \omega)$ may be simulated by using
-forward filter backward sampling with pseudo-data $z_t = \kappa_t / \omega_t$
-where $\kappa_t = y_t - n_t / 2$.
+  \[
+  p(y_t | \psi_t) = c(y_t) \frac{\exp(\psi_t)^{y_t}}{(1+\exp({\psi_t}))^{n_t}}.
+  \]
+  Thus the complete conditional $(\betap | y, \omega)$ may be simulated by using
+  forward filter backward sampling with pseudo-data $z_t = \kappa_t / \omega_t$
+  where $\kappa_t = y_t - n_t / 2$.
 \end{example}
 
 
@@ -407,45 +425,45 @@ where $\kappa_t = y_t - n_t / 2$.
   as a positive real-valued dispersion coefficient, and $q_t$ is the probability
   of observing a success.  Letting $\psi_t$ be the log-odds, the data generating
   distribution is
-\[
-p(y_t | \psi_t) = c(y_t, d) \frac{\exp({\psi_t})^{y_t}}{(1+\exp({\psi_t}))^{y_t+d}}.
-\]
-In negative binomial regression, it is common to model the log-mean, $\lambda_t
-= \psi_t + \log(d) = x_t \beta_t$, instead of the log-odds.  This requires only
-a slight modification.  Following the work above, the complete conditional
-$(\omega_t | \beta_t, d)$ is $\PG(b_t, \psi_t)$ where $b_t = y_t + d$.  However,
-the DLM used to estimate $\bbeta$ is now
-% \[
-% \begin{cases}
-% z_t = \psi_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
-% \psi_t = x_t \beta_t - \log(d) \\
-% \beta_t = \mu + \Phi (\beta_{t-1} - \mu) + \omega_t, & \omega_t \sim N(0, W)
-% \end{cases}
-% \]
-% where $z_t = \kappa_t / \omega_t$ and $\kappa_t = (y_t - d_t) / 2$.
-\[
-\begin{cases}
-z_t = \lambda_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
-\lambda_t = x_t' \beta_t \\
-\beta_t = \mu + \Phi (\beta_{t-1} - \mu) + \omega_t, & \omega_t \sim N(0, W)
-\end{cases}
-\]
-where $z_t = \kappa_t / \omega_t + \log(d)$ and $\kappa_t = (y_t - d) / 2$.
+  \[
+  p(y_t | \psi_t) = c(y_t, d) \frac{\exp({\psi_t})^{y_t}}{(1+\exp({\psi_t}))^{y_t+d}}.
+  \]
+  In negative binomial regression, it is common to model the log-mean, $\lambda_t
+  = \psi_t + \log(d) = \vx_t' \bbeta_t$, instead of the log-odds.  This requires only
+  a slight modification.  Following the work above, the complete conditional
+  $(\omega_t | \bbeta_t, d)$ is $\PG(b_t, \psi_t)$ where $b_t = y_t + d$.  However,
+  the DLM used to estimate $\betap$ is now
+  % \[
+  % \begin{cases}
+  %   z_t = \psi_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
+  %   \psi_t = \vx_t \bbeta_t - \log(d) \\
+  %   \bbeta_t = \mu + \bPhi (\bbeta_{t-1} - \mu) + \omega_t, & \omega_t \sim N(0, W)
+  % \end{cases}
+  % \]
+  % where $z_t = \kappa_t / \omega_t$ and $\kappa_t = (y_t - d_t) / 2$.
+  \[
+  \begin{cases}
+    z_t = \lambda_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
+    \lambda_t = \vx_t' \bbeta_t \\
+    \bbeta_t = \bmu + \bPhi (\bbeta_{t-1} - \bmu) + \veta_t, & \veta_t \sim N(0, \bW)
+  \end{cases}
+  \]
+  where $z_t = \kappa_t / \omega_t + \log(d)$ and $\kappa_t = (y_t - d) / 2$.
 \end{example}
 
 % To estimate $d$ in dynamic negative binomial regression one may use a
 % Metropolis-Hastings step (Appendix \ref{sec:sample-d}).
 
-%\subsection{AR(1) Example}
+% \subsection{AR(1) Example}
 
 \begin{figure}
-\begin{center}
-\includegraphics[width=5.5in]{nb-ar1-tophalf.pdf}
-\caption{\label{fig:nb-ar1} Incidence of influenza-like illness in Texas,
-  2008--11, together with the estimated mean from the negative-binomial AR(1)
-  model.  The blanks in weeks 21-41 correspond to missing data.  The grey lines
-  depict the upper and lower bounds of a 95$\%$ predictive interval.}
-\end{center}
+  \begin{center}
+    \includegraphics[width=5.5in]{nb-ar1-tophalf.pdf}
+    \caption{\label{fig:nb-ar1} Incidence of influenza-like illness in Texas,
+      2008--11, together with the estimated mean from the negative-binomial AR(1)
+      model.  The blanks in weeks 21-41 correspond to missing data.  The grey lines
+      depict the upper and lower bounds of a 95$\%$ predictive interval.}
+  \end{center}
 \end{figure}
 
 As an initial illustration, we fit a negative-binomial AR(1) model to four years
@@ -455,9 +473,9 @@ cases of influenza-like illness in week $t$.  We assume that these counts follow
 a negative-binomial model, which will allow over-dispersion relative to the
 Poisson.
 % \begin{eqnarray*}
-% % y_t &\sim& \mbox{NB}(h, q_t) \; , \quad q_t= \frac{e^{\psi_t}}{1+e^{\psi_t}} \\
-% \psi_t &=& \alpha + \gamma_t  \; , \quad \gamma_t = \phi \gamma_{t-1} + \epsilon_t \\
-% \epsilon_t &\sim& N(0, \sigma^2) \, .
+% %   y_t &\sim& \mbox{NB}(h, q_t) \; , \quad q_t= \frac{e^{\psi_t}}{1+e^{\psi_t}} \\
+%   \psi_t &=& \alpha + \gamma_t  \; , \quad \gamma_t = \phi \gamma_{t-1} + \epsilon_t \\
+%   \epsilon_t &\sim& N(0, \sigma^2) \, .
 % \end{eqnarray*}
 Figure \ref{fig:nb-ar1} shows the results of the fit. For simplicity, we assumed
 an improper uniform prior on the dispersion parameter $d$, and fixed $\phi$ and
@@ -491,7 +509,7 @@ correlated samples so that remaining draws appear independent.  From
 ESS_{it} = M / \Big( 1 + 2 \sum_{k=1}^\ell \rho_k(\beta_{it}) \Big)
 \]
 where $\rho_k(\beta_{it})$ is the $k$th lagged autocorrelation of the chain
-corresponding to the $i$th component of $\beta_t$.  The effective
+corresponding to the $i$th component of $\bbeta_t$.  The effective
 sampling rate is the ratio of the effective sample size to the time taken to
 generate the post-burn-in samples; thus, it measures the rate at which the
 Markov Chain produces independent draws after initialization and burn-in.
@@ -510,15 +528,15 @@ the median effective sampling rate,
 \]
 
 We consider synthetic data sets with a variety of characteristics.
-% since this is an empirical, as opposed to theoretical assessment.  
+% since this is an empirical, as opposed to theoretical assessment.
 For dynamic binomial logistic regression, we consider log odds of the form
-$\alpha + x_t' \beta_t$ where $\alpha$ is a scalar and $\{\beta_t\}_{t=1}^T$ is
-a 2-dimensional AR(1) process with autocorrelation coefficient $\Phi = 0.95
+$\alpha + \vx_t' \bbeta_t$ where $\alpha$ is a scalar and $\{\bbeta_t\}_{t=1}^T$ is
+a 2-dimensional AR(1) process with autocorrelation coefficient $\bPhi = 0.95
 I_2$.  Four different synthetic data sets are constructed, allowing for low and
-high correlation amongst $\{x_t\}_{t=1}^T$ and responses, $y_t \sim
+high correlation amongst $\{\vx_t\}_{t=1}^T$ and responses, $y_t \sim
 \text{Binom}(n, q_t), t=1, \ldots, T$, with either $n=1$ or $n=20$ trials.  The
 setup is almost identical for dynamic negative binomial regression except that
-we model the log-mean as $\alpha + x_t' \beta_t$ and consider responses with
+we model the log-mean as $\alpha + \vx_t' \bbeta_t$ and consider responses with
 $\alpha = \log(10)$ or $\alpha = \log(100)$ corresponding to average count sizes
 of roughly 10 or 100.  Further details may be found in Appendix
 \ref{sec:benchmark-details}.
@@ -582,134 +600,134 @@ augmentation technique to the top for all of the models considered.  Table
 account of each benchmark.
 
 % Summary Table
-%-------------------------------------------------------------------------------
+% -------------------------------------------------------------------------------
 \begin{table}
 
-\begin{center}
-\caption{\label{tab:benchmark-summary} A summary of the benchmarking results.}
-\hrule
-\vspace{2pt}
-\hrule
-\end{center}
-\begin{center}
-\small
-\begin{tabular}{l l c c}
-\multicolumn{4}{c}{Dynamic Binom.\ Logistic Reg.} \\
-\hline
-& & Est.\ & ESR \\
-n & f & AR & PG/dRUM \\
-\hline
-% Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-1-wout.ar
-% PG / dRUM 
-$1$ & low & no & 1.26 \\
-% PG / CUBS 47.5399
-% Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-1-with.ar
-% PG / PG 1
-% PG / dRUM 
-$1$ & low & yes & 1.29 \\
-% PG / CUBS 287.291
+  \begin{center}
+    \caption{\label{tab:benchmark-summary} A summary of the benchmarking results.}
+    \hrule
+    \vspace{2pt}
+    \hrule
+  \end{center}
+  \begin{center}
+    \small
+    \begin{tabular}{l l c c}
+      \multicolumn{4}{c}{Dynamic Binom.\ Logistic Reg.} \\
+      \hline
+      & & Est.\ & ESR \\
+      n & f & AR & PG/dRUM \\
+      \hline
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-1-wout.ar
+      % PG / dRUM
+      $1$ & low & no & 1.26 \\
+      % PG / CUBS 47.5399
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-1-with.ar
+      % PG / PG 1
+      % PG / dRUM
+      $1$ & low & yes & 1.29 \\
+      % PG / CUBS 287.291
 
-% Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-1-wout.ar
-% PG / PG 1
-% PG / dRUM 
-$1$ & high & no & 1.25 \\
-% PG / CUBS 36.9012
-% Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-1-with.ar
-% PG / PG 1
-% PG / dRUM 
-$1$ & high & yes & 1.26 \\
-% PG / CUBS 175.964
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-1-wout.ar
+      % PG / PG 1
+      % PG / dRUM
+      $1$ & high & no & 1.25 \\
+      % PG / CUBS 36.9012
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-1-with.ar
+      % PG / PG 1
+      % PG / dRUM
+      $1$ & high & yes & 1.26 \\
+      % PG / CUBS 175.964
 
-% Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-20-wout.ar
-% PG / PG 1
-% PG / dRUM 
-$20$ & low & no & 0.52 \\
-% PG / CUBS 29.4906
-% Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-20-with.ar
-% PG / PG 1
-% PG / dRUM 
-$20$ & low & yes & 0.57 \\
-% PG / CUBS 49.9306
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-20-wout.ar
+      % PG / PG 1
+      % PG / dRUM
+      $20$ & low & no & 0.52 \\
+      % PG / CUBS 29.4906
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-20-with.ar
+      % PG / PG 1
+      % PG / dRUM
+      $20$ & low & yes & 0.57 \\
+      % PG / CUBS 49.9306
 
-% Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-20-wout.ar
-% PG / PG 1
-% PG / dRUM 
-$20$ & high & no & 0.48 \\
-% PG / CUBS 13.323
-% Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-20-with.ar
-% PG / PG 1
-% PG / dRUM 
-$20$ & high & yes & 0.58 
-% PG / CUBS 38.9124
-\end{tabular}
-%
-\hspace{12pt}
-%
-\begin{tabular}{l l c c}
-\multicolumn{4}{c}{Dynamic Neg.\ Binomial Reg.} \\
-\hline
-& & Est.\ & ESR \\
-$\mu$ & f & AR & PG/FS \\
-\hline
-% Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-10-wout.ar
-% PG / PG 1
-% PG / FS 
-$10$ & low & no & 1.03 \\
-% PG / CUBS 42.3582
-% Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-10-with.ar
-% PG / PG 1
-% PG / FS 
-$10$ & low & yes & 1.86 \\
-% PG / CUBS 59.1934
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-20-wout.ar
+      % PG / PG 1
+      % PG / dRUM
+      $20$ & high & no & 0.48 \\
+      % PG / CUBS 13.323
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-20-with.ar
+      % PG / PG 1
+      % PG / dRUM
+      $20$ & high & yes & 0.58
+      % PG / CUBS 38.9124
+    \end{tabular}
+    % 
+    \hspace{12pt}
+    % 
+    \begin{tabular}{l l c c}
+      \multicolumn{4}{c}{Dynamic Neg.\ Binomial Reg.} \\
+      \hline
+      & & Est.\ & ESR \\
+      $\mu$ & f & AR & PG/FS \\
+      \hline
+      % Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-10-wout.ar
+      % PG / PG 1
+      % PG / FS
+      $10$ & low & no & 1.03 \\
+      % PG / CUBS 42.3582
+      % Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-10-with.ar
+      % PG / PG 1
+      % PG / FS
+      $10$ & low & yes & 1.86 \\
+      % PG / CUBS 59.1934
 
-% Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-10-wout.ar
-% PG / PG 1
-% PG / FS 
-$10$ & high & no & 1.15 \\
-% PG / CUBS 20.6336
-% Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-10-with.ar
-% PG / PG 1
-% PG / FS 
-$10$ & high & yes & 1.06 \\
-% PG / CUBS 18.0189
+      % Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-10-wout.ar
+      % PG / PG 1
+      % PG / FS
+      $10$ & high & no & 1.15 \\
+      % PG / CUBS 20.6336
+      % Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-10-with.ar
+      % PG / PG 1
+      % PG / FS
+      $10$ & high & yes & 1.06 \\
+      % PG / CUBS 18.0189
 
-% Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-100-wout.ar
-% PG / PG 1
-% PG / FS 
-$100$ & low & no & 0.76 \\
-% PG / CUBS 103.273
-% Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-100-with.ar
-% PG / PG 1
-% PG / FS 
-$100$ & low & yes & 0.82 \\
-% PG / CUBS 102.229
+      % Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-100-wout.ar
+      % PG / PG 1
+      % PG / FS
+      $100$ & low & no & 0.76 \\
+      % PG / CUBS 103.273
+      % Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-100-with.ar
+      % PG / PG 1
+      % PG / FS
+      $100$ & low & yes & 0.82 \\
+      % PG / CUBS 102.229
 
-% Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-100-wout.ar
-% PG / PG 1
-% PG / FS 
-$100$ & high & no & 0.76 \\
-% PG / CUBS 34.7778
-% Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-100-with.ar
-% PG / PG 1
-% PG / FS
-$100$ & high & yes & 0.78 \\
-% PG / CUBS 69.6132
+      % Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-100-wout.ar
+      % PG / PG 1
+      % PG / FS
+      $100$ & high & no & 0.76 \\
+      % PG / CUBS 34.7778
+      % Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-100-with.ar
+      % PG / PG 1
+      % PG / FS
+      $100$ & high & yes & 0.78 \\
+      % PG / CUBS 69.6132
 
-\end{tabular}
-\end{center}
+    \end{tabular}
+  \end{center}
 
-NOTE: ESR PG/dRUM and ESR PG/FS report the ratio of the median effective
-sampling rate for the PG method compared to the best alternative, which in both
-cases are the discrete mixture of normal approaches of \cite{fussl-etal-2013}
-and \cite{fruhwirth-schnatter-etal-2009}.  A higher ratio corresponds to the PG
-method doing better than the best alternative.  The PG method always beats the
-CUBS approach and it does better than the discrete mixture of normals approach
-in dynamic binomial logistic regression when the number of trials is small and
-in dynamic negative binomial regression when the mean is small.  $n$ corresponds
-to the number of trials for the binomial response while $\mu$ corresponds to the
-approximate mean for the negative binomial response.  $f$ determines whether
-there is a low or high amount of correlation between the covariates.  Est.\ AR
-indicates whether the parameters of the AR process were estimated or not.
+  NOTE: ESR PG/dRUM and ESR PG/FS report the ratio of the median effective
+  sampling rate for the PG method compared to the best alternative, which in both
+  cases are the discrete mixture of normal approaches of \cite{fussl-etal-2013}
+  and \cite{fruhwirth-schnatter-etal-2009}.  A higher ratio corresponds to the PG
+  method doing better than the best alternative.  The PG method always beats the
+  CUBS approach and it does better than the discrete mixture of normals approach
+  in dynamic binomial logistic regression when the number of trials is small and
+  in dynamic negative binomial regression when the mean is small.  $n$ corresponds
+  to the number of trials for the binomial response while $\mu$ corresponds to the
+  approximate mean for the negative binomial response.  $f$ determines whether
+  there is a low or high amount of correlation between the covariates.  Est.\ AR
+  indicates whether the parameters of the AR process were estimated or not.
 
 \end{table}
 
@@ -752,56 +770,56 @@ changes to their code, they can simply download the latest version of the R
 package.  The overwhelming simplicity and adaptability of the method makes it a
 good choice regardless of its efficiency.
 
-%\appendix
+% \appendix
 \section*{Appendix: Benchmark Data Sets}
 \label{sec:benchmark-details}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                              %% 06 Benchmarks %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%% 06 Benchmarks %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 For both binomial responses and negative binomial responses, we create four
 synthetic data sets whose log-odds and log-mean, respectively, take the form
 \begin{equation}
-\label{eqn:synth-psi}
-\psi_t = \alpha + x_t' \beta_t, \; t = 1, \ldots, T
+  \label{eqn:synth-psi}
+  \psi_t = \alpha + \vx_t' \bbeta_t, \; t = 1, \ldots, T
 \end{equation}
 with
 \[
-\beta_t = \Phi \beta_{t-1} + \omega_t, \; \omega_t \sim N(0, W)
+\bbeta_t = \bPhi \bbeta_{t-1} + \ep_t, \; \ep_t \sim N(0, \bW)
 \]
-where $\Phi = 0.95 I_2$ and $W = 0.172 I_2$.  The covariates $x_t \in \bbR^2$
-are 
+where $\bPhi = 0.95 \bI_2$ and $\bW = 0.172 \bI_2$.  The covariates $\vx_t \in
+\bbR^2$ are
 \[
-x_{tj} = \cos(\pi f_j s_t) / \sqrt{8}
+x_{tj} = \cos(\pi \vf_j s_t) / \sqrt{8}
 \]
-where $\{s_t\}_{t=1}^T$ is an equally spaced partition of $[-1,1]$ and $f$ is
-either $f^{(low)} = (1,2)$ or $f^{(high)} = (1,1.1)$, corresponding to
+where $\{s_t\}_{t=1}^T$ is an equally spaced partition of $[-1,1]$ and $\vf$ is
+either $\vf^{(low)} = (1,2)$ or $\vf^{(high)} = (1,1.1)$, corresponding to
 covariates with a lower or higher degree of correlation.  The binomial response
 is
 \[
 y_t \sim \text{Binom}(n, q_t)
 \]
-where $q_t = \frac{e^{\psi_t}}{(1+e^{\psi_t})}$, $n$ is either $1$ or $20$, and
-$\alpha$ from (\ref{eqn:synth-psi}) set to 1.4.  The negative binomial response
-is
+where $q_t = \exp({\psi_t}) / (1+\exp({\psi_t}))$, $n$ is either $1$ or $20$,
+and $\alpha$ from (\ref{eqn:synth-psi}) set to 1.4.  The negative binomial
+response is
 \[
 y_t \sim \text{NB}(d, \mu_t)
 \]
-where $d=4$, $\mu_t = e^{\psi_t}$, and $\alpha$ from (\ref{eqn:synth-psi}) is
-either $\log(10)$ or $\log(100)$.  Thus, for dynamic binomial logistic
+where $d=4$, $\mu_t = \exp({\psi_t})$, and $\alpha$ from (\ref{eqn:synth-psi})
+is either $\log(10)$ or $\log(100)$.  Thus, for dynamic binomial logistic
 regression, we create four data sets by varying $n$ and $f$, and for dynamic
 negative binomial regression, we create four data sets by varying $f$ and
 $\alpha$.
 
 For each data set and each method, we run the MCMC simulations twice, once
 assuming that the parameters of the AR model are known and again assuming that
-they are unknown.  When the parameters are unknown, both $\Phi$ and $W$ are
-assumed to be diagonal; the prior for $\Phi$ is $\Phi_{ii} \sim N(0.95, 0.1)
-\bbI_{(0,1)}$ and the prior for $W$ is $W_{ii} \sim \Ga(300/2, 30/2)$.  For all
-simulations, the prior for $\alpha$ is $N(0, 100)$ and the prior for $\beta_0$
-is $N(0, 100 I_2)$.  For the negative binomial benchmarks, $d$ is taken to be
-known.
+they are unknown.  When the parameters are unknown, both $\bPhi$ and $\bW$ are
+assumed to be diagonal; the prior for $\bPhi$ is $\bPhi_{ii} \sim N(0.95, 0.1)
+\bbI_{(0,1)}$ and the prior for $\bW$ is $\bW_{ii} \sim \Ga(300/2, 30/2)$.  For
+all simulations, the prior for $\alpha$ is $N(0, 100)$ and the prior for
+$\bbeta_0$ is $N(0, 100 \bI_2)$.  For the negative binomial benchmarks, $d$ is
+taken to be known.
 %% My note: $d$ unknown will ``hurt'' results in that it will induce extra
 %% correlation, which presumably will hurt PG,mu=10 results.
 
@@ -810,7 +828,7 @@ eight MCMC simulations for each method of posterior inference.  Tables
 \ref{tab:dynlogit-detail} and \ref{tab:dynnb-detail} provide a complete summary
 of the results.
 
-%-------------------------------------------------------------------------------
+% -------------------------------------------------------------------------------
 % \section{Sampling $d$ in dynamic negative binomial regression}
 % \label{sec:sample-d}
 
@@ -821,16 +839,16 @@ of the results.
 % \[
 % \frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t} q_t^{y_t} (1-q_t)^{d} ,
 % \]
-% or 
+% or
 % \[
-% \frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t} 
+% \frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t}
 % \Big( \frac{\mu_t}{\mu_t + d} \Big)^{y_t} \Big( \frac{d}{\mu_t + d} \Big)^d
 % \]
-% in terms of the mean $\mu_t$.  Since we chose to model $\log \mu_t = x_t
+% in terms of the mean $\mu_t$.  Since we chose to model $\log \mu_t = \vx_t
 % \beta_t$ it will be easier to work with the latter version.  In that case, the
 % log-likelihood is
 % \[
-% \ell(d|\mu, y) = \sum_{t=1}^T [ \log \Gamma(y_t + d)  - \log \Gamma(d) ]  + 
+% \ell(d|\mu, y) = \sum_{t=1}^T [ \log \Gamma(y_t + d)  - \log \Gamma(d) ]  +
 % \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
 % d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
 % \]
@@ -839,7 +857,7 @@ of the results.
 % evaluations of the gamma function.  We may expand $\Gamma(y_t + d)$ and
 % $\Gamma(d)$ as products, in which case the log-likelihood is
 % \[
-% \ell(d|\mu, y) = \sum_{t=1}^T \sum_{j=0}^{y_t-1} \log(d + j) + 
+% \ell(d|\mu, y) = \sum_{t=1}^T \sum_{j=0}^{y_t-1} \log(d + j) +
 % \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
 % d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
 % \]
@@ -853,22 +871,22 @@ of the results.
 % \]
 % where $n_k = \{ \# y_t = k \}$.  We have thus
 % \begin{align*}
-% \sum_{k=1}^{\max(y_t)} \sum_{j=0}^{\max(y_t)-1} n_k \log(d+j) \one\{j < k\}
-% & = 
-% \sum_{j=0}^{\max(y_t)-1} \log(d+j) \sum_{k=j+1}^{\max(y_t)} n_k \\
-% & = \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j
+%   \sum_{k=1}^{\max(y_t)} \sum_{j=0}^{\max(y_t)-1} n_k \log(d+j) \one\{j < k\}
+%   & =
+%   \sum_{j=0}^{\max(y_t)-1} \log(d+j) \sum_{k=j+1}^{\max(y_t)} n_k \\
+%   & = \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j
 % \end{align*}
 % where $G_j = \{ \# y_t > j \}$.  Notice that $1-G_j = F(j) = \{\# y_t \leq j\}$
 % and that $G$ may be pre-processed.  Hence the log-likelihood is
 % \[
-% \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j + 
+% \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j +
 % \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
 % d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
 % \]
 % Preprocessing $G$ saves us from having to compute a doubly indexed summation.
 
 % BIBLIOGRAPHY
-%-------------------------------------------------------------------------------
+% -------------------------------------------------------------------------------
 
 % If you have a bibliography.
 % The file withe bibliography is name.bib.
@@ -876,270 +894,270 @@ of the results.
 \bibliographystyle{asa}
 
 % TABLES
-%-------------------------------------------------------------------------------
+% -------------------------------------------------------------------------------
 % dyn logit
 
 % More detailed tables
-%-------------------------------------------------------------------------------
+% -------------------------------------------------------------------------------
 \begin{table}
 
-\begin{center}
-  \caption{\label{tab:dynlogit-detail} Dynamic binomial logistic benchmarks.}
-\hrule
-\vspace{2pt}
-\hrule
-\end{center}
+  \begin{center}
+    \caption{\label{tab:dynlogit-detail} Dynamic binomial logistic benchmarks.}
+    \hrule
+    \vspace{2pt}
+    \hrule
+  \end{center}
 
-\small
+  \small
 
-\begin{center}
-%Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-1-wout.ar
-\begin{tabular}{l r r r r r r r r } 
-         Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &
-         ESR.min  &  ESR.med  &  ESR.max  \\ 
-\hline
+  \begin{center}
+    % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-1-wout.ar
+    \begin{tabular}{l r r r r r r r r }
+      Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &
+      ESR.min  &  ESR.med  &  ESR.max  \\
+      \hline
 
- \multicolumn{9}{c}{$n=1$, $f = (1,2)$, known AR parameters} \\
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    28.66 &     1.00 &   8333.94 &   9388.18 &   9904.42 &    290.79 &    327.55 &    345.57 \\ 
-           dRUM   &    29.13 &     1.00 &   5344.83 &   7550.10 &   9757.91 &    183.48 &    259.19 &    334.98 \\ 
-           CUBS   &   612.14 &     0.71 &   2799.89 &   4219.25 &   5845.51 &      4.57 &      6.89 &      9.55
-\\ %\end{tabular}
+      \multicolumn{9}{c}{$n=1$, $f = (1,2)$, known AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    28.66 &     1.00 &   8333.94 &   9388.18 &   9904.42 &    290.79 &    327.55 &    345.57 \\
+      dRUM   &    29.13 &     1.00 &   5344.83 &   7550.10 &   9757.91 &    183.48 &    259.19 &    334.98 \\
+      CUBS   &   612.14 &     0.71 &   2799.89 &   4219.25 &   5845.51 &      4.57 &      6.89 &      9.55
+      \\ %\end{tabular}
 
-%Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-1-with.ar
-%\begin{tabular}{l r r r r r r r r } 
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-1-with.ar
+      % \begin{tabular}{l r r r r r r r r }
 
- \multicolumn{9}{c}{$n=1$, $f = (1,2)$, unknown AR parameters} \\
+      \multicolumn{9}{c}{$n=1$, $f = (1,2)$, unknown AR parameters} \\
 
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    31.33 &     1.00 &   1855.82 &   7109.57 &   9739.31 &     59.24 &    226.96 &    310.89 \\ 
-           dRUM   &    31.95 &     1.00 &   1535.90 &   5632.82 &   8921.27 &     48.07 &    176.30 &    279.22 \\ 
-           CUBS   &   612.37 &     0.56 &    242.71 &    487.21 &    775.24 &      0.39 &      0.79 &      1.26
- \\ %\end{tabular}
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    31.33 &     1.00 &   1855.82 &   7109.57 &   9739.31 &     59.24 &    226.96 &    310.89 \\
+      dRUM   &    31.95 &     1.00 &   1535.90 &   5632.82 &   8921.27 &     48.07 &    176.30 &    279.22 \\
+      CUBS   &   612.37 &     0.56 &    242.71 &    487.21 &    775.24 &      0.39 &      0.79 &      1.26
+      \\ %\end{tabular}
 
-%Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-1-wout.ar
-%\begin{tabular}{l r r r r r r r r } 
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-1-wout.ar
+      % \begin{tabular}{l r r r r r r r r }
 
-\multicolumn{9}{c}{$n=1$, $f = (1,1.1)$, known AR parameters} \\
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    28.60 &     1.00 &   8596.25 &   9402.62 &   9933.72 &    300.60 &    328.79 &    347.36 \\ 
-           dRUM   &    29.13 &     1.00 &   6095.80 &   7675.76 &   9634.57 &    209.27 &    263.51 &    330.77 \\ 
-           CUBS   &   620.95 &     0.72 &   4120.25 &   5531.41 &   6817.09 &      6.64 &      8.91 &     10.98
- \\ %\end{tabular}
-
-
-%Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-1-with.ar
-%\begin{tabular}{l r r r r r r r r } 
-\multicolumn{9}{c}{$n=1$, $f = (1,1.1)$, unknown AR parameters} \\
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    31.37 &     1.00 &    765.97 &   4636.70 &   9415.57 &     24.42 &    147.81 &    300.15 \\ 
-           dRUM   &    31.96 &     1.00 &    656.58 &   3734.29 &   8079.58 &     20.55 &    116.85 &    252.82 \\ 
-           CUBS   &   615.39 &     0.56 &    211.12 &    516.69 &    998.70 &      0.34 &      0.84 &      1.61
- \\ %\end{tabular}
-
-%Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-20-wout.ar
-%\begin{tabular}{l r r r r r r r r } 
-\multicolumn{9}{c}{$n=20$, $f = (1,2)$, known AR parameters} \\
-        %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    73.54 &     1.00 &   7161.18 &   9238.58 &   9923.40 &     97.38 &    125.63 &    134.95 \\ 
-           dRUM   &    28.87 &     1.00 &   3528.34 &   6959.36 &   9893.99 &    122.21 &    241.04 &    342.69 \\ 
-           CUBS   &   650.67 &     0.51 &    727.34 &   2770.01 &   3699.75 &      1.12 &      4.26 &      5.69
- \\ %\end{tabular}
+      \multicolumn{9}{c}{$n=1$, $f = (1,1.1)$, known AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    28.60 &     1.00 &   8596.25 &   9402.62 &   9933.72 &    300.60 &    328.79 &    347.36 \\
+      dRUM   &    29.13 &     1.00 &   6095.80 &   7675.76 &   9634.57 &    209.27 &    263.51 &    330.77 \\
+      CUBS   &   620.95 &     0.72 &   4120.25 &   5531.41 &   6817.09 &      6.64 &      8.91 &     10.98
+      \\ %\end{tabular}
 
 
-%Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-20-with.ar
-%\begin{tabular}{l r r r r r r r r } 
-\multicolumn{9}{c}{$n=20$, $f = (1,2)$, unknown AR parameters} \\
-        %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    76.26 &     1.00 &   1897.09 &   5482.92 &   9758.10 &     24.88 &     71.90 &    127.95 \\ 
-           dRUM   &    31.69 &     1.00 &   1754.39 &   4003.81 &   9536.59 &     55.36 &    126.33 &    300.91 \\ 
-           CUBS   &   662.42 &     0.47 &    498.89 &    953.03 &   1980.98 &      0.75 &      1.44 &      2.99
- \\ %\end{tabular}
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-1-with.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$n=1$, $f = (1,1.1)$, unknown AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    31.37 &     1.00 &    765.97 &   4636.70 &   9415.57 &     24.42 &    147.81 &    300.15 \\
+      dRUM   &    31.96 &     1.00 &    656.58 &   3734.29 &   8079.58 &     20.55 &    116.85 &    252.82 \\
+      CUBS   &   615.39 &     0.56 &    211.12 &    516.69 &    998.70 &      0.34 &      0.84 &      1.61
+      \\ %\end{tabular}
+
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-20-wout.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$n=20$, $f = (1,2)$, known AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    73.54 &     1.00 &   7161.18 &   9238.58 &   9923.40 &     97.38 &    125.63 &    134.95 \\
+      dRUM   &    28.87 &     1.00 &   3528.34 &   6959.36 &   9893.99 &    122.21 &    241.04 &    342.69 \\
+      CUBS   &   650.67 &     0.51 &    727.34 &   2770.01 &   3699.75 &      1.12 &      4.26 &      5.69
+      \\ %\end{tabular}
 
 
-%Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-20-wout.ar
-%\begin{tabular}{l r r r r r r r r } 
-\multicolumn{9}{c}{$n=20$, $f = (1,1.1)$, known AR parameters} \\
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    73.16 &     1.00 &   7918.31 &   9416.01 &   9810.23 &    108.23 &    128.70 &    134.09 \\ 
-           dRUM   &    28.88 &     1.00 &   4654.77 &   7771.95 &   9041.13 &    161.17 &    269.10 &    313.05 \\ 
-           CUBS   &   659.75 &     0.63 &   3813.36 &   6375.18 &   6741.68 &      5.78 &      9.66 &     10.22
- \\ %\end{tabular}
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-20-with.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$n=20$, $f = (1,2)$, unknown AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    76.26 &     1.00 &   1897.09 &   5482.92 &   9758.10 &     24.88 &     71.90 &    127.95 \\
+      dRUM   &    31.69 &     1.00 &   1754.39 &   4003.81 &   9536.59 &     55.36 &    126.33 &    300.91 \\
+      CUBS   &   662.42 &     0.47 &    498.89 &    953.03 &   1980.98 &      0.75 &      1.44 &      2.99
+      \\ %\end{tabular}
 
-%Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-20-with.ar
-%\begin{tabular}{l r r r r r r r r } 
-\multicolumn{9}{c}{$n=20$, $f = (1,1.1)$, unknown AR parameters} \\
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    75.98 &     1.00 &    408.79 &   5735.76 &   9484.30 &      5.38 &     75.49 &    124.83 \\ 
-           dRUM   &    31.71 &     1.00 &    418.48 &   4106.12 &   8269.33 &     13.20 &    129.48 &    260.76 \\ 
-           CUBS   &   665.71 &     0.47 &    273.76 &   1290.78 &   1893.79 &      0.41 &      1.94 &      2.84
- \end{tabular}
-\end{center}
 
-NOTE: $n$ corresponds to the number of trials for each response; $f$ corresponds
-to the frequency used when constructing the covariates.  When $f = (1,2)$ the
-covariates are less correlated when $f=(1,1.1)$ the covariates are more
-correlated.  The PG method does well when $n=1$.  The FS method does well when
-$n=20$.  Time refers to the time taken to produce 10,000 post burn-in samples.
-ARate refers to the Metroplis-Hastings acceptance rate.
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-20-wout.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$n=20$, $f = (1,1.1)$, known AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    73.16 &     1.00 &   7918.31 &   9416.01 &   9810.23 &    108.23 &    128.70 &    134.09 \\
+      dRUM   &    28.88 &     1.00 &   4654.77 &   7771.95 &   9041.13 &    161.17 &    269.10 &    313.05 \\
+      CUBS   &   659.75 &     0.63 &   3813.36 &   6375.18 &   6741.68 &      5.78 &      9.66 &     10.22
+      \\ %\end{tabular}
+
+      % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-20-with.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$n=20$, $f = (1,1.1)$, unknown AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    75.98 &     1.00 &    408.79 &   5735.76 &   9484.30 &      5.38 &     75.49 &    124.83 \\
+      dRUM   &    31.71 &     1.00 &    418.48 &   4106.12 &   8269.33 &     13.20 &    129.48 &    260.76 \\
+      CUBS   &   665.71 &     0.47 &    273.76 &   1290.78 &   1893.79 &      0.41 &      1.94 &      2.84
+    \end{tabular}
+  \end{center}
+
+  NOTE: $n$ corresponds to the number of trials for each response; $f$ corresponds
+  to the frequency used when constructing the covariates.  When $f = (1,2)$ the
+  covariates are less correlated when $f=(1,1.1)$ the covariates are more
+  correlated.  The PG method does well when $n=1$.  The FS method does well when
+  $n=20$.  Time refers to the time taken to produce 10,000 post burn-in samples.
+  ARate refers to the Metroplis-Hastings acceptance rate.
 \end{table}
 
-%-------------------------------------------------------------------------------
+% -------------------------------------------------------------------------------
 % dyn-nb
 
 \begin{table}
 
-\begin{center}
-\caption{\label{tab:dynnb-detail} dynamic negative binomial benchmarks.}
-\hrule
-\vspace{2pt}
-\hrule
-\end{center}
+  \begin{center}
+    \caption{\label{tab:dynnb-detail} dynamic negative binomial benchmarks.}
+    \hrule
+    \vspace{2pt}
+    \hrule
+  \end{center}
 
-%Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-10-wout.ar
-\begin{center}
-\small
-\begin{tabular}{l r r r r r r r r } 
-Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  & ESR.med  &  ESR.max \\
-\hline
+  % Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-10-wout.ar
+  \begin{center}
+    \small
+    \begin{tabular}{l r r r r r r r r }
+      Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  & ESR.med  &  ESR.max \\
+      \hline
 
- \multicolumn{9}{c}{$\mu=10$, $f = (1,2)$, known AR parameters} \\
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    42.50 &     1.00 &   7972.97 &   9649.48 &   9947.01 &    187.60 &    227.04 &    234.04 \\ 
-             FS   &    29.54 &     1.00 &   1861.10 &   6530.79 &   9831.67 &     62.99 &    221.05 &    332.77 \\ 
-           CUBS   &   655.71 &     0.61 &    800.95 &   3517.15 &   5603.81 &      1.22 &      5.36 &      8.55
- \\ %\end{tabular}
+      \multicolumn{9}{c}{$\mu=10$, $f = (1,2)$, known AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    42.50 &     1.00 &   7972.97 &   9649.48 &   9947.01 &    187.60 &    227.04 &    234.04 \\
+      FS   &    29.54 &     1.00 &   1861.10 &   6530.79 &   9831.67 &     62.99 &    221.05 &    332.77 \\
+      CUBS   &   655.71 &     0.61 &    800.95 &   3517.15 &   5603.81 &      1.22 &      5.36 &      8.55
+      \\ %\end{tabular}
 
-%Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-10-with.ar
-%\begin{tabular}{l r r r r r r r r } 
- \multicolumn{9}{c}{$\mu=10$, $f = (1,2)$, unknown AR parameters} \\
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    45.29 &     1.00 &    156.63 &   4852.66 &   9812.26 &      3.46 &    107.14 &    216.67 \\ 
-             FS   &    32.31 &     1.00 &    135.06 &   1856.03 &   7837.19 &      4.18 &     57.45 &    242.58 \\ 
-           CUBS   &   674.23 &     0.55 &    116.36 &   1223.44 &   2700.52 &      0.17 &      1.81 &      4.01
- \\ %\end{tabular}
+      % Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-10-with.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$\mu=10$, $f = (1,2)$, unknown AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    45.29 &     1.00 &    156.63 &   4852.66 &   9812.26 &      3.46 &    107.14 &    216.67 \\
+      FS   &    32.31 &     1.00 &    135.06 &   1856.03 &   7837.19 &      4.18 &     57.45 &    242.58 \\
+      CUBS   &   674.23 &     0.55 &    116.36 &   1223.44 &   2700.52 &      0.17 &      1.81 &      4.01
+      \\ %\end{tabular}
 
-%Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-10-wout.ar
-%\begin{tabular}{l r r r r r r r r } 
- \multicolumn{9}{c}{$\mu=10$, $f = (1,1.1)$, known AR parameters} \\
-         %Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
-            PG  &    42.39 &     1.00 &   9142.96 &   9692.30 &   9943.59 &    215.67 &    228.62 &    234.55 \\ 
-            FS  &    29.55 &     1.00 &   2820.14 &   5898.99 &   9765.03 &     95.43 &    199.61 &    330.43 \\ 
-          CUBS  &   656.58 &     0.73 &   4509.25 &   7276.52 &   7891.49 &      6.87 &     11.08 &     12.02
+      % Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-10-wout.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$\mu=10$, $f = (1,1.1)$, known AR parameters} \\
+      % Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\
+      PG  &    42.39 &     1.00 &   9142.96 &   9692.30 &   9943.59 &    215.67 &    228.62 &    234.55 \\
+      FS  &    29.55 &     1.00 &   2820.14 &   5898.99 &   9765.03 &     95.43 &    199.61 &    330.43 \\
+      CUBS  &   656.58 &     0.73 &   4509.25 &   7276.52 &   7891.49 &      6.87 &     11.08 &     12.02
 
- \\ %\end{tabular}
+      \\ %\end{tabular}
 
-%Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-10-with.ar
-%\begin{tabular}{l r r r r r r r r } 
- \multicolumn{9}{c}{$\mu=10$, $f = (1,1.1)$, unknown AR parameters} \\
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    45.16 &     1.00 &    276.72 &   1725.30 &   9555.14 &      6.13 &     38.20 &    211.58 \\ 
-             FS   &    32.28 &     1.00 &    263.56 &   1164.83 &   5458.53 &      8.16 &     36.08 &    169.10 \\ 
-           CUBS   &   677.20 &     0.62 &    405.83 &   1438.07 &   3812.09 &      0.60 &      2.12 &      5.63
- \\ %\end{tabular}
+      % Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-10-with.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$\mu=10$, $f = (1,1.1)$, unknown AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    45.16 &     1.00 &    276.72 &   1725.30 &   9555.14 &      6.13 &     38.20 &    211.58 \\
+      FS   &    32.28 &     1.00 &    263.56 &   1164.83 &   5458.53 &      8.16 &     36.08 &    169.10 \\
+      CUBS   &   677.20 &     0.62 &    405.83 &   1438.07 &   3812.09 &      0.60 &      2.12 &      5.63
+      \\ %\end{tabular}
 
-%Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-100-wout.ar
-%\begin{tabular}{l r r r r r r r r } 
- \multicolumn{9}{c}{$\mu=100$, $f = (1,2)$, known AR parameters} \\
-         %Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
-            PG  &    38.56 &     1.00 &   1860.03 &   7287.72 &   9927.30 &     48.23 &    188.99 &    257.43 \\ 
-            FS  &    29.17 &     1.00 &   2352.61 &   7301.91 &   9827.50 &     80.65 &    250.31 &    336.89 \\ 
-          CUBS  &   669.34 &     0.38 &    228.97 &   1226.28 &   2833.25 &      0.34 &      1.83 &      4.23
+      % Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-100-wout.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$\mu=100$, $f = (1,2)$, known AR parameters} \\
+      % Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\
+      PG  &    38.56 &     1.00 &   1860.03 &   7287.72 &   9927.30 &     48.23 &    188.99 &    257.43 \\
+      FS  &    29.17 &     1.00 &   2352.61 &   7301.91 &   9827.50 &     80.65 &    250.31 &    336.89 \\
+      CUBS  &   669.34 &     0.38 &    228.97 &   1226.28 &   2833.25 &      0.34 &      1.83 &      4.23
 
- \\ %\end{tabular}
+      \\ %\end{tabular}
 
-%Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-100-with.ar
-%\begin{tabular}{l r r r r r r r r } 
- \multicolumn{9}{c}{$\mu=100$, $f = (1,2)$, unknown AR parameters} \\
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    41.33 &     1.00 &   1798.58 &   4986.44 &   9178.54 &     43.51 &    120.63 &    222.06 \\ 
-             FS   &    32.28 &     1.00 &   2098.04 &   4727.49 &   9132.24 &     65.00 &    146.45 &    282.90 \\ 
-           CUBS   &   677.94 &     0.32 &    459.22 &    799.84 &   1194.99 &      0.68 &      1.18 &      1.76
- \\ %\end{tabular}
+      % Bench-Dyn-06/Tables/table.bench-dynnb-low-2-mu-100-with.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$\mu=100$, $f = (1,2)$, unknown AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    41.33 &     1.00 &   1798.58 &   4986.44 &   9178.54 &     43.51 &    120.63 &    222.06 \\
+      FS   &    32.28 &     1.00 &   2098.04 &   4727.49 &   9132.24 &     65.00 &    146.45 &    282.90 \\
+      CUBS   &   677.94 &     0.32 &    459.22 &    799.84 &   1194.99 &      0.68 &      1.18 &      1.76
+      \\ %\end{tabular}
 
-%Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-100-wout.ar
-%\begin{tabular}{l r r r r r r r r } 
- \multicolumn{9}{c}{$\mu=100$, $f = (1,1.1)$, known AR parameters} \\
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    40.73 &     1.00 &   4061.25 &   7265.75 &   9856.66 &     99.72 &    178.41 &    242.03 \\ 
-             FS   &    29.44 &     1.00 &   3396.35 &   6938.80 &   9867.25 &    115.36 &    235.66 &    335.13 \\ 
-           CUBS   &   668.03 &     0.42 &   1676.35 &   3429.40 &   4146.91 &      2.51 &      5.13 &      6.21
- \\ %\end{tabular}
+      % Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-100-wout.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$\mu=100$, $f = (1,1.1)$, known AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    40.73 &     1.00 &   4061.25 &   7265.75 &   9856.66 &     99.72 &    178.41 &    242.03 \\
+      FS   &    29.44 &     1.00 &   3396.35 &   6938.80 &   9867.25 &    115.36 &    235.66 &    335.13 \\
+      CUBS   &   668.03 &     0.42 &   1676.35 &   3429.40 &   4146.91 &      2.51 &      5.13 &      6.21
+      \\ %\end{tabular}
 
-%Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-100-with.ar
-%\begin{tabular}{l r r r r r r r r } 
- \multicolumn{9}{c}{$\mu=100$, $f = (1,1.1)$, unknown AR parameters} \\
-         %Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\ 
-             PG   &    43.57 &     1.00 &   1186.07 &   3214.67 &   6880.24 &     27.22 &     73.79 &    157.93 \\ 
-             FS   &    32.25 &     1.00 &   1115.12 &   3071.79 &   6879.66 &     34.58 &     95.25 &    213.31 \\ 
-           CUBS   &   682.59 &     0.30 &    412.62 &    723.17 &   1028.33 &      0.60 &      1.06 &      1.51
- \end{tabular}
-\end{center} 
+      % Bench-Dyn-06/Tables/table.bench-dynnb-high-2-mu-100-with.ar
+      % \begin{tabular}{l r r r r r r r r }
+      \multicolumn{9}{c}{$\mu=100$, $f = (1,1.1)$, unknown AR parameters} \\
+      % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
+      PG   &    43.57 &     1.00 &   1186.07 &   3214.67 &   6880.24 &     27.22 &     73.79 &    157.93 \\
+      FS   &    32.25 &     1.00 &   1115.12 &   3071.79 &   6879.66 &     34.58 &     95.25 &    213.31 \\
+      CUBS   &   682.59 &     0.30 &    412.62 &    723.17 &   1028.33 &      0.60 &      1.06 &      1.51
+    \end{tabular}
+  \end{center}
 
-NOTE: $\mu$ corresponds to the mean of the response; $f$ corresponds to the
-frequency used when constructing the covariates.  When $f = (1,2)$ the
-covariates are less correlated when $f=(1,1.1)$ the covariates are more
-correlated.  The PG method does well when $\mu=10$.  The FS method does well
-when $\mu=100$. Time refers to the time taken to produce 10,000 post burn-in
-samples.  ARate refers to the Metroplis-Hastings acceptance rate.
+  NOTE: $\mu$ corresponds to the mean of the response; $f$ corresponds to the
+  frequency used when constructing the covariates.  When $f = (1,2)$ the
+  covariates are less correlated when $f=(1,1.1)$ the covariates are more
+  correlated.  The PG method does well when $\mu=10$.  The FS method does well
+  when $\mu=100$. Time refers to the time taken to produce 10,000 post burn-in
+  samples.  ARate refers to the Metroplis-Hastings acceptance rate.
 
 \end{table}
 
 \end{document}
 
-% \begin{tabular}{l r r r r r r r r } 
-% \hline
-% \multicolumn{9}{c}{Tokyo Rainfall} \\
-% \hline
-%           Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\ 
-%             CUBS  &   233.98 &     1.00 &   652.86 &   761.98 &   910.62 &     2.79 &     3.26 &     3.89 \\ 
-%               PG  &    21.72 &     1.00 &  4352.80 &  7735.08 & 10081.46 &   200.43 &   356.18 &   464.22 \\ 
-%             dRUM  &    20.60 &     1.00 &  1627.61 &  3649.46 &  5428.93 &    79.03 &   177.19 &   263.60
-%  \end{tabular}
-% \end{table}
-
-% \begin{table}
-% \centering
-% \begin{tabular}{l r r r r r r r r } 
-% \hline
-% \multicolumn{9}{c}{Low corr X: $P$=2, $T$=400.  Estimate $\alpha, \beta$.} \\
-% \hline
-%           Method  &    time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
-%              PG  &    22.59 &     1.00 &   7367.68 &   9229.91 &  10189.37 &    326.10 &    408.52 &    450.97 \\ 
-%            dRUM  &    23.19 &     1.00 &   2759.83 &   7260.46 &   9967.66 &    118.99 &    313.04 &    429.77
-%          \end{tabular}
-
 % \begin{tabular}{l r r r r r r r r }
-% \hline
-% \multicolumn{9}{c}{High corr X: $P$=2, $T$=400. Estimate $\alpha, \beta$.} \\
-% \hline 
-%           Method  &    time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
-%              PG  &    22.52 &     1.00 &   8494.04 &   9662.06 &  10225.35 &    377.13 &    428.98 &    454.00 \\ 
-%            dRUM  &    23.17 &     1.00 &   4963.68 &   8105.02 &   9936.46 &    214.26 &    349.86 &    428.91
+%   \hline
+%   \multicolumn{9}{c}{Tokyo Rainfall} \\
+%   \hline
+%   Method  &     time &    ARate &  ESS.min &  ESS.med &  ESS.max &  ESR.min &  ESR.med &  ESR.max \\
+%   CUBS  &   233.98 &     1.00 &   652.86 &   761.98 &   910.62 &     2.79 &     3.26 &     3.89 \\
+%   PG  &    21.72 &     1.00 &  4352.80 &  7735.08 & 10081.46 &   200.43 &   356.18 &   464.22 \\
+%   dRUM  &    20.60 &     1.00 &  1627.61 &  3649.46 &  5428.93 &    79.03 &   177.19 &   263.60
 % \end{tabular}
+% \end{table}
+
+% \begin{table}
+%   \centering
+%   \begin{tabular}{l r r r r r r r r }
+%     \hline
+%     \multicolumn{9}{c}{Low corr X: $P$=2, $T$=400.  Estimate $\alpha, \beta$.} \\
+%     \hline
+%     Method  &    time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\
+%     PG  &    22.59 &     1.00 &   7367.68 &   9229.91 &  10189.37 &    326.10 &    408.52 &    450.97 \\
+%     dRUM  &    23.19 &     1.00 &   2759.83 &   7260.46 &   9967.66 &    118.99 &    313.04 &    429.77
+%   \end{tabular}
+
+%   \begin{tabular}{l r r r r r r r r }
+%     \hline
+%     \multicolumn{9}{c}{High corr X: $P$=2, $T$=400. Estimate $\alpha, \beta$.} \\
+%     \hline
+%     Method  &    time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\
+%     PG  &    22.52 &     1.00 &   8494.04 &   9662.06 &  10225.35 &    377.13 &    428.98 &    454.00 \\
+%     dRUM  &    23.17 &     1.00 &   4963.68 &   8105.02 &   9936.46 &    214.26 &    349.86 &    428.91
+%   \end{tabular}
 
 % \end{table}
 
 
 % \begin{table}
-% \centering
-% \begin{tabular}{l r r r r r r r r } 
-% \hline
-% \multicolumn{9}{c}{Low corr X: $P$=2, $T$=400.  Estimate $\alpha, \beta, \phi, W$.} \\
-% \hline
-%           Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
-%             PG  &    25.04 &     1.00 &    643.23 &   6531.34 &  10420.88 &     25.69 &    260.82 &    416.13 \\ 
-%           dRUM  &    25.73 &     1.00 &    430.79 &   4490.34 &  10124.47 &     16.74 &    174.55 &    393.48
-%  \end{tabular}
+%   \centering
+%   \begin{tabular}{l r r r r r r r r }
+%     \hline
+%     \multicolumn{9}{c}{Low corr X: $P$=2, $T$=400.  Estimate $\alpha, \beta, \phi, W$.} \\
+%     \hline
+%     Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\
+%     PG  &    25.04 &     1.00 &    643.23 &   6531.34 &  10420.88 &     25.69 &    260.82 &    416.13 \\
+%     dRUM  &    25.73 &     1.00 &    430.79 &   4490.34 &  10124.47 &     16.74 &    174.55 &    393.48
+%   \end{tabular}
 
-% \begin{tabular}{l r r r r r r r r } 
-% \hline
-% \multicolumn{9}{c}{High corr X: $P$=2, $T$=400. Estimate $\alpha, \beta, \phi, W$.} \\
-% \hline
-%           Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\ 
-%             PG  &    25.16 &     1.00 &    988.83 &   5654.23 &  10337.07 &     39.31 &    224.75 &    410.87 \\ 
-%           dRUM  &    25.84 &     1.00 &   1040.12 &   5496.94 &   9760.64 &     40.25 &    212.74 &    377.75
-%  \end{tabular}
+%   \begin{tabular}{l r r r r r r r r }
+%     \hline
+%     \multicolumn{9}{c}{High corr X: $P$=2, $T$=400. Estimate $\alpha, \beta, \phi, W$.} \\
+%     \hline
+%     Method  &   time &  ARate & ESS.min & ESS.med & ESS.max & ESR.min & ESR.med & ESR.max \\
+%     PG  &    25.16 &     1.00 &    988.83 &   5654.23 &  10337.07 &     39.31 &    224.75 &    410.87 \\
+%     dRUM  &    25.84 &     1.00 &   1040.12 &   5496.94 &   9760.64 &     40.25 &    212.74 &    377.75
+%   \end{tabular}
 
 
 
