@@ -26,6 +26,7 @@
 \newcommand{\vf}{\boldsymbol{f}}
 \newcommand{\bmu}{\boldsymbol{\mu}}
 \newcommand{\veta}{\boldsymbol{\eta}}
+\newcommand{\vep}{\boldsymbol{\ep}}
 
 \newcommand{\point}{\noindent $\bullet$ }
 
@@ -35,7 +36,8 @@
   \makebox[0.5in][c]{\textbf{\arabic{parnum}.}} %
   \marginnote{\small\ttfamily\the\inputlineno}}
 
-%\renewcommand{\npoint}{}
+% uncomment if you do not want point numbers.
+\renewcommand{\npoint}{}
 
 % Page Layout
 \setlength{\oddsidemargin}{0.0in}
@@ -109,28 +111,31 @@
 
 \section{Introduction}
 
-\npoint There are a variety of settings in which one wants to model non real-valued
-data.  For instance, integral data may be found in ecology or epidemiology when
-modeling populations of species or outbreaks of infections and in neuroscience
-when modeling brain activity in terms of discrete neural impulses.  Categorical
-data is similarly ubiquitous, arising, for example, in medicine to describe a
-successful treatment and in economics to denote the default on a loan.  
-%
-Such data may be temporally correlated as well, in which case setting up an
+\npoint Non real-valued data arises in a variety of settings.  For instance,
+integral data may be found in ecology or epidemiology when modeling populations
+of species or outbreaks of infections and in neuroscience when modeling brain
+activity in terms of discrete neural impulses.  Categorical data is similarly
+ubiquitous, arising, for example, in medicine to describe a successful treatment
+and in economics to denote the default on a loan.
+%%%%
+\npoint Such data may be temporally correlated, in which case setting up an
 autoregressive-like structure is helpful, though at the cost of making posterior
 inference more difficult.
-%
-\npoint This paper presents a data augmentation technique that produces
-posterior samples for these types of models.  We begin by setting up the
-problem, starting with the static case, moving to the dynamic analog, and then
-describing the challenge of generating posterior samples.
+%%%%
+\npoint We address this hardship, proposing an elegant and efficient data
+augmentation technique for dynamic models of counts or categories that have
+binomial likelihoods.
+%%%%
+\npoint The origin of these models can be traced to their static ancestors,
+which, in turn, are successors to the linear model.  Currently, we provide a
+brief overview of this evolution and the challenges that arise along the way.
 
 \npoint When there is a linear relationship between the expectation of the response and
 the covariates, and the variance of the response is constant---that is when one
 is doing linear regression---the Gauss-Markov theorem ensures that ordinary
 least squares (OLS) produces the best linear unbiased estimator, a frequentist
 way of saying that the model has a nice solution \citep{christensen-book-2001}.
-%
+%%%%
 \npoint Further, assuming that the response is normally distributed and adopting a
 normal prior leads to a closed-form posterior distribution that is easy to
 sample from, which is a Bayesian equivalent of niceness.  When modeling counts
@@ -168,20 +173,20 @@ difficult to generate posterior samples.
 \npoint To clarify the challenge of simulating $(\{\bbeta_t\}_{t=1}^T |
 \{y_t\}_{t=1}^T)$ for dynamic generalized linear models, it is helpful to
 consider more and less tractable state-space models.  
-%
+%%%%
 \npoint State-space models with non-Gaussian, non-linear responses and
 non-linear evolution equations are less tractable.  One may efficiently
 approximate the filtered distributions of such models, $p(\bbeta_t |
 \{y_s\}_{s=1}^t)$, using sequential methods, but the lack of structure makes
 sampling from the posterior of $\{\bbeta_t\}_{t=1}^T$ difficult.  
-%
+%%%%
 \npoint In contrast, dynamic linear models (DLMs) with Gaussian states and
 Gaussian observations are more tractable: one may sample the posterior
 distribution of the states using the forward filter backward sample (FFBS)
 algorithm \citep{carter-kohn-1994, fruhwirth-schnatter-1994}, a procedure that
 is linear in the number of observations and thus quite efficient.  However, the
-FFBS algorithm breaks down outside of these vary narrow assumptions. 
-%
+FFBS algorithm breaks down outside of these vary narrow assumptions.
+%%%%
 \npoint Dynamic generalized linear models that have Gaussian, linear evolution
 equations, but non-Gaussian, non-linear response distributions sit between these
 extremes.  Within this class, the FFBS algorithm is not immediately applicable,
@@ -192,7 +197,7 @@ are not always as effective as their constituent parts.  In particular,
 Metropolis-Hastings based techniques for GLMs do not translate well to the
 dynamic setting, as $\{\bbeta_t\}_{t=1}^T$ is of much higher dimension than
 $\bbeta$.  
-%
+%%%%
 \npoint Data augmentation techniques for GLMs that lead to a Gaussian complete
 conditional for $\bbeta$ provide a preferable approach since the corresponding
 complete conditional for $\{\bbeta_t\}_{t=1}^T$ will coincide with the
@@ -231,14 +236,14 @@ of the exponential family according to $f(y_t | \psi_t)$ where $\psi_t = \vx_t'
 $\{\bbeta_t\}_{t=1}^T$ evolve according to an AR(1) or random walk process with
 Gaussian disturbances described by the transition density $g(\bbeta_t |
 \bbeta_{t-1})$.
-%fake
+%%%%
 \npoint In the very specific case that $y_t \sim N(\psi_t | V_t)$ there is an
 algorithm, the FFBS, that generates posterior samples of $\{\beta_{t}\}_{t=1}^T$
 in $\mcO(T)$ time as $T$ varies \citep{carter-kohn-1994,
   fruhwirth-schnatter-1994}.  When the response comes from some other
 distribution, like the binomial or negative binomial distributions, the FFBS
 breaks down.
-%fake
+%%%%
 \npoint Thus, one must appeal to approximate distributions, Metropolis-Hastings
 sampling, Gibbs sampling, or some other MCMC approach, like particle methods.
 
@@ -285,7 +290,7 @@ augmentation scheme for the static problem, that is when $\psi_t = \vx_t'
 \bbeta$, so that the complete conditional of $\bbeta$ is Gaussian, then the
 corresponding complete conditional of $\{\bbeta_t\}_{t=1}^T$ for the dynamic
 analog will coincide with a DLM so that one may use of the FFBS algorithm.
-%fake
+%%%%
 \npoint But finding such a scheme is difficult since it requires auxiliary
 variables that (1) yield a Gaussian complete conditional for $\bbeta$ and (2)
 can be sampled efficiently.  For instance, \cite{mcfadden-1974} provides an
@@ -304,7 +309,7 @@ binomial and multinomial logistic regression
 logistic regression, we will limit our comparison to \cite{fussl-etal-2013}
 since it appears to be the best choice within Fr\"{u}hwirth-Schnatter et al.'s
 discrete mixture of normals cornucopia.)
-%fake
+%%%%
 \npoint While their methods work well, several rely upon precomputing large
 tables of weights, means, and variances for the components of a collection of
 mixtures that approximate an entire family of distributions.  Further all of the
@@ -398,7 +403,7 @@ from the DLM
 \begin{cases}
   z_t = \psi_t + \nu_t, & \nu_t \sim N(0, 1/\omega_t) \\
   \psi_t = \vx_t' \bbeta_t \\
-  \bbeta_t = \bmu + \bPhi (\bbeta_{t-1} - \bmu) + \veta_t, & \veta_t \sim N(0, \bW).
+  \bbeta_t = \bmu + \bPhi (\bbeta_{t-1} - \bmu) + \vep_t, & \vep_t \sim N(0, \bW).
 \end{cases}
 \]
 
@@ -448,9 +453,9 @@ the innovation variance, follows using standard conjugate or MCMC techniques.
   % where $z_t = \kappa_t / \omega_t$ and $\kappa_t = (y_t - d_t) / 2$.
   \[
   \begin{cases}
-    z_t = \lambda_t + \ep_t, & \ep_t \sim N(0, 1/\omega_t) \\
+    z_t = \lambda_t + \nu_t, & \nu_t \sim N(0, 1/\omega_t) \\
     \lambda_t = \vx_t' \bbeta_t \\
-    \bbeta_t = \bmu + \bPhi (\bbeta_{t-1} - \bmu) + \veta_t, & \veta_t \sim N(0, \bW)
+    \bbeta_t = \bmu + \bPhi (\bbeta_{t-1} - \bmu) + \vep_t, & \vep_t \sim N(0, \bW)
   \end{cases}
   \]
   where $z_t = \kappa_t / \omega_t + \log(d)$ and $\kappa_t = (y_t - d) / 2$.
@@ -599,9 +604,8 @@ fared worse still.
 Of note, the \Polya-Gamma method almost always has superior effective sample
 sizes.  Hence faster \Polya-Gamma samplers could push the \Polya-Gamma data
 augmentation technique to the top for all of the models considered.  Table
-\ref{tab:benchmark-summary} provides a summary of the benchmarks; Tables
-\ref{tab:dynlogit-detail} and \ref{tab:dynnb-detail} provide a more detailed
-account of each benchmark.
+\ref{tab:benchmark-summary} provides a summary of the benchmarks; details may be
+found in the Appendix.
 
 % Summary Table
 % -------------------------------------------------------------------------------
@@ -783,11 +787,11 @@ For both binomial responses and negative binomial responses, we create four
 synthetic data sets whose log-odds and log-mean, respectively, take the form
 \begin{equation}
   \label{eqn:synth-psi}
-  \psi_t = \alpha + \vx_t' \bbeta_t, \; t = 1, \ldots, T
+  \psi_t = \alpha + \vx_t' \bbeta_t, \; \; t = 1, \ldots, T,
 \end{equation}
 with
 \[
-\bbeta_t = \bPhi \bbeta_{t-1} + \ep_t, \; \ep_t \sim N(0, \bW)
+\bbeta_t = \bPhi \bbeta_{t-1} + \vep_t, \; \; \vep_t \sim N(0, \bW)
 \]
 where $\bPhi = 0.95 \bI_2$ and $\bW = 0.172 \bI_2$.  The covariates $\vx_t \in
 \bbR^2$ are
@@ -828,71 +832,6 @@ Four data sets for each type of response, along with two prior structures yields
 eight MCMC simulations for each method of posterior inference.  Tables
 \ref{tab:dynlogit-detail} and \ref{tab:dynnb-detail} provide a complete summary
 of the results.
-
-% -------------------------------------------------------------------------------
-% \section{Sampling $d$ in dynamic negative binomial regression}
-% \label{sec:sample-d}
-
-% We may sample $d$ by an independent Metropolis-Hastings or a random-walk
-% Metropolis-Hastings.  In either case, we need the log-likelihood of $d$.
-
-% The conditional density for a single term $y_t \sim N(d, q_t)$ is
-% \[
-% \frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t} q_t^{y_t} (1-q_t)^{d} ,
-% \]
-% or
-% \[
-% \frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t}
-% \Big( \frac{\mu_t}{\mu_t + d} \Big)^{y_t} \Big( \frac{d}{\mu_t + d} \Big)^d
-% \]
-% in terms of the mean $\mu_t$.  Since we chose to model $\log \mu_t = \vx_t
-% \beta_t$ it will be easier to work with the latter version.  In that case, the
-% log-likelihood is
-% \[
-% \ell(d|\mu, y) = \sum_{t=1}^T [ \log \Gamma(y_t + d)  - \log \Gamma(d) ]  +
-% \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
-% d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
-% \]
-
-% If we assume that $d$ is a natural number then we can rid ourselves of $T$
-% evaluations of the gamma function.  We may expand $\Gamma(y_t + d)$ and
-% $\Gamma(d)$ as products, in which case the log-likelihood is
-% \[
-% \ell(d|\mu, y) = \sum_{t=1}^T \sum_{j=0}^{y_t-1} \log(d + j) +
-% \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
-% d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
-% \]
-% We can rewrite the first term of the sum as
-% \[
-% \sum_{t=1}^T \sum_{k=1}^{\max(y_t)} \sum_{j=0}^{k-1} \log(d+j) \one \{y_t = k\}
-% \]
-% which becomes
-% \[
-% \sum_{k=1}^{\max(y_t)} n_k \sum_{j=0}^{k-1} \log(d+j)
-% \]
-% where $n_k = \{ \# y_t = k \}$.  We have thus
-% \begin{align*}
-%   \sum_{k=1}^{\max(y_t)} \sum_{j=0}^{\max(y_t)-1} n_k \log(d+j) \one\{j < k\}
-%   & =
-%   \sum_{j=0}^{\max(y_t)-1} \log(d+j) \sum_{k=j+1}^{\max(y_t)} n_k \\
-%   & = \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j
-% \end{align*}
-% where $G_j = \{ \# y_t > j \}$.  Notice that $1-G_j = F(j) = \{\# y_t \leq j\}$
-% and that $G$ may be pre-processed.  Hence the log-likelihood is
-% \[
-% \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j +
-% \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
-% d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
-% \]
-% Preprocessing $G$ saves us from having to compute a doubly indexed summation.
-
-% BIBLIOGRAPHY
-% -------------------------------------------------------------------------------
-
-% If you have a bibliography.
-% The file withe bibliography is name.bib.
-\bibliography{bayeslogit}{}
-\bibliographystyle{asa}
 
 % TABLES
 % -------------------------------------------------------------------------------
@@ -1103,6 +1042,73 @@ of the results.
   samples.  ARate refers to the Metroplis-Hastings acceptance rate.
 
 \end{table}
+
+% -------------------------------------------------------------------------------
+% \section{Sampling $d$ in dynamic negative binomial regression}
+% \label{sec:sample-d}
+
+% We may sample $d$ by an independent Metropolis-Hastings or a random-walk
+% Metropolis-Hastings.  In either case, we need the log-likelihood of $d$.
+
+% The conditional density for a single term $y_t \sim N(d, q_t)$ is
+% \[
+% \frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t} q_t^{y_t} (1-q_t)^{d} ,
+% \]
+% or
+% \[
+% \frac{\Gamma(y_t + d)}{\Gamma(d) \Gamma(y_t) y_t}
+% \Big( \frac{\mu_t}{\mu_t + d} \Big)^{y_t} \Big( \frac{d}{\mu_t + d} \Big)^d
+% \]
+% in terms of the mean $\mu_t$.  Since we chose to model $\log \mu_t = \vx_t
+% \beta_t$ it will be easier to work with the latter version.  In that case, the
+% log-likelihood is
+% \[
+% \ell(d|\mu, y) = \sum_{t=1}^T [ \log \Gamma(y_t + d)  - \log \Gamma(d) ]  +
+% \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
+% d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
+% \]
+
+% If we assume that $d$ is a natural number then we can rid ourselves of $T$
+% evaluations of the gamma function.  We may expand $\Gamma(y_t + d)$ and
+% $\Gamma(d)$ as products, in which case the log-likelihood is
+% \[
+% \ell(d|\mu, y) = \sum_{t=1}^T \sum_{j=0}^{y_t-1} \log(d + j) +
+% \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
+% d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
+% \]
+% We can rewrite the first term of the sum as
+% \[
+% \sum_{t=1}^T \sum_{k=1}^{\max(y_t)} \sum_{j=0}^{k-1} \log(d+j) \one \{y_t = k\}
+% \]
+% which becomes
+% \[
+% \sum_{k=1}^{\max(y_t)} n_k \sum_{j=0}^{k-1} \log(d+j)
+% \]
+% where $n_k = \{ \# y_t = k \}$.  We have thus
+% \begin{align*}
+%   \sum_{k=1}^{\max(y_t)} \sum_{j=0}^{\max(y_t)-1} n_k \log(d+j) \one\{j < k\}
+%   & =
+%   \sum_{j=0}^{\max(y_t)-1} \log(d+j) \sum_{k=j+1}^{\max(y_t)} n_k \\
+%   & = \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j
+% \end{align*}
+% where $G_j = \{ \# y_t > j \}$.  Notice that $1-G_j = F(j) = \{\# y_t \leq j\}$
+% and that $G$ may be pre-processed.  Hence the log-likelihood is
+% \[
+% \sum_{j=0}^{\max(y_t)-1} \log(d+j) G_j +
+% \sum_{t=1}^T y_t \log \big( \frac{\mu_t}{\mu_t + d} \Big) +
+% d \sum_{t=1}^T \log \Big( \frac{d}{\mu_t + d} \Big).
+% \]
+% Preprocessing $G$ saves us from having to compute a doubly indexed summation.
+
+\newpage
+
+% BIBLIOGRAPHY
+% -------------------------------------------------------------------------------
+
+% If you have a bibliography.
+% The file withe bibliography is name.bib.
+\bibliography{bayeslogit}{}
+\bibliographystyle{asa}
 
 \end{document}
 
