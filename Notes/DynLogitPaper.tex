@@ -55,14 +55,15 @@
 \title{\Polya-Gamma Data Augmentation for Dynamic Models}
 % 
 \author{ %
-  Jesse Windle, %
+  Jesse Windle, \\
+  \textit{Duke University} \\ \\
   Carlos M. Carvalho, %
   James G. Scott, %
   Liang Sun %
   \footnote{ %
-    Jesse Windle is a Post-Doc in the Department of Statistical Science, Duke
-    University, Box 90251, Durham NC 27708-0251 (E-mail:
-    jesse.windle@gmail.com).
+    Jesse Windle is a Post Doctoral Associate in the Department of Statistical
+    Science, Duke University, Box 90251, Durham NC 27708-0251 (E-mail:
+    jesse.windle@stat.duke.edu).
     % 
     Carlos M. Carvalho is Associate Professor of Statistics, Department of
     Information, Risk, and Operations Management, The University of Texas at Austin,
@@ -99,7 +100,7 @@
   \Polya-Gamma data augmentation, and compare it against two competing methods.
   We find that the \Polya-Gamma approach works well for dynamic logistic
   regression and for dynamic negative binomial regression when the count sizes
-  are small.
+  are small.  Supplementary files are provided for replicating the benchmarks.
 
   \smallskip \textit{Keywords:} {binomial likelihood, dynamic logistic
     regression, dynamic negative binomial regression} }
@@ -130,23 +131,11 @@ binomial likelihoods.
 which, in turn, are successors to the linear model.  Currently, we provide a
 brief overview of this evolution and the challenges that arise along the way.
 
-\npoint When there is a linear relationship between the expectation of the response and
-the covariates, and the variance of the response is constant---that is when one
-is doing linear regression---the Gauss-Markov theorem ensures that ordinary
-least squares (OLS) produces the best linear unbiased estimator, a frequentist
-way of saying that the model has a nice solution \citep{christensen-book-2001}.
-%%%%
-\npoint Further, assuming that the response is normally distributed and adopting a
-normal prior leads to a closed-form posterior distribution that is easy to
-sample from, which is a Bayesian equivalent of niceness.  When modeling counts
-or categories, the aforementioned necessary conditions do not hold and hence OLS
-does not lead to the best linear unbiased estimator and convenient posterior
-distributions are not guaranteed.
-
-\npoint Generalized linear models (GLMs) partially address these deficiencies.
-In particular, parameterizing the expectation and variance of the response in
-terms of a linear combination of the predictors, $\psi_t = \vx_t' \bbeta$, leads
-to tractable models for counts, categories, and other non-real valued data
+\npoint Generalized linear models (GLMs) 
+% extend their linear counterparts by parameterizing
+parameterize the expectation and variance of the response in terms of a linear
+combination of the predictors, $\psi_t = \vx_t' \bbeta$, and lead to tractable
+models for counts, categories, and other non-real valued data
 \citep{mccullagh-nelder-1989, wedderburn-1974}.  Strictly speaking, one need not
 specify the distribution of the response, just its first two moments, but since
 we are interested in Bayesian inference we will restrict our attention to
@@ -237,9 +226,9 @@ $\{\bbeta_t\}_{t=1}^T$ evolve according to an AR(1) or random walk process with
 Gaussian disturbances described by the transition density $g(\bbeta_t |
 \bbeta_{t-1})$.
 %%%%
-\npoint In the very specific case that $y_t \sim N(\psi_t | V_t)$ there is an
-algorithm, the FFBS, that generates posterior samples of $\{\beta_{t}\}_{t=1}^T$
-in $\mcO(T)$ time as $T$ varies \citep{carter-kohn-1994,
+\npoint In the very specific case that $y_t \sim N(\psi_t, V_t)$, the forward
+filter backwards sampler (FFBS) generates posterior samples of
+$\{\beta_{t}\}_{t=1}^T$ in $\mcO(T)$ time as $T$ varies \citep{carter-kohn-1994,
   fruhwirth-schnatter-1994}.  When the response comes from some other
 distribution, like the binomial or negative binomial distributions, the FFBS
 breaks down.
@@ -248,12 +237,11 @@ breaks down.
 sampling, Gibbs sampling, or some other MCMC approach, like particle methods.
 
 \npoint Alternative approaches to posterior simulation date back to at least
-\cite{west-etal-1985}, who employed a conjugate updating, backward sampling
-(CUBS) strategy to generate approximate posterior draws.  Their strategy is to
-use an approximation of the filtered distributions $(\bbeta_t |
-\{y_s\}_{s=1}^t)$ when backwards sampling.  The CUBS method is also $\mcO(T)$ as
-$T$ varies, but requires solving $T$ non-linear equations, which is
-time consuming.
+\cite{west-etal-1985}, who employ a conjugate updating, backward sampling (CUBS)
+strategy to generate approximate posterior draws.  Their strategy is to use an
+approximation of the filtered distributions $(\bbeta_t | \{y_s\}_{s=1}^t)$ when
+backwards sampling.  The CUBS method is also $\mcO(T)$ as $T$ varies, but
+requires solving $T$ non-linear equations, which is time consuming.
 
 \npoint Metropolis-Hastings based approaches can take approximate draws and make
 them exact by introducing an accept/reject step.  The challenge is to devise a
@@ -278,37 +266,36 @@ strategy by first doing a change of coordinates to sample the disturbances
 instead of the hidden states and then use a Laplace approximation
 \citep{gamerman-1998, shephard-pitt-1997}.  Advocates of this strategy suggest
 that the subsequent blocking possesses less intrinsic autocorrelation.
-\cite{migon-etal-2013} find that the CUBS approximation of \cite{west-etal-1985}
-works well.  We did our own comparison and found that, indeed, the approach of
-\cite{migon-etal-2013} is superior to sampling blocks of disturbances.  However,
-none of these Metropolis-Hastings are completely satisfactory.  In particular,
-\cite{migon-etal-2013} is still time consuming, requiring $T$ non-linear solves
-for each MCMC iteration.
+\cite{migon-etal-2013} show that the CUBS approximation of \cite{west-etal-1985}
+is a good proposal, and based upon our own computational experiments we find
+that, indeed, the approach of \cite{migon-etal-2013} is better than sampling
+blocks of disturbances.  However, none of these Metropolis-Hastings proposals
+are completely satisfactory.  In particular, \cite{migon-etal-2013} is still
+time consuming, requiring $T$ non-linear solves for each MCMC iteration.
 
 \npoint Data augmentation provides a preferable approach.  If one finds a data
 augmentation scheme for the static problem, that is when $\psi_t = \vx_t'
 \bbeta$, so that the complete conditional of $\bbeta$ is Gaussian, then the
 corresponding complete conditional of $\{\bbeta_t\}_{t=1}^T$ for the dynamic
-analog will coincide with a DLM so that one may use of the FFBS algorithm.
+analog will coincide with a DLM and one may use the FFBS algorithm.
 %%%%
 \npoint But finding such a scheme is difficult since it requires auxiliary
 variables that (1) yield a Gaussian complete conditional for $\bbeta$ and (2)
-can be sampled efficiently.  For instance, \cite{mcfadden-1974} provides an
-example where (1) is not met while \cite{holmes-held-2006} provide an example
-where (2) can be significantly improved.
+can be sampled efficiently.  Examples that almost meet both criterions include
+\cite{mcfadden-1974}, where (1) is not met, and \cite{holmes-held-2006}, where
+(2) can be significantly improved.
 
 \npoint Fr\"{u}hwirth-Schnatter and her colleagues have developed fixes for
-these shortcomings that rely upon approximating one or several distributions
-using discrete mixtures of Gaussians.  Their work has lead to data augmentation
-schemes that satisfy (1) and (2), in an approximate though accurate sense, for
-binomial and multinomial logistic regression
-\citep{fruhwirth-schnatter-fruhwirth-2007, fruhwirth-schnatter-fruhwirth-2010,
-  fussl-etal-2013}, Poisson regression \citep{fruhwirth-schnatter-wagner-2006,
-  fruhwirth-schnatter-etal-2009}, and negative binomial regression
-\citep{fruhwirth-schnatter-etal-2009}.  (In the sequel, for dynamic binomial
-logistic regression, we will limit our comparison to \cite{fussl-etal-2013}
-since it appears to be the best choice within Fr\"{u}hwirth-Schnatter et al.'s
-discrete mixture of normals cornucopia.)
+these shortcomings that rely upon approximating distributions using discrete
+mixtures of Gaussians.  Their work has lead to data augmentation schemes that
+satisfy (1) and (2), in an approximate though accurate sense, for binomial and
+multinomial logistic regression \citep{fruhwirth-schnatter-fruhwirth-2007,
+  fruhwirth-schnatter-fruhwirth-2010, fussl-etal-2013}, Poisson regression
+\citep{fruhwirth-schnatter-wagner-2006, fruhwirth-schnatter-etal-2009}, and
+negative binomial regression \citep{fruhwirth-schnatter-etal-2009}.  (In the
+sequel, for dynamic binomial logistic regression, we will limit our comparison
+to \cite{fussl-etal-2013} since it appears to be the best choice within
+Fr\"{u}hwirth-Schnatter et al.'s discrete mixture cornucopia.)
 %%%%
 \npoint While their methods work well, several rely upon precomputing large
 tables of weights, means, and variances for the components of a collection of
@@ -552,21 +539,23 @@ of roughly 10 or 100.  Further details may be found in the Appendix.
 
 Some caution is warranted when comparing methods as the effective sampling rate
 is sensitive to a procedure's implementation and the hardware on which it is
-run. The routines are written primarily in R.  We use code from
-\cite{binomlogit-2012} and \cite{fruhwirth-schnatter-book-2007} for the discrete
-mixture of normals methods.  All benchmarks are carried out on an Ubuntu machine
-with Intel Core i5-3570 3.4GHz processor and 8GB of RAM.  Some computations were
-burdensome in R, and hence we wrote wrappers to C to speed up the MCMC
-simulations.  In particular, both data augmentation methods implement forward
-filtering and backward sampling using a C wrapper.  The \Polya-Gamma technique
-calls C code to sample random variates using version 0.2-4 of the
-\texttt{BayesLogit} package \citep{bayeslogit-2013}.  The conjugate updating and
-backwards sampling of \cite{migon-etal-2013} is done in C.  Having a C wrapper
-to forward filter and backwards sample is particularly important, as our C
-implementation is much faster than the corresponding R code.  Were we to use the
-slower R version, our results would favor the \Polya-Gamma method, as it has
-better effective sample sizes and would spend less time, proportionally,
-sampling the latent random variables.
+run.  (Supplementary files have been provided so that users may examine the
+performance of these methods on their own.)  The routines are written primarily
+in R.  We use code from \cite{binomlogit-2012} and
+\cite{fruhwirth-schnatter-book-2007} for the discrete mixture of normals
+methods.  All benchmarks are carried out on an Ubuntu machine with Intel Core
+i5-3570 3.4GHz processor and 8GB of RAM.  Some computations were burdensome in
+R, and hence we wrote wrappers to C to speed up the MCMC simulations.  In
+particular, both data augmentation methods implement forward filtering and
+backward sampling using a C wrapper.  The \Polya-Gamma technique calls C code to
+sample random variates using version 0.2-4 of the \texttt{BayesLogit} package
+\citep{bayeslogit-2013}.  The conjugate updating and backwards sampling of
+\cite{migon-etal-2013} is done in C.  Having a C wrapper to forward filter and
+backwards sample is particularly important, as our C implementation is much
+faster than the corresponding R code.  Were we to use the slower R version, our
+results would favor the \Polya-Gamma method, as it has better effective sample
+sizes and would spend less time, proportionally, sampling the latent random
+variables.
 
 \cite{polson-etal-2013} outline the expected performance of the \Polya-Gamma
 data augmentation technique, which depends heavily on how quickly one can
@@ -1101,6 +1090,17 @@ of the results.
 % Preprocessing $G$ saves us from having to compute a doubly indexed summation.
 
 \newpage
+
+\section*{Supplementary Materials}
+
+\begin{description}
+
+\item[Benchmark Routines (dynsup.tgz):] A collection of R files along with a customized
+  version of the R package \texttt{BayesLogit} that may be used to create the
+  benchmarks.  The README file provides detailed instructions for replicating
+  the benchmarks.  (gzipped tar archive)
+
+\end{description}
 
 % BIBLIOGRAPHY
 % -------------------------------------------------------------------------------
