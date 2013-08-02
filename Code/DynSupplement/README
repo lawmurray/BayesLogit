@@ -1,0 +1,56 @@
+Dynamic logistic and dynamic negative binomial benchmarks...
+
+Key:
+
+$ denotes the command line
+> denotes the R prompt
+
+* Make sure you have the following R packages:
+
+  RcppEigen
+  coda
+
+* Open a terminal and navigate to the directory in which this file is located.
+
+* Install the package (1):
+
+  $ R CMD INSTALL BayesLogit_0.2-4-dynamic.tar.gz
+
+* Set a low number of samples for a test run.
+
+  $ bash SetSize.bash Small
+
+* Open up R, and make this directory the working directory.
+
+* Initialize the library:
+
+  > library("BayesLogit")
+
+* Run either
+
+  > source("Benchmark-DynLogit.R")
+
+or
+
+  > source("Benchmark-DynNB.R")
+
+* After you have ran these scripts there will a list called "tables", which is a
+list of the tables and a list called "ids", which is a list of the different
+benchmarks.  Thus, run
+
+  > ids
+  > tables
+
+  or
+
+  > for (i in 1:length(ids)) { print(ids[[i]]); print(tables[[i]]); }
+
+* Quit R and set a high nubmer of samples to check the paper.
+
+  $ bash SetSize.bash Large
+
+* Rerun the R scripts and check the new tables.
+
+--- ### ---
+
+(1) You need to be able to manually install R packages.
