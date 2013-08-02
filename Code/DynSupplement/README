@@ -14,11 +14,21 @@ $ denotes the command line
 
 * Install the package (1):
 
+** On Linux or on Mac (with requisite tools, e.g. g++, gfortran, etc.)
+
   $ R CMD INSTALL BayesLogit_0.2-4-dynamic.tar.gz
+
+** On Mac (x86)
+
+  Manually install using .tgz file.
+
+** On Windows
+
+  No support currently.
 
 * Set a low number of samples for a test run.
 
-  $ bash SetSize.bash Small
+  $ bash SetSize.bash small
 
 * Open up R, and make this directory the working directory.
 
@@ -47,10 +57,22 @@ benchmarks.  Thus, run
 
 * Quit R and set a high nubmer of samples to check the paper.
 
-  $ bash SetSize.bash Large
+  $ bash SetSize.bash large
 
 * Rerun the R scripts and check the new tables.
 
 --- ### ---
 
 (1) You need to be able to manually install R packages.
+
+If you do not have administrator priveleges for your machine then you will need
+to proceed in a slightly diffrent fashion.  In particular, 
+
+* Install the package locally
+
+  $ mkdir Packages
+  $ R CMD INSTALL -l Packages BayesLogit_0.2-4-dynamic.tar.gz 
+
+* Load the library (assuming you are within this directory)
+
+  > library("BayesLogit", lib.loc="Packages")

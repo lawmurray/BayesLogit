@@ -30,7 +30,7 @@ plot.it  = FALSE
 print.it = FALSE
 read.it  = FALSE
 
-methods = c("PG", "dRUM", "CUBS", "FS2010", "OmegaBlock");
+methods = c("PG", "dRUM", "CUBS", "OmegaBlock", "FS2010");
 
 ## The methods to run from the sequence above.
 run.idc = 1:3;

@@ -5,17 +5,18 @@ samp=10000
 burn=2000
 verb=1000
 reps=10
+idcs="1:3"
 
-# Small
-if [[ $1 == "Small" ]]; then
+# small
+if [[ $1 == "small" ]]; then
 	samp=100
 	burn=20
 	verb=10
 	reps=2
 fi
 
-# Large
-if [[ $1 == "Large" ]]; then
+# large
+if [[ $1 == "large" ]]; then
 	samp=10000
 	burn=2000
 	verb=1000
@@ -33,8 +34,8 @@ sedexp='s/^samp = [0-9]*$/samp = '${samp}'/
         s/^burn = [0-9]*$/burn = '${burn}'/
         s/^verbose = [0-9]*$/verbose = '${verb}'/
         s/^ntrials = [0-9]* #/ntrials = '${reps}' #/
-        s/"allsynth"=FALSE/"allsynth"=TRUE/'
-
+        s/"allsynth"=FALSE/"allsynth"=TRUE/
+        s/run\.idc = .*$/run\.idc = '${idcs}'/'
 
 # echo "$sedexp"
 sed -i~ -e "$sedexp" Benchmark-DynLogit.R
