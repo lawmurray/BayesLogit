@@ -1,3 +1,8 @@
+## Copyright 2013 Nick Polson, James Scott, and Jesse Windle.
+
+## This file is part of BayesLogit, distributed under the GNU General Public
+## License version 3 or later and without ANY warranty, implied or otherwise.
+
 gaussian.dens <- function(x, m, LorV, log.sc=FALSE, is.V=FALSE)
 {
   if (is.V) LorV = t(chol(LorV));

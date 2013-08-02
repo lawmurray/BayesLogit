@@ -1,3 +1,8 @@
+## Copyright 2013 Nick Polson, James Scott, and Jesse Windle.
+
+## This file is part of BayesLogit, distributed under the GNU General Public
+## License version 3 or later and without ANY warranty, implied or otherwise.
+
 
 ## Here we follow FS&F (2007)'s dynamic logit model.  There is one binary
 ## response at each time point.  This is in contrast to the possibility that you

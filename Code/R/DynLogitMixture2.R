@@ -1,3 +1,8 @@
+## Copyright 2013 Nick Polson, James Scott, and Jesse Windle.
+
+## This file is part of BayesLogit, distributed under the GNU General Public
+## License version 3 or later and without ANY warranty, implied or otherwise.
+
 ## This is a variant upon FS&F (2007) where we allow for multiple observations
 ## of a binary response at each time step.
 

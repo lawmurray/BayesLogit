@@ -1,3 +1,8 @@
+## Copyright 2013 Nick Polson, James Scott, and Jesse Windle.
+
+## This file is part of BayesLogit, distributed under the GNU General Public
+## License version 3 or later and without ANY warranty, implied or otherwise.
+
 
 draw.omega.mh <- function(omega, beta, llh, y, tX, ntrials, prior.prec, phi, starts, just.max=FALSE, offset=0, type=0)
 {

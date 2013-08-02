@@ -1,3 +1,8 @@
+## Copyright 2013 Nick Polson, James Scott, and Jesse Windle.
+
+## This file is part of BayesLogit, distributed under the GNU General Public
+## License version 3 or later and without ANY warranty, implied or otherwise.
+
 ## This R script implements Fruhwirth-Schnatter and Fruhwirth's normal-mixture
 ## approximation to logistic regression (2007).  I mostly adhere to their
 ## notation.
