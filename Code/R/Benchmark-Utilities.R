@@ -287,7 +287,8 @@ setup.table.dyn <- function(b.out, var.name="beta") {
   mmm.esr = drop(apply(ave.sstat[,,4,,drop=FALSE], c(3,4), function(x) quantile(x, c(0.0, 0.5, 1.0)) ))
 
   ## ave.arate = simplify2array(lapply(b.out, function(x) x$info$ave.arate));
-  ave.arate = 1
+  ave.arate = as.numeric(lapply(b.out, function(x) mean(x$arate)));
+  ## ave.arate = 1
   
   the.table = rbind(ave.time, ave.arate, mmm.ess, mmm.esr);
   rownames(the.table) = c("time", "ARate", "ESS.min", "ESS.med", "ESS.max", "ESR.min", "ESR.med", "ESR.max");

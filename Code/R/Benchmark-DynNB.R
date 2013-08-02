@@ -16,22 +16,24 @@ run <- list("flu"   =FALSE,
             "synth1"=FALSE,
             "synth2"=FALSE,
             "synth3"=FALSE,
-            "allsynth"=FALSE)
-
-methods = c("PG", "FS", "CUBS", "OmegaBlock")
+            "allsynth"=FALSE,
+            "allview"=FALSE)
 
 write.dir = "Bench-Dyn-06" # Used in file.path
 
-write.it = FALSE
+write.it = TRUE
 plot.it  = FALSE
 read.it = FALSE
 
+methods = c("PG", "FS", "CUBS", "OmegaBlock")
+
+## The methods to run from the sequence above.
 run.idc = 1:3
 
 samp = 10000
-burn  = 2000
+burn = 2000
 verbose = 1000
-ntrials = 10
+ntrials = 10 ## Ambiguous languge.  Repetitions of MCMC.
 
 options = list("just.max"=FALSE, "starts"=1);
 
@@ -377,10 +379,10 @@ if (run$allsynth)
   iter   = 0
   
   P = 2
-  nb.mean = 10
-  corr.type = "high"
+  nb.mean = 100
+  corr.type = "low"
   ## est.ar = "with.ar"
-  est.ar = "with.ar"
+  est.ar = "wout.ar"
   
   for (est.ar in c("wout.ar", "with.ar")) {
     ## for (P in c(2,4)) {
@@ -436,8 +438,8 @@ if (run$allsynth)
                                           mu.true=mu.true, phi.true=phi.true, W.true=W.true, d.true=d.true, options=options);
   }
   
-  synth.table = setup.table.dyn(bench.synth, "beta")
-
+  synth.table = setup.table.dyn(bench.synth, "beta")  
+  
   ## if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X, n=n, bmark1=pg, bmark2=fs); }
   if (write.it) save(bench.synth, synth.table, dset.name, file=file.path(write.dir, filename))
 
@@ -459,13 +461,13 @@ if (FALSE) {
   
 }
 
-if (FALSE) {
+if (run$allview) {
 
   P = 2
-  nb.mean = 100
+  nb.mean = 10
   corr.type = "high"
   ## est.ar = "with.ar"
-  est.ar = "with.ar"
+  est.ar = "wout.ar"
   
   for (est.ar in c("wout.ar", "with.ar")) {
     ## for (P in c(2,4)) {

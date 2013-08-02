@@ -20,21 +20,23 @@ run <- list("tokyo"=FALSE,
             "low.4"=FALSE,
             "high.2"=FALSE,
             "high.4"=FALSE,
-            "allsynth"=FALSE)
+            "allsynth"=FALSE,
+            "allview"=FALSE)
 
 write.dir = "./Bench-Dyn-06"
 
-write.it = FALSE
+write.it = TRUE
 plot.it  = FALSE
 print.it = FALSE
 read.it  = FALSE
 
 methods = c("PG", "dRUM", "CUBS", "FS2010", "OmegaBlock");
 
+## The methods to run from the sequence above.
 run.idc = 1:3;
 
 samp = 10000
-burn  = 2000
+burn = 2000
 verbose = 1000
 ntrials = 10 ## Ambiguous languge.  Repetitions of MCMC.
 
@@ -469,6 +471,11 @@ if (run$allsynth)
 
   ## source("Benchmark-DynLogit.R")
 
+  sstats = list()
+  tables = list()
+  ids    = list()
+  iter   = 0
+  
   P = 2
   nt = 10
   corr.type = "low"
@@ -480,7 +487,8 @@ if (run$allsynth)
       for (nt in c(1,20)) {
         for (corr.type in c("low", "high")) {
 
-
+  iter = iter + 1
+          
   cat("Dyn Logit.  AR:", est.ar, "\n");
           
   dset.name = paste(corr.type, "-", P, "-n-", nt, sep="");
@@ -546,12 +554,16 @@ if (run$allsynth)
   ## if (plot.it)  { plot.bench(pg, fs); plot.check.logit(y, X, n=n, bmark1=pg, bmark2=fs); }
   if (write.it) save(bench.synth, synth.table, dset.name, file=file.path(write.dir, filename))
 
+  sstats[[iter]] = synth.table$ave.sstat
+  tables[[iter]] = synth.table$table
+  ids[[iter]]    = filename
+  
 }}}#}
   
 }
 
 
-if (FALSE) {
+if (run$allview) {
 
   P = 2
   nt = 1
@@ -573,7 +585,7 @@ if (FALSE) {
         cat("AR:", est.ar, dset.name, "\n");        
         
         load(file.path("Benchmark-DataSets", source.file))
-        load(file.path("Bench-Dyn-05", bench.data))
+        load(file.path(write.dir, bench.data))
         
         the.table = synth.table$table
         the.table[3,2] = mean(bench.synth$CUBS$arate) ## CUBS
