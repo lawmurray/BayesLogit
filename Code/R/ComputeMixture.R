@@ -1,8 +1,3 @@
-## Copyright 2013 Nick Polson, James Scott, and Jesse Windle.
-
-## This file is part of BayesLogit, distributed under the GNU General Public
-## License version 3 or later and without ANY warranty, implied or otherwise.
-
 ## Approximation of the negative log-gamma distribution by Gaussian mixtures
 ## Compute mixture parameters, given degrees of freedom
 
