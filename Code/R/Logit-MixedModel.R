@@ -2061,7 +2061,7 @@ if (FALSE)
   verbose = 1000
 
   ## source("Logit-MixedModel.R")
-  out.0 = logit.R(y, X, m0=m0.PG, P0=P0.PG, samp=samp, burn=burn, verbose=verbose);
+  out.0 = logit(y, X, m0=m0.PG, P0=P0.PG, samp=samp, burn=burn);
   out.1 = logit.PG.mm(y, X.re, X.fe, n, shape, rate, m.0, P.0, samp=samp, burn=burn, verbose=verbose);
   out.2 = logit.PG.mm.2(y, X.re, X.fe, n, shape, rate, kappa, m.0, P.0, samp=samp, burn=burn, verbose=verbose);
   colnames(out.2$re) = paste("D", c(1:53, 55:61), sep="")

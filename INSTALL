@@ -1,3 +1,61 @@
+
+To generate the C library manually.
+
+1) Get the BayesLogit code.
+ 
+  - You can clone the repository or download the code as a zip file via
+    github.com.
+
+  - For these instructions, ASSUME the repository/base directory is called
+    BayesLogit.
+
+2) Install the Matrix and RNG files in BayesLogit/Code/C/include/
+
+  - From the command line
+      - cd to BayesLogit/Code/C/include	
+      $ wget https://github.com/jwindle/Matrix/archive/master.zip
+      $ wget https://github.com/jwindle/RNG/archive/master.zip
+  
+  - Or from your browser
+    - type in the above links and save them in
+      BayesLogit/Code/C/include/
+
+  - Unzip the files.
+
+  - Remove the -master suffix 
+    $ mv Matrix-master Matrix
+    $ mv RNG-master RNG
+
+3) Compile 
+
+  - cd to BayesLogit/Code/C
+  $ make BayesLogit.so
+
+To generate the R package.
+
+1) Follow steps (1) and (2) above.
+
+2) cd to BayesLogit/Code/BLPackage
+
+3) Update the files for the package.
+
+  $ bash sync.bash
+
+4) Build the package
+
+  $ R CMD build BayesLogit
+
+5) Check the package (optional)
+
+  $ R CMD check BayesLogit_WHATEVER.tar.gz 
+
+6) Install the package
+
+  $ R CMD INSTALL BayesLogit_WHATEVER.tar.gz
+
+-----------------------------------------------------------------
+OLD
+
 Nothing needs to be done if you just want to use the R Scripts--simply
 load the R package before you call any of the Scripts.
 
