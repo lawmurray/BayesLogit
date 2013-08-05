@@ -42,28 +42,25 @@
 % Page Layout
 \setlength{\oddsidemargin}{0.0in}
 \setlength{\textwidth}{6.5in}
-\setlength{\textheight}{8in}
-% \parindent 0in
-% \parskip 12pt
+%\setlength{\textheight}{8in}
 
-% Set Fancy Style
-% \pagestyle{fancy}
-
-% \lhead{Left Header}
-% \rhead{Right Header}
+%\addtolength{\oddsidemargin}{-.5in}%
+%\addtolength{\evensidemargin}{-.5in}%
+%\addtolength{\textwidth}{1.5in}%
+\addtolength{\textheight}{1.3in}%
+\addtolength{\topmargin}{-.8in}%
 
 \title{\Polya-Gamma Data Augmentation for Dynamic Models}
 % 
 \author{ %
-  Jesse Windle, \\
-  \textit{Duke University} \\ \\
-  Carlos M. Carvalho, %
-  James G. Scott, %
-  Liang Sun %
+  Jesse Windle$^{a}$, %
+  Carlos M. Carvalho$^{b}$, %
+  James G. Scott$^{b}$, and %
+  Liang Sun$^{c}$ %
   \footnote{ %
-    Jesse Windle is a Post Doctoral Associate in the Department of Statistical
-    Science, Duke University, Box 90251, Durham NC 27708-0251 (E-mail:
-    jesse.windle@stat.duke.edu).
+    Jesse Windle, corresponding author, is a Post Doctoral Associate in the
+    Department of Statistical Science, Duke University, Box 90251, Durham NC
+    27708-0251 (E-mail: jesse.windle@stat.duke.edu).
     % 
     Carlos M. Carvalho is Associate Professor of Statistics, Department of
     Information, Risk, and Operations Management, The University of Texas at Austin,
@@ -80,30 +77,36 @@
     St.  Austin, Texas 78712 (E-mail: sallylia@gmail.com).
     % 
   }
-  \\
-  \textit{The Univeristy of Texas at Austin} }
+  \\ \\
+  $^{a}$ Department of Statistical Science, Duke University \\
+  $^{b}$ Department of IROM, The University of Texas at Austin \\
+  $^{c}$ Department of ORIE, The University of Texas at Austin %
+  % \\
+}
 
 \begin{document}
 
 \maketitle
 
-\abstract{Dynamic linear models with Gaussian observations and Gaussian states
-  lead to closed-form formulas for posterior simulation.  However, these
-  closed-form formulas break down when the response or state evolution ceases to
-  be Gaussian.  Dynamic, generalized linear models exemplify a class of models
-  for which this is the case, and include, amongst other models, dynamic
-  binomial logistic regression and dynamic negative binomial regression.
-  Finding and appraising posterior simulation techniques for these models is
-  important since modeling temporally correlated categories or counts is useful
-  in a variety of disciplines, including ecology, economics, epidemiology,
-  medicine, and neuroscience.  In this paper, we present one such technique,
-  \Polya-Gamma data augmentation, and compare it against two competing methods.
-  We find that the \Polya-Gamma approach works well for dynamic logistic
-  regression and for dynamic negative binomial regression when the count sizes
-  are small.  Supplementary files are provided for replicating the benchmarks.
+\begin{abstract}
+Dynamic linear models with Gaussian observations and Gaussian states lead to
+closed-form formulas for posterior simulation.  However, these closed-form
+formulas break down when the response or state evolution ceases to be Gaussian.
+Dynamic, generalized linear models exemplify a class of models for which this is
+the case, and include, amongst other models, dynamic binomial logistic
+regression and dynamic negative binomial regression.  Finding and appraising
+posterior simulation techniques for these models is important since modeling
+temporally correlated categories or counts is useful in a variety of
+disciplines, including ecology, economics, epidemiology, medicine, and
+neuroscience.  In this paper, we present one such technique, \Polya-Gamma data
+augmentation, and compare it against two competing methods.  We find that the
+\Polya-Gamma approach works well for dynamic logistic regression and for dynamic
+negative binomial regression when the count sizes are small.  Supplementary
+files are provided for replicating the benchmarks.
+\end{abstract}
 
-  \smallskip \textit{Keywords:} {binomial likelihood, dynamic logistic
-    regression, dynamic negative binomial regression} }
+\noindent %
+{\it Keywords:} {Bayesian, Binomial, Logistic, Regression, Simulation}
 
 % \tableofcontents
 % \newpage
@@ -136,7 +139,7 @@ brief overview of this evolution and the challenges that arise along the way.
 parameterize the expectation and variance of the response in terms of a linear
 combination of the predictors, $\psi_t = \vx_t' \bbeta$, and lead to tractable
 models for counts, categories, and other non-real valued data
-\citep{mccullagh-nelder-1989, wedderburn-1974}.  Strictly speaking, one need not
+\citep{wedderburn-1974, mccullagh-nelder-1989}.  Strictly speaking, one need not
 specify the distribution of the response, just its first two moments, but since
 we are interested in Bayesian inference we will restrict our attention to
 situations in which the likelihood, $f(y_t | \psi_t)$, is specified.  When the
@@ -264,7 +267,7 @@ this coincides with the iteratively reweighted least squares procedure for
 generalized linear models \citep{gamerman-1997}.  One may follow a similar
 strategy by first doing a change of coordinates to sample the disturbances
 instead of the hidden states and then use a Laplace approximation
-\citep{gamerman-1998, shephard-pitt-1997}.  Advocates of this strategy suggest
+\citep{shephard-pitt-1997, gamerman-1998}.  Advocates of this strategy suggest
 that the subsequent blocking possesses less intrinsic autocorrelation.
 \cite{migon-etal-2013} show that the CUBS approximation of \cite{west-etal-1985}
 is a good proposal, and based upon our own computational experiments we find
@@ -285,11 +288,12 @@ can be sampled efficiently.  Examples that almost meet both criterions include
 \cite{mcfadden-1974}, where (1) is not met, and \cite{holmes-held-2006}, where
 (2) can be significantly improved.
 
-\npoint Fr\"{u}hwirth-Schnatter and her colleagues have developed fixes for
-these shortcomings that rely upon approximating distributions using discrete
-mixtures of Gaussians.  Their work has lead to data augmentation schemes that
-satisfy (1) and (2), in an approximate though accurate sense, for binomial and
-multinomial logistic regression \citep{fruhwirth-schnatter-fruhwirth-2007,
+\npoint Fr\"{u}hwirth-Schnatter and Fr\"{u}hwirth and their colleagues Fussl,
+Held, Rue, and Wagner have developed fixes for these shortcomings that rely upon
+approximating distributions using discrete mixtures of Gaussians.  Their work
+has lead to data augmentation schemes that satisfy (1) and (2), in an
+approximate though accurate sense, for binomial and multinomial logistic
+regression \citep{fruhwirth-schnatter-fruhwirth-2007,
   fruhwirth-schnatter-fruhwirth-2010, fussl-etal-2013}, Poisson regression
 \citep{fruhwirth-schnatter-wagner-2006, fruhwirth-schnatter-etal-2009}, and
 negative binomial regression \citep{fruhwirth-schnatter-etal-2009}.  (In the
@@ -358,7 +362,7 @@ which is useful since the ratio
   \propto
   \exp({-\psi_t b_t/2}) 
 \end{equation}
-so that the complete conditional of $\bbeta$ is
+so that, upon completing the square, the complete conditional of $\bbeta$ is
 % \[
 % p(\beta | y, \omega) \propto
 % \Big[ \prod_{t=1}^n e^{\kappa_t \psi_t - \frac{\omega_t}{2} \psi_t^2}
@@ -574,9 +578,9 @@ MCMC simulations.
 
 In general, we find these principles to hold.  The \Polya-Gamma data
 augmentation technique performs well for dynamic binomial logistic regression
-when the number of trials of the response is small, showing a 25\% better ESR
-for binary logistic regression than \cite{fussl-etal-2013}; however,
-\cite{fussl-etal-2013} does better when the number of trials is large.
+when the number of trials of the response is small, showing a roughly 25\%
+better ESR for binary logistic regression than \cite{fussl-etal-2013}; however,
+\cite{fussl-etal-2013} does slightly better when the number of trials is large.
 Similarly, the \Polya-Gamma technique outpaces
 \cite{fruhwirth-schnatter-etal-2009} in negative binomial regression when the
 average number of counts is small, but loses when the average number of counts
@@ -616,45 +620,53 @@ found in the Appendix.
       \hline
       % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-1-wout.ar
       % PG / dRUM
+      % $1$ & low & no & 1.26 \\
       $1$ & low & no & 1.26 \\
       % PG / CUBS 47.5399
       % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-1-with.ar
       % PG / PG 1
       % PG / dRUM
-      $1$ & low & yes & 1.29 \\
+      % $1$ & low & yes & 1.29 \\
+      $1$ & low & yes & 1.30 \\
       % PG / CUBS 287.291
 
       % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-1-wout.ar
       % PG / PG 1
       % PG / dRUM
-      $1$ & high & no & 1.25 \\
+      % $1$ & high & no & 1.25 \\
+      $1$ & high & no & 1.23 \\
       % PG / CUBS 36.9012
       % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-1-with.ar
       % PG / PG 1
       % PG / dRUM
-      $1$ & high & yes & 1.26 \\
+      % $1$ & high & yes & 1.26 \\
+      $1$ & high & yes & 1.23 \\
       % PG / CUBS 175.964
 
       % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-20-wout.ar
       % PG / PG 1
       % PG / dRUM
-      $20$ & low & no & 0.52 \\
+      % $20$ & low & no & 0.52 \\
+      $20$ & low & no & 0.91 \\
       % PG / CUBS 29.4906
       % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-20-with.ar
       % PG / PG 1
       % PG / dRUM
-      $20$ & low & yes & 0.57 \\
+      % $20$ & low & yes & 0.57 \\
+      $20$ & low & yes & 0.98 \\
       % PG / CUBS 49.9306
 
       % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-20-wout.ar
       % PG / PG 1
       % PG / dRUM
-      $20$ & high & no & 0.48 \\
+      % $20$ & high & no & 0.48 \\
+      $20$ & high & no & 0.83 \\
       % PG / CUBS 13.323
       % Bench-Dyn-06/Tables/table.bench-dynlogit-high-2-n-20-with.ar
       % PG / PG 1
       % PG / dRUM
-      $20$ & high & yes & 0.58
+      % $20$ & high & yes & 0.58
+      $20$ & high & yes & 0.98
       % PG / CUBS 38.9124
     \end{tabular}
     % 
@@ -713,15 +725,15 @@ found in the Appendix.
     \end{tabular}
   \end{center}
 
-  NOTE: ESR PG/dRUM and ESR PG/FS report the ratio of the median effective
-  sampling rate for the PG method compared to the best alternative, which in both
-  cases is the discrete mixture of normal approaches \citep{fussl-etal-2013,
-    fruhwirth-schnatter-etal-2009}.  A higher ratio corresponds to the PG method
-  doing better.  $n$ corresponds to the number of trials for the binomial response
-  while $\mu$ corresponds to the approximate mean for the negative binomial
-  response.  $f$ determines whether there is a low or high amount of correlation
-  between the covariates.  Est.\ AR indicates whether the parameters of the AR
-  process were estimated or not.
+NOTE: ESR PG/dRUM and ESR PG/FS report the ratio of the median effective
+sampling rate for the PG method compared to the best alternative, which in both
+cases is the discrete mixture of normal approaches \citep{fussl-etal-2013,
+  fruhwirth-schnatter-etal-2009}.  A higher ratio corresponds to the PG method
+doing better.  $n$ corresponds to the number of trials for the binomial response
+while $\mu$ corresponds to the approximate mean for the negative binomial
+response.  $f$ determines whether there is a low or high amount of correlation
+between the covariates.  Est.\ AR indicates whether the parameters of the AR
+process were estimated or not.
 
 \end{table}
 
@@ -756,13 +768,13 @@ reduces to simulating \Polya-Gamma random variates, which can be done using the
 \Polya-Gamma data augmentation approach is one line of code within an R script.
 (The C code used by the \texttt{BayesLogit} package is freely available, so this
 applies equally well to any scripting language that can make calls to external C
-routines.)  Further, for all models benchmarked herein, the \Polya-Gamma
-technique has superior effective sampling size, so that more efficient
-\Polya-Gamma samplers will diminish any gaps in performance.  When improved
-samplers arise, users of the \Polya-Gamma technique need not make any changes to
-their code, they can simply download the latest version of the R package.  The
-overwhelming simplicity and adaptability of the method makes it a good choice
-regardless of its efficiency.
+routines.)  Further, for all but one benchmark, the \Polya-Gamma technique has
+superior effective sample size, so that more efficient \Polya-Gamma samplers
+will diminish any gaps in performance.  When improved samplers arise, users of
+the \Polya-Gamma technique need not make any changes to their code, they can
+simply download the latest version of the R package.  The overwhelming
+simplicity and adaptability of the method makes it a good choice regardless of
+its efficiency.
 
 % \appendix
 \section*{Appendix: Benchmark Data Sets}
@@ -848,7 +860,8 @@ of the results.
 
       \multicolumn{9}{c}{$n=1$, $f = (1,2)$, known AR parameters} \\
       % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
-      PG   &    28.66 &     1.00 &   8333.94 &   9388.18 &   9904.42 &    290.79 &    327.55 &    345.57 \\
+      %PG     &    28.66 &     1.00 &   8333.94 &   9388.18 &   9904.42 &    290.79 &    327.55 &    345.57 \\
+      PG     &    28.89 &     1.00 &   8318.79 &   9410.34 &   9900.54 &    287.97 &    325.75 &    342.72 \\ 
       dRUM   &    29.13 &     1.00 &   5344.83 &   7550.10 &   9757.91 &    183.48 &    259.19 &    334.98 \\
       CUBS   &   612.14 &     0.71 &   2799.89 &   4219.25 &   5845.51 &      4.57 &      6.89 &      9.55
       \\ %\end{tabular}
@@ -859,7 +872,8 @@ of the results.
       \multicolumn{9}{c}{$n=1$, $f = (1,2)$, unknown AR parameters} \\
 
       % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
-      PG   &    31.33 &     1.00 &   1855.82 &   7109.57 &   9739.31 &     59.24 &    226.96 &    310.89 \\
+      %PG     &    31.33 &     1.00 &   1855.82 &   7109.57 &   9739.31 &     59.24 &    226.96 &    310.89 \\
+      PG     &    31.74 &     1.00 &   1767.54 &   7260.85 &   9638.08 &     55.70 &    228.80 &    303.71 \\ 
       dRUM   &    31.95 &     1.00 &   1535.90 &   5632.82 &   8921.27 &     48.07 &    176.30 &    279.22 \\
       CUBS   &   612.37 &     0.56 &    242.71 &    487.21 &    775.24 &      0.39 &      0.79 &      1.26
       \\ %\end{tabular}
@@ -869,7 +883,8 @@ of the results.
 
       \multicolumn{9}{c}{$n=1$, $f = (1,1.1)$, known AR parameters} \\
       % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
-      PG   &    28.60 &     1.00 &   8596.25 &   9402.62 &   9933.72 &    300.60 &    328.79 &    347.36 \\
+      %PG     &    28.60 &     1.00 &   8596.25 &   9402.62 &   9933.72 &  300.60 &    328.79 &    347.36 \\
+      PG     &    28.92 &     1.00 &   8549.34 &   9398.49 &   9920.66 &    295.63 &    324.99 &    343.05 \\
       dRUM   &    29.13 &     1.00 &   6095.80 &   7675.76 &   9634.57 &    209.27 &    263.51 &    330.77 \\
       CUBS   &   620.95 &     0.72 &   4120.25 &   5531.41 &   6817.09 &      6.64 &      8.91 &     10.98
       \\ %\end{tabular}
@@ -879,16 +894,18 @@ of the results.
       % \begin{tabular}{l r r r r r r r r }
       \multicolumn{9}{c}{$n=1$, $f = (1,1.1)$, unknown AR parameters} \\
       % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
-      PG   &    31.37 &     1.00 &    765.97 &   4636.70 &   9415.57 &     24.42 &    147.81 &    300.15 \\
+      %PG     &    31.37 &     1.00 &    765.97 &   4636.70 &   9415.57 &   24.42 &    147.81 &    300.15 \\
+      PG     &    31.75 &     1.00 &    747.98 &   4541.20 &   9543.19 &     23.56 &    143.03 &    300.56 \\
       dRUM   &    31.96 &     1.00 &    656.58 &   3734.29 &   8079.58 &     20.55 &    116.85 &    252.82 \\
-      CUBS   &   615.39 &     0.56 &    211.12 &    516.69 &    998.70 &      0.34 &      0.84 &      1.61
+      CUBS   &   615.39 &     0.56 &    211.12 &    516.69 &    998.70 & 0.34 &      0.84 &      1.61
       \\ %\end{tabular}
 
       % Bench-Dyn-06/Tables/table.bench-dynlogit-low-2-n-20-wout.ar
       % \begin{tabular}{l r r r r r r r r }
       \multicolumn{9}{c}{$n=20$, $f = (1,2)$, known AR parameters} \\
       % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
-      PG   &    73.54 &     1.00 &   7161.18 &   9238.58 &   9923.40 &     97.38 &    125.63 &    134.95 \\
+      %PG     &    73.54 &     1.00 &   7161.18 &   9238.58 &   9923.40 &     97.38 &    125.63 &    134.95 \\
+      PG     &    42.09 &     1.00 &   7232.56 &   9231.66 &   9968.61 &    171.83 &    219.33 &    236.83 \\ 
       dRUM   &    28.87 &     1.00 &   3528.34 &   6959.36 &   9893.99 &    122.21 &    241.04 &    342.69 \\
       CUBS   &   650.67 &     0.51 &    727.34 &   2770.01 &   3699.75 &      1.12 &      4.26 &      5.69
       \\ %\end{tabular}
@@ -898,7 +915,8 @@ of the results.
       % \begin{tabular}{l r r r r r r r r }
       \multicolumn{9}{c}{$n=20$, $f = (1,2)$, unknown AR parameters} \\
       % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
-      PG   &    76.26 &     1.00 &   1897.09 &   5482.92 &   9758.10 &     24.88 &     71.90 &    127.95 \\
+      %PG     &    76.26 &     1.00 &   1897.09 &   5482.92 &   9758.10 &     24.88 &     71.90 &    127.95 \\
+      PG     &    44.97 &     1.00 &   1912.71 &   5555.84 &   9668.94 &     42.54 &    123.56 &    215.03 \\ 
       dRUM   &    31.69 &     1.00 &   1754.39 &   4003.81 &   9536.59 &     55.36 &    126.33 &    300.91 \\
       CUBS   &   662.42 &     0.47 &    498.89 &    953.03 &   1980.98 &      0.75 &      1.44 &      2.99
       \\ %\end{tabular}
@@ -908,7 +926,8 @@ of the results.
       % \begin{tabular}{l r r r r r r r r }
       \multicolumn{9}{c}{$n=20$, $f = (1,1.1)$, known AR parameters} \\
       % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
-      PG   &    73.16 &     1.00 &   7918.31 &   9416.01 &   9810.23 &    108.23 &    128.70 &    134.09 \\
+      %PG     &    73.16 &     1.00 &   7918.31 &   9416.01 &   9810.23 &    108.23 &    128.70 &    134.09 \\
+      PG     &    42.01 &     1.00 &   7874.38 &   9424.07 &   9873.00 &    187.46 &    224.35 &    235.04 \\ 
       dRUM   &    28.88 &     1.00 &   4654.77 &   7771.95 &   9041.13 &    161.17 &    269.10 &    313.05 \\
       CUBS   &   659.75 &     0.63 &   3813.36 &   6375.18 &   6741.68 &      5.78 &      9.66 &     10.22
       \\ %\end{tabular}
@@ -917,7 +936,8 @@ of the results.
       % \begin{tabular}{l r r r r r r r r }
       \multicolumn{9}{c}{$n=20$, $f = (1,1.1)$, unknown AR parameters} \\
       % Method  &    time  &   ARate  &  ESS.min  &  ESS.med  &  ESS.max  &  ESR.min  &  ESR.med  &  ESR.max  \\
-      PG   &    75.98 &     1.00 &    408.79 &   5735.76 &   9484.30 &      5.38 &     75.49 &    124.83 \\
+      %PG     &    75.98 &     1.00 &    408.79 &   5735.76 &   9484.30 &      5.38 &     75.49 &    124.83 \\
+      PG     &    44.87 &     1.00 &    414.63 &   5713.07 &   9511.09 &      9.24 &    127.33 &    211.99 \\
       dRUM   &    31.71 &     1.00 &    418.48 &   4106.12 &   8269.33 &     13.20 &    129.48 &    260.76 \\
       CUBS   &   665.71 &     0.47 &    273.76 &   1290.78 &   1893.79 &      0.41 &      1.94 &      2.84
     \end{tabular}
@@ -1091,7 +1111,12 @@ of the results.
 
 \newpage
 
-\section*{Supplementary Materials}
+\bigskip
+\begin{center}
+{\large\bf SUPPLEMENTAL MATERIALS}
+\end{center}
+
+%\section*{Supplementary Materials}
 
 \begin{description}
 

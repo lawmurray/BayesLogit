@@ -1,0 +1,55 @@
+\documentclass[12pt]{letter}
+
+\usepackage{marginnote}
+
+\newcounter{parnum}
+\newcommand{\npoint}{%
+  \noindent\refstepcounter{parnum}%
+  \makebox[0.5in][c]{\textbf{\arabic{parnum}.}} %
+  \marginnote{\small\ttfamily\the\inputlineno}}
+
+\renewcommand{\npoint}{}
+
+\usepackage{hyperref}
+\signature{Jesse Windle}
+\address{Duke University \\ Department of Statistical Science \\ Box 90251 \\
+  Durham, NC, 27708 \\ jesse.windle@stat.duke.edu }
+
+\begin{document}
+ 
+\begin{letter}{Journal of Computational and Graphical Statistics}
+\opening{Dear Editors:}
+ 
+\npoint We hereby submit for your consideration a paper proposing a posterior
+simulation technique for dynamic generalized linear models whose observations
+have binomial likelihoods.
+%
+\npoint The method is useful when modeling temporally correlated counts or
+binary outcomes, as might arise in ecology, epidemiology, neuroscience,
+economics, or medicine.
+% 
+\npoint Posterior simulation in such scenarios is difficult since (1) non-normal
+responses break the forward filter backwards sampler, a method that is linear in
+the number of outcomes, and (2) time series are inherently high-dimensional,
+making Metropolis-Hastings based approaches a challenge.
+% 
+\npoint We propose a data augmentation strategy and compare it to two preeminent
+alternatives, one that uses data augmentation and another that uses
+Metropols-Hastings.
+%
+\npoint The subsequent benchmarks show that our method performs well for dynamic
+logistic regression and dynamic negative binomial regression for small count
+sizes.
+% 
+\npoint The supplementary file submitted will let anyone with the ability to
+compile an R package perform the same set of benchmarks.
+
+\closing{Thank you for your time and service,}
+ 
+% \ps{P.S. You can find the full text of GFDL license at
+% \url{http://www.gnu.org/copyleft/fdl.html}.}
+% \encl{Copyright permission form}
+ 
+\end{letter}
+ 
+\end{document}
