@@ -115,23 +115,34 @@ files are provided for replicating the benchmarks.
 
 \section{Introduction}
 
-\npoint Non real-valued data arises in a variety of settings.  For instance,
-integral data may be found in ecology or epidemiology when modeling populations
-of species or outbreaks of infections and in neuroscience when modeling brain
-activity in terms of discrete neural impulses.  Categorical data is similarly
-ubiquitous, arising, for example, in medicine to describe a successful treatment
-and in economics to denote the default on a loan.
+\subsection{Bayesian inference for complex discrete data}
+
+Bayesian inference for discrete-data models has long been recognized as
+a challenging problem, due to the analytically inconvenient form of
+the likelihood functions that arise.  This makes it much more difficult to fit discrete models with rich stochastic structure.  This is in stark contrast to the case of real-valued data, for which the Bayesian literature contains a tremendous variety of highly structured models.  These tools allow us to handle data sets that are not merely large, but also dense: varying in time or space, rich with covariates, or layered with multi-level structure.  This level of sophistication is made possible by the mathematical and computational simplicity of the Gaussian likelihood, and the flexibility of the mixture-of-Gaussians class.
+
+Given the widespread need for rich discrete-data models, much work has been done on making them amenable to Bayesian inference.  The traditional approach is
+to work directly with the discrete-data likelihood, whether via numerical
+integration \citep{skene:wakefield:1990}, analytic approximations
+\citep{carlin:1992,bradlow:etal:2002,gelman:etal:2008,forster:2011},
+or the Metropolis-Hastings algorithm \citep{DelFor99,dobra:tebaldi:west:2006}.  These methods are used in popular R packages that implement MCMC for non-Gaussian models \citep{mcmcpack:2011}.  Unfortunately, none lead to a fully automatic
+approach to posterior inference, as they require either approximations
+(whose quality must be validated) or the choice of a tuning
+constant (as in the
+Metropolis--Hastings sampler) that strongly affects performance.  In practice, these difficulties limit users to simple models and small data sets, especially in the case of non-i.i.d.~data.
+
+This paper considers the particular situation of integer-valued outcomes collected over time.  This kind of data may be found in, for example, ecology or epidemiology when modeling populations
+of species or outbreaks of infections, and in neuroscience when modeling brain
+activity as manifest in neural spike trains.  Such data sets are archetypal of the wider pattern of computational difficulty associated with discrete data sets: in addition to the non-Gaussian likelihood, one must also account for the temporal correlation.  Autoregressive-like models are helpful in this regard, at the cost of making posterior inference more difficult.
+
+We directly address this problem, proposing an elegant and efficient data
+augmentation technique for dynamic models with binomial likelihoods.  This includes the logistic regression model and its variants (for binary and categorical data), along with the negative-binomial model (for count data).  Our approach involves a data-augmentation scheme based on the family of Polya-Gamma distributions.  As we will show, this is the crucial step in allowing a wide class of models to be handled using simple variations on established techniques for Bayesian inference in linear Gaussian state-space models.
 %%%%
-\npoint Such data may be temporally correlated, in which case setting up an
-autoregressive-like structure is helpful, though at the cost of making posterior
-inference more difficult.
-%%%%
-\npoint We address this hardship, proposing an elegant and efficient data
-augmentation technique for dynamic models of counts or categories that have
-binomial likelihoods.
-%%%%
-\npoint The origin of these models can be traced to their static ancestors,
-which, in turn, are successors to the linear model.  Currently, we provide a
+
+\subsection{Background}
+
+\npoint The origin of dynamic logit and negative-binomial models can be traced to their static ancestors,
+which, in turn, are successors to the linear model.  We provide a
 brief overview of this evolution and the challenges that arise along the way.
 
 \npoint Generalized linear models (GLMs) 
@@ -1132,8 +1143,8 @@ of the results.
 
 % If you have a bibliography.
 % The file withe bibliography is name.bib.
-\bibliography{bayeslogit}{}
-\bibliographystyle{asa}
+\bibliography{bayeslogit,jamesbib}{}
+\bibliographystyle{abbrvnat}
 
 \end{document}
 
