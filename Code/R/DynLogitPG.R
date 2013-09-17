@@ -118,8 +118,9 @@ dyn.logit.PG <- function(y, X.dyn, n=rep(1, length(y)), X.stc=NULL,
     if (P.a > 0) { psi = psi + X.stc %*% iota; }
     
     ## draw om
-    om = rpg.devroye(T, n, psi);
-
+    ## om = rpg.devroye(T, n, psi);
+    om = rpg(T, n, psi);
+    
     ## Draw beta;
     z = kappa / om;
     ffbs = CUBS.C(z, X, 1/om, mu, phi, diag(W, P.b), m.0, C.0, obs="norm");
