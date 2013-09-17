@@ -1,0 +1,57 @@
+\documentclass[12pt]{article}
+
+\usepackage{graphicx,hyperref}
+\usepackage{bayes}
+%\usepackage{times}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{setspace}
+\usepackage{natbib}
+\usepackage{marginnote}
+
+\input{DynLogitPaperCommands}
+
+\setlength{\oddsidemargin}{0.0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\textheight}{8in}
+
+\begin{document}
+
+%% Title/Author
+% -------------------------------------------------------------------------------
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+\author{
+  Jesse Windle\footnotemark[1],
+  Carlos M. Carvalho\footnotemark[2],
+  James G. Scott\footnotemark[2], and
+  Liang Sun\footnotemark[2]%
+}
+
+\title{\Polya-Gamma Data Augmentation for Dynamic Models}
+
+\maketitle
+
+\footnotetext[1]{
+ Duke University
+ \href{mailto:jesse.windle@stat.duke.edu}{jesse.windle@stat.duke.edu}
+}
+\footnotetext[2]{
+ The University of Texas at Austin
+ %\href{mailto:email2@example.com}{email2@example.com}
+}
+\renewcommand{\thefootnote}{\arabic{footnote}}
+
+%% CONTENT 
+% -------------------------------------------------------------------------------
+\input{DynLogitPaper}
+
+% BIBLIOGRAPHY
+% -------------------------------------------------------------------------------
+
+% If you have a bibliography.
+% The file withe bibliography is name.bib.
+\bibliography{bayeslogit}{}
+\bibliographystyle{abbrvnat}
+
+\end{document}

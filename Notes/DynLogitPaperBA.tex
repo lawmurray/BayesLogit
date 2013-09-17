@@ -1,0 +1,62 @@
+\documentclass[bib]{ba}
+
+\usepackage{graphicx,hyperref}
+\usepackage{bayes}
+%\usepackage{times}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{setspace}
+\usepackage{natbib}
+\usepackage{marginnote}
+
+\input{DynLogitPaperCommands}
+
+\begin{document}
+
+%% Title/Author
+% -------------------------------------------------------------------------------
+\inserttype[ba0001]{article}
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+\author{J. Windle, C. M. Carvalho, J.G. Scott, and L. Sun}{
+\fnms{Jesse}
+\snm{Windle}
+\footnotemark[1]\ead{jesse.windle@stat.duke.edu}
+\fnms{Carlos M.}
+\snm{Carvalho}
+\footnotemark[2]\ead{carlos.carvalho@mccombs.utexas.edu}
+\fnms{James G.}
+\snm{Scott}
+\footnotemark[2]\ead{james.scott@mccombs.utexas.edu}
+\fnms{Liang}
+\snm{Sun}
+\footnotemark[2]\ead{sallylia@gmail.com}
+}
+
+\title{\Polya-Gamma Data Augmentation for Dynamic Models}
+
+\maketitle
+
+\footnotetext[1]{
+ Duke University
+ \href{mailto:jesse.windle@stat.duke.edu}{jesse.windle@stat.duke.edu}
+}
+\footnotetext[2]{
+ The University of Texas at Austin
+ %\href{mailto:email2@example.com}{email2@example.com}
+}
+\renewcommand{\thefootnote}{\arabic{footnote}}
+
+%% CONTENT 
+% -------------------------------------------------------------------------------
+\input{DynLogitPaper}
+
+% BIBLIOGRAPHY
+% -------------------------------------------------------------------------------
+
+% If you have a bibliography.
+% The file withe bibliography is name.bib.
+\bibliography{bayeslogit}{}
+\bibliographystyle{ba}
+
+\end{document}
