@@ -162,7 +162,7 @@ class of models to be handled using simple variations on established techniques
 for Bayesian inference in linear Gaussian state-space models.
 %%%%
 
-\subsection{Background}
+\subsection{Historical Context}
 
 \npoint The origin of dynamic logit and negative-binomial models can be traced
 to their static ancestors, which, in turn, are successors to the linear model.
@@ -178,24 +178,24 @@ models for counts, categories, and other non-real valued data
 specify the distribution of the response, just its first two moments, but since
 we are interested in Bayesian inference we will restrict our attention to
 situations in which the likelihood, $f(y_t | \psi_t)$, is specified.  When the
-likelihood comes from the exponential family of distributions, tractable means
-that one may easily calculate the posterior mode and associated error estimates;
-however, most likelihoods lead to posterior distributions which are difficult to
-sample, requiring Metropolis-Hastings sampling, Gibbs sampling via data
-augmentation, or some other MCMC method.
+likelihood comes from the exponential family of distributions, one may easily
+calculate the posterior mode and associated error estimates; however, most of
+these likelihoods lead to posterior distributions which are difficult to sample,
+requiring Metropolis-Hastings sampling, Gibbs sampling via data augmentation, or
+some other MCMC method.
 
 \npoint Dynamic generalized linear models (DGLMs) permit an evolving
 relationship between the response and the covariates via time-varying regression
 coefficients, $\{\bbeta_t\}_{t=1}^T$, so that $\psi_t = \vx_t' \bbeta_t$ for
 $t=1, \ldots, T$.  One must specify a prior for $\{\bbeta_t\}_{t=1}^T$, which
-controls how quickly $\{\bbeta_t\}_{t=1}^T$ may change, to complete the model.
-It is common to let the prior be an AR(1) process or a random walk, both with
-Gaussian innovations.  In either case, one recovers a state-space model
-characterized by the observation distribution $f(y_t | \psi_t)$ for the response
-and the Markovian evolution distribution $g(\bbeta_t | \bbeta_{t-1})$ for the
-hidden states.  Transitioning from the static to the dynamic model is a small
-step conceptually but a big step practically.  In particular, it becomes more
-difficult to generate posterior samples.
+controls how quickly $\{\bbeta_t\}_{t=1}^T$ may change; it is common to let
+$\{\bbeta_t\}_{t=1}^T$ be a Gaussian AR(1) process or a Gaussian random walk.
+In either case, one recovers a state-space model characterized by the
+observation distribution $f(y_t | \psi_t)$ for the response and the Markovian
+evolution distribution $g(\bbeta_t | \bbeta_{t-1})$ for the hidden states.
+Transitioning from the static to the dynamic model is a small step conceptually
+but a big step practically.  In particular, it becomes more difficult to
+generate posterior samples.
 
 \npoint To clarify the challenge of simulating $(\{\bbeta_t\}_{t=1}^T |
 \{y_t\}_{t=1}^T)$ for dynamic generalized linear models, it is helpful to
@@ -358,26 +358,27 @@ considered herein.
 \label{sec:pg}
 
 We consider DGLMs with binomial likelihoods: \( f(y_t | q_t) = c(y_t) q_t^{a_t}
-(1-q_t)^{d_t}, \) where $a_t$ and $d_t$ do not depend upon $q_t$.  Logistic
-regression and negative binomial regression are two common models that fit
-within this regime.  It is preferable to express this likelihood in terms of the
-log odds, $\psi_t = \log \frac{q_t}{1-q_t}$, since this is the scale on which we
-linearly model the covariates:
+(1-q_t)^{d_t}, \) where $a_t$ and $d_t$ may depend on $y_t$ but do not depend
+upon $q_t$.  Logistic regression and negative binomial regression are two common
+models that fit within this regime.  It is preferable to express the likelihood
+$f$ in terms of the log odds, $\psi_t = \log \frac{q_t}{1-q_t}$, since this is
+the scale on which we linearly model the covariates:
 \[
 f(y_t | \psi_t) = c(y_t) \, \frac{\exp(\psi_t)^{a_t}}{(1+\exp(\psi_t))^{b_t}},
 \]
 where $b_t = a_t + d_t$.  Given a collection of observations $\yy =
-\{y_t\}_{t=1}^T$, the posterior distribution is
+\{y_t\}_{t=1}^T$, the posterior distribution of the hidden states $\betap =
+\{\bbeta_t\}_{t=1}^T$ is
 \[
 p(\betap | \yy) = c(\yy) \Big[ \prod_{t=1}^T
 \frac{\exp({\psi_t})^{a_t}}{(1+\exp({\psi_t}))^{b_t}}
 \Big] p(\betap),
 \]
-where $\psi_t = \vx_t' \bbeta_t$ and $\betap = \{\bbeta_t\}_{t=1}^T$.  (We will use
-the generic function $p$ to denote a probability density.)  Following
-\cite{polson-etal-2013}, one may introduce a collection of independent
-\Polya-Gamma random variates $\oomega = \{\omega_t\}_{t=1}^T$, $\omega_t \sim
-\PG(b_t, \psi_t)$ for $t=1, \ldots, T$, to construct the joint distribution
+where $\psi_t = \vx_t' \bbeta_t$.  (We will use the generic function $p$ to
+denote a probability density.)  Following \cite{polson-etal-2013}, one may
+introduce a collection of independent \Polya-Gamma random variates $\oomega =
+\{\omega_t\}_{t=1}^T$, $\omega_t \sim \PG(b_t, \psi_t)$ for $t=1, \ldots, T$, to
+construct the joint distribution
 \[
 p(\betap, \oomega | \yy) = c(\yy) \Big[ \prod_{t=1}^T
 \frac{\exp({\psi_t})^{a_t}}{(1+\exp({\psi_t}))^{b_t}} p(\omega_t | b_t, \psi_t)
@@ -397,7 +398,7 @@ which is useful since the ratio
   \propto
   \exp({-\psi_t b_t/2}) 
 \end{equation}
-so that, upon completing the square, the complete conditional of $\bbeta$ is
+so that, upon completing the square, the complete conditional of $\betap$ is
 % \[
 % p(\beta | y, \omega) \propto
 % \Big[ \prod_{t=1}^n e^{\kappa_t \psi_t - \frac{\omega_t}{2} \psi_t^2}
@@ -433,14 +434,15 @@ from the DLM
 \end{cases}
 \]
 
-Collecting these two complete conditionals leads to posterior simulation by
-Gibbs sampling: draw $(\betap|\oomega, \yy)$ using the FFBS algorithm and draw
-$(\oomega | \betap, \yy)$ by taking independent samples of $\omega_t \sim
-\PG(b_t, \psi_t)$ for $t=1, \ldots, T$.  \cite{polson-etal-2013} describe how to
-sample from $\PG$ distributions and implement this sampler in the \texttt{R}
-package \texttt{BayesLogit} \citep{bayeslogit-2013}.  Sampling any
-hyperparameters, like the autocorrelation coefficient of the AR(1) process or
-the innovation variance, follows using standard conjugate or MCMC techniques.
+Collecting the complete conditional for $\betap$ and for $\oomega$ leads to
+posterior simulation by Gibbs sampling: draw $(\betap|\oomega, \yy)$ using the
+FFBS algorithm and draw $(\oomega | \betap, \yy)$ by taking independent samples
+of $\omega_t \sim \PG(b_t, \psi_t)$ for $t=1, \ldots, T$.
+\cite{polson-etal-2013} describe how to sample from $\PG$ distributions and
+implement this sampler in the \texttt{R} package \texttt{BayesLogit}
+\citep{bayeslogit-2013}.  Sampling any hyperparameters, like the autocorrelation
+coefficient of the AR(1) process or the innovation variance, follows using
+standard conjugate or MCMC techniques.
 
 \begin{example}
   Suppose that one observes binomial outcomes $y_t \sim \text{Binom}(n_t, q_t)$
@@ -568,13 +570,14 @@ We consider synthetic data sets with a variety of characteristics.
 For dynamic binomial logistic regression, we consider log odds of the form
 $\alpha + \vx_t' \bbeta_t$ where $\alpha$ is a scalar and $\{\bbeta_t\}_{t=1}^T$
 is a 2-dimensional AR(1) process with autocorrelation coefficient $\bPhi = 0.95
-I_2$.  Four different synthetic data sets are constructed, allowing for low and
-high correlation amongst $\{\vx_t\}_{t=1}^T$ and responses, $y_t \sim
-\text{Binom}(n, q_t), t=1, \ldots, T$, with either $n=1$ or $n=20$ trials.  The
-setup is almost identical for dynamic negative binomial regression except that
-we model the log-mean as $\alpha + \vx_t' \bbeta_t$ and consider responses with
-$\alpha = \log(10)$ or $\alpha = \log(100)$ corresponding to average count sizes
-of roughly 10 or 100.  Further details may be found in the Appendix.
+I_2$.  Four different synthetic data sets are constructed, allowing the
+covariates $\{\vx_t\}_{t=1}^T$ to have lots or little of correlation and letting
+the responses $y_t$ arise from $\text{Binom}(n, q_t), t=1, \ldots, T$ with
+either $n=1$ or $n=20$ trials.  The setup is almost identical for dynamic
+negative binomial regression except that we model the log-mean as $\alpha +
+\vx_t' \bbeta_t$ and consider responses with $\alpha = \log(10)$ or $\alpha =
+\log(100)$ corresponding to average count sizes of roughly 10 or 100.  Further
+details may be found in the Appendix.
 
 Some caution is warranted when comparing methods as the effective sampling rate
 is sensitive to a procedure's implementation and the hardware on which it is
@@ -606,10 +609,10 @@ slower than sampling small $b$.  These differences in computational cost are
 important, as one must sample $\omega_t \sim \PG(b_t, \psi_t), t=1,\ldots,T$,
 for each MCMC iteration under \Polya-Gamma data augmentation.  In binomial
 logistic regression, $b_t = n_t$ where $n_t$ is the number of trials at each
-response $y_t$.  Hence, when $n_t$ is small the PG method will do well.  In
-negative binomial regression, $b_t = y_t + d_t$ where $y_t$ is a response and
-$d_t$ is the dispersion.  Thus, larger average responses should lead to longer
-MCMC simulations.
+response $y_t$.  Hence, when there are few trials, as is usually the case, the
+PG method will do well.  For negative binomial regression $b_t = y_t + d_t$
+where $y_t$ is the response and $d_t$ is the dispersion.  Thus, larger average
+counts sizes will lead to longer MCMC simulations.
 
 In general, we find these principles to hold.  The \Polya-Gamma data
 augmentation technique performs well for dynamic binomial logistic regression
