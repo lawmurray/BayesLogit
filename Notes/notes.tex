@@ -2028,6 +2028,56 @@ for the sum of independent Logistics, which is
 \sum_{i=1}^n Lo_i = log(\Ga(n,1)) - \log(Ga(n,1)).
 \]
 
+\section{Fussl 2013}
+
+Check out literature-notes.tex.  Let $y_i \sim \text{Binom}(n_i, p_i)$.  Let
+$\psi_i = p_i / (1 - p_i) = x_i \beta$.  Then we introduce latent's $z_i^*$ and
+$r_i$.
+
+\subsection{$(z_i^*|y_i)$}
+
+Note: MARGINAL.
+
+Draw
+\[
+\begin{cases}
+w_i = \text{rgamma}(n_i, 1) / (\lambda_i^1 + \lambda_i^0) \\
+u_i = \text{rgamma}(n_i - y_i, 1) / \lambda_i^0 \\
+v_i = \text{rgamma}(y_i, 1) / \lambda_i^1 \\
+\end{cases}
+\]
+where $\lambda_i^0 = 1$ and $\lambda_i^1 = \exp(\psi)$.  Then
+\[
+(z_i^*|y_i) = - \log(w_i + v_i) + \log(w_i + u_i).
+\]
+
+\subsection{$(\beta | z_i^*, r_i)$}
+
+We have that
+\[
+z_i^* = x_i \beta + \ep_i, \; \ep_i \sim N(0, v_{r_i}).
+\]
+Let $V_i = v_{r_i}$.  Let $V$ denote this vector or diagonal matrix.  Then we
+have
+\[
+z = X \beta + \ep, \; \ep \sim N(0, V).
+\]
+So the exponent is 
+\begin{align*}
+(z - X \beta)' V^{-1} (z - X \beta) & = 
+z' V^{-1} z - 2 \beta' X' V^{-1} z + \beta' X' V^{-1} X \beta.
+\end{align*}
+Thus
+\[
+P_1 = P_0 + X' V^{-1} X,
+\]
+and
+\[
+b_1 = X' V^{-1} z + P_0 m_0.
+\]
+
+
+
 \section{Mixed Model}
 
 Let's check the model and the posterior.  The model we are working with is
