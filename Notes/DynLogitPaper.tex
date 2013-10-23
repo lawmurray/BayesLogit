@@ -83,8 +83,8 @@ for Bayesian inference in linear Gaussian state-space models.
 
 \npoint The origin of dynamic logit and negative-binomial models can be traced
 to their static ancestors, which, in turn, are successors to the linear model.
-We provide a brief overview of this evolution and the challenges that arise
-along the way.
+We provide a brief overview of this evolution and the inferential challenges
+that arise along the way.
 
 \npoint Generalized linear models (GLMs) 
 % extend their linear counterparts by parameterizing
@@ -111,8 +111,8 @@ Gaussian random walk.  In either case, one recovers a state-space model
 characterized by the observation distribution $f(y_t | \psi_t)$ for the response
 and the Markovian evolution distribution $g(\bbeta_t | \bbeta_{t-1})$ for the
 hidden states.  Transitioning from the static to the dynamic model is a small
-step conceptually but a big step practically; in particular, it becomes more
-difficult to generate posterior samples.
+step conceptually but a big step practically; in particular, it becomes even
+more difficult to generate posterior samples.
 
 \npoint To clarify the challenge of simulating $(\{\bbeta_t\}_{t=1}^T |
 \{y_t\}_{t=1}^T)$ for dynamic generalized linear models, it is helpful to
@@ -145,7 +145,7 @@ $\bbeta$.
 \npoint Data augmentation techniques for GLMs that lead to a Gaussian complete
 conditional for $\bbeta$ provide a preferable approach since the corresponding
 complete conditional for $\{\bbeta_t\}_{t=1}^T$ will coincide with the
-likelihood of a DLM and hence the FFBS algorithm.  (See section \ref{sec:pg} for
+likelihood of a DLM and hence the FFBS algorithm.  (See Section \ref{sec:pg} for
 details.)  But such data augmentation tricks are difficult to find.  Recently,
 \citet{polson-etal-2013} introduced a data augmentation trick for GLMs with
 binomial likelihoods and that is what we exploit here.
@@ -430,74 +430,65 @@ regressors.
 
 \subsection{Ease of implementation}
 
-One may assess the \Polya-Gamma approach along two axes: ease of use and
-efficiency.  Our numerical comparisons, detailed below, show the \Polya-Gamma
-technique's fiercest competition comes from the data augmentation approaches of
-\cite{fussl-etal-2013} and \cite{fruhwirth-schnatter-etal-2009}, each of which
-rely on mixture representations of the data generating process which are
-reminiscent of \cite{albert-chib-1993} except that one does not arrive at a
-normal distribution after de-mixing the data generating process, but rather some
-exotic distribution that must be approximated by a discrete mixture of normal
-random variables.  The parameters of this exotic distribution change, so one
-must consider not a single distribution but rather an entire family of
-troublesome distributions, which in turn requires an entire family of
-approximations.  However, an uncountable family cannot be captured by a finite
-collection of approximations and one must find a way to interpolate between
-approximations to cover the entire parametric space.  That is, one must resort
-to approximations of approximations.  \cite{fussl-etal-2013} and
-\cite{fruhwirth-schnatter-etal-2009} show how to put these pieces together, and
-mercifully, in both cases, the set of discrete mixture of normals approximations
-along with the requisite interpolations may be precomputed.  It is these
-laborious prior computations that ultimately give rise to efficient data
-augmentation techniques.  However, the inexactness of these techniques, the
-extensive prior work required, the complex hierarchical de-mixing, and the
-multiple layers of auxiliary variables make this pair of approaches daunting.
+The new data-augmentation approach outlined here may be evaluated along two
+axes: ease of use (measured in the fixed cost of time-to-implementation by the
+design of a bespoke statistical model), and pure efficiency (measured by runtime
+of the algorithm).  Our numerical comparisons show that for all the \Polya-Gamma
+technique has excellent effective sampling rates with its strongest competition
+coming from the data augmentation approaches of \cite{fussl-etal-2013} and
+\cite{fruhwirth-schnatter-etal-2009}.
 
-The \Polya-Gamma approach, meanwhile, is simple in both concept and practice.
-One need only understand an algebraic relationship (Equation
-\ref{eqn:pg-cancellation}) to follow its derivation, unlike other data
-augmentation approaches, which requires parsing a complicated hierarchical model
-that mixes to the correct likelihood.  Further, the \Polya-Gamma technique takes
-an intractable likelihood and transform it back to more familiar Gaussian
-territory; hence, one only needs to be comfortable working with heteroscedastic
-Gaussian likelihoods to implement the technique---terra firma for anyone that
-has encountered, for instance, reweighted least squares.  These assertions hold,
-not just for the AR(1) prior presented previously, but for \emph{any} bespoke
-linear evolution equations, such as dynamic factor models.  Since the requisite
-Gaussian machinery is well established, the only challenge is sampling the
-conditional distribution of the latent variables, but this reduces to simulating
-\Polya-Gamma random variates, which can be done using the \texttt{BayesLogit} R
-Package.  Thus, the only novel aspect of implementing the \Polya-Gamma data
-augmentation approach is one line of code within an R script.  (The C code used
-by the \texttt{BayesLogit} package is freely available, so this applies equally
-well to any scripting language that can make calls to external C routines.)  As
-show below, for all but one benchmark, the \Polya-Gamma technique has superior
-effective sample size, so that more efficient \Polya-Gamma samplers will
-diminish any gaps in performance.  When improved samplers arise, users of the
-\Polya-Gamma technique need not make any changes to their code, they can simply
-download the latest version of the R package.  The overwhelming simplicity and
-adaptability of the method makes it a good choice regardless of its efficiency.
+But pure efficiency is not the only consideration, and we will preface these
+results with a few brief comments about the structure of the various algorithms,
+especially regarding their ease of use.  Both \cite{fussl-etal-2013} and
+\cite{fruhwirth-schnatter-etal-2009} rely on mixture representations of the
+data-generating process that are reminiscent of \cite{albert-chib-1993}.  The
+difference from the probit model is that, in the logit and negative-binomial
+cases, directly mimicking the Albert/Chib missing-data mechanism does not lead
+to a conditionally Gaussian representation.  Rather, it leads to an exotic
+distribution that must be approximated by a discrete mixture of normal random
+variables.  Crucially, the parameters of this exotic distribution depend on the
+data.  Therefore, one cannot simply consider a single troublesome distribution,
+but rather an entire family of such distributions, and therefore a corresponding
+family of approximations.
 
-% Dynamic versions of binomial logistic regression and negative binomial
-% regression are common models.  Hence, it is important to understand which
-% methods work best for each model.
+This family, moreover, is uncountably large, and cannot be captured by a finite
+collection of approximations.  One must therefore find a way to interpolate
+between approximations to cover the entire parametric space.  That is, in order
+for the overall scheme to be practical, one must resort to approximations of
+approximations.
 
-% \npoint This paper presents \Polya-Gamma data augmentation for dynamic
-% regression models with binomial likelihoods and compares it to a pair of other
-% approaches: conjugate updating and backward sampling with a Metroplis-Hastings
-% step \citep{migon-etal-2013} and data augmentation using a discrete mixture of
-% normals approximation \citep{fruhwirth-schnatter-etal-2009, fussl-etal-2013}.
-% Our method is pleasing because of its parsimony, ease of implementation, and
-% efficiency.
+The papers by \cite{fussl-etal-2013} and \cite{fruhwirth-schnatter-etal-2009}
+show how to stitch these two approximations together to yield an approximate
+sampling method for any model in the class.  In both cases, the set of discrete
+mixture-of-normals approximations, along with the needed interpolation scheme,
+may be precomputed; and it is these extensive prior computations that account
+for the method's success on the pure-efficiency axis.  We have not included the
+time required by such computations in our comparisons, but this upfront cost,
+and the inexactness of the method, must be borne in mind by practitioners.
 
-% \npoint The merits of our approach come from its efficiency in addition to its
-% simplicity and flexibility.  To provide an extensive suite of benchmarks against
-% against competing methods (\cite{fussl-etal-2013, fruhwirth-schnatter-etal-2009,
-%   migon-etal-2013}) and show that the \Polya-Gamma approach is the best choice
-% for dynamic logistic regression models and is the best choice for dynamic
-% negative binomial regression when the count size is small.
+The \Polya-Gamma approach, meanwhile, is both exact and simple.  It depends only
+upon Equation (\ref{eqn:pg-cancellation}), which directly turns an
+intractable likelihood into a familiar Gaussian form.  This holds not just for
+the AR(1) prior presented previously, but for any linear evolution equation,
+such as a dynamic factor model.  Since the requisite Gaussian machinery is well
+established, the only challenge is sampling the conditional distribution of the
+latent variables.  This, too, requires working with a distribution that will
+seem exotic to most Bayesian practitioners, at least initially.  But this cost
+has already been borne: the only step here is to simulate \Polya-Gamma random
+variates, which can be done using the \texttt{BayesLogit} R Package.  (The C
+code used by the \texttt{BayesLogit} package is freely available, so this
+applies equally to any scripting language that can make calls to external C
+routines.)  Thus, the only novel aspect of implementing the \Polya-Gamma data
+augmentation approach is to insert one extra module---effectively, one extra
+line of code---into an existing sampling scheme.
 
-%%% 
+It is also worth considering that the Polya-Gamma class is a relatively new
+distributional family.  Further research will likely bring a more efficient
+sampler that will diminish any gaps in performance.  These gains will be
+realized simply by plugging in the new sampling module into existing code.  We
+would argue that this blend of simplicity, modularity, and efficiency is ideal
+for practitioners.
 
 \subsection{Efficiency}
 
