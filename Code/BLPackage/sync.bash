@@ -20,11 +20,11 @@ BLDIR=$CODE/BLPackage/BayesLogit
 # CPP files.
 $rsyncit $CODE/C/Logit.hpp         $BLDIR/src/Logit.h
 $rsyncit $CODE/C/MultLogit.hpp     $BLDIR/src/MultLogit.h
-$rsyncit $CODE/C/LogitWrapper.hpp  $BLDIR/src/LogitWrapper.h
+$rsyncit $CODE/C/LogitWrapper.h    $BLDIR/src/
 $rsyncit $CODE/C/LogitWrapper.cpp  $BLDIR/src/
-$rsyncit $CODE/C/PolyaGamma.hpp    $BLDIR/src/PolyaGamma.h
-$rsyncit $CODE/C/PolyaGammaAlt.hpp $BLDIR/src/PolyaGammaAlt.h
-$rsyncit $CODE/C/PolyaGammaSP.hpp  $BLDIR/src/PolyaGammaSP.h
+$rsyncit $CODE/C/PolyaGamma.h      $BLDIR/src/
+$rsyncit $CODE/C/PolyaGammaAlt.h   $BLDIR/src/
+$rsyncit $CODE/C/PolyaGammaSP.h    $BLDIR/src/
 $rsyncit $CODE/C/PolyaGamma.cpp    $BLDIR/src/
 $rsyncit $CODE/C/PolyaGammaAlt.cpp $BLDIR/src/
 $rsyncit $CODE/C/PolyaGammaSP.cpp  $BLDIR/src/
