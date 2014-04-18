@@ -2,7 +2,7 @@
 
 #include "Matrix.h"
 #include "RNG.hpp"
-#include "PolyaGamma.hpp"
+#include "PolyaGamma.h"
 #include "Logit.hpp"
 #include "MultLogit.hpp"
 

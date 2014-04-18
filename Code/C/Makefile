@@ -101,13 +101,13 @@ CUBS.o : CUBS.h CUBS.cpp
 CUBS_update.o : CUBS_update.cpp CUBS_update.h
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o CUBS_update.o -c CUBS_update.cpp
 
-PolyaGammaSP.o : PolyaGammaSP.hpp PolyaGammaSP.cpp
+PolyaGammaSP.o : PolyaGammaSP.h PolyaGammaSP.cpp
 	g++ $(OPTS) $(INC) -fPIC -o PolyaGammaSP.o -c PolyaGammaSP.cpp
 
-PolyaGammaAlt.o : PolyaGammaAlt.hpp PolyaGammaAlt.cpp
+PolyaGammaAlt.o : PolyaGammaAlt.h PolyaGammaAlt.cpp
 	g++ $(OPTS) $(INC) -fPIC -o PolyaGammaAlt.o -c PolyaGammaAlt.cpp
 
-PolyaGamma.o : PolyaGamma.hpp PolyaGamma.cpp
+PolyaGamma.o : PolyaGamma.h PolyaGamma.cpp
 	g++ $(OPTS) $(INC) -fPIC -o PolyaGamma.o -c PolyaGamma.cpp
 
 InvertY2.o : InvertY2.hpp InvertY2.cpp 

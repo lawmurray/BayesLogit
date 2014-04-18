@@ -1,4 +1,4 @@
-#include "PolyaGammaAlt.hpp"
+#include "PolyaGammaAlt.h"
 #include <stdexcept>
 
 //------------------------------------------------------------------------------

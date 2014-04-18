@@ -1,4 +1,4 @@
-#include "PolyaGammaSP.hpp"
+#include "PolyaGammaSP.h"
 #include "InvertY.hpp"
 #include <stdexcept>
 

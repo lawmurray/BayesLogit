@@ -610,6 +610,8 @@ void laplace_omega(Gaussian& nbp, const MatrixBase<dV1>& omega, const llh_struct
   // std::cout << "Ftil2:\n" << Ftil2.transpose() << "\n";
 
   // There may be a more clever way to do this.
+  // MatrixXd blah(Xi); blah.array() *= llh.l2.array();
+  // MatrixXd Htil1_ = Xi.block(0, idx_start, N, num_idxs).transpose() * (blah);
   MatrixXd Htil1_ = Xi.block(0, idx_start, N, num_idxs).transpose() * (llh.l2.asDiagonal() * Xi);
 
   // O11

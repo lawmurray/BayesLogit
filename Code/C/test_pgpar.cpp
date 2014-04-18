@@ -1,6 +1,6 @@
 
-// #include "PolyaGamma.hpp"
-#include "PolyaGammaPar.hpp"
+// #include "PolyaGamma.h"
+#include "PolyaGammaPar.h"
 #include <stdio.h>
 
 const int N = 0x10000;

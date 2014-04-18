@@ -22,7 +22,7 @@
 
 #include "Matrix.h"
 #include "RNG.hpp"
-#include "PolyaGamma.hpp"
+#include "PolyaGamma.h"
 #include "Normal.hpp"
 #include <stdexcept>
 #include <list>

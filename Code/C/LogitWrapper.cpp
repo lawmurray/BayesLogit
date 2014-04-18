@@ -26,9 +26,9 @@
 #include "Logit.hpp"
 #include "MultLogit.hpp"
 #include "RNG.hpp"
-#include "PolyaGamma.hpp"
-#include "PolyaGammaAlt.hpp"
-#include "PolyaGammaSP.hpp"
+#include "PolyaGamma.h"
+#include "PolyaGammaAlt.h"
+#include "PolyaGammaSP.h"
 #include <exception>
 #include <stdio.h>
 

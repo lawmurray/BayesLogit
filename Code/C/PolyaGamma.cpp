@@ -1,4 +1,4 @@
-#include "PolyaGamma.hpp"
+#include "PolyaGamma.h"
 #include <stdexcept>
 
 using std::pow;

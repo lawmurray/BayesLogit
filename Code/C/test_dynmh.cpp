@@ -256,7 +256,7 @@ void test_draw_omega(int reps=1)
 
 void test_draw_omega_wrapper(int reps=1)
 {
-  int num = 5;
+  int num = 500;
   int bsize = 2;
   int nb   = num * bsize;
 
@@ -269,7 +269,7 @@ void test_draw_omega_wrapper(int reps=1)
   MatrixXd Phi = phi.asDiagonal();
 
   MatrixXd L(nb, nb); L.fill(0.0);
-  make_L(L, phi, 5);
+  make_L(L, phi, num);
 
   MatrixXd tX(bsize, num); tX.fill(1.0);
   VectorXd y(num); y.fill(1.0);
@@ -295,21 +295,22 @@ void test_draw_omega_wrapper(int reps=1)
 
   VectorXd offset(nb); offset.fill(0.0);
 
-  int nstarts = 2;
+  int nstarts = 5;
   MatrixXi starts(nstarts,1);
-  starts << 0, 3;
+  starts << 0, 99, 199, 299, 399;
 
   int  naccept  = 0;
   bool just_max = true;
+  int type      = 0;
 
   for (int i=0; i<reps; i++) {
     draw_omega(&omega(0), &beta(0), 
-			   &llh.psi_dyn(0), &llh.psi_stc(0),
-			   &llh.psi(0), &llh.l0(0), &llh.l1(0), &llh.l2(0), &llh.pl2(0),
-			   &y(0), &tX(0), &ntrials(0), &offset(0),
-			   &prior_prec(0), &phi(0),
-			   &starts(0), &num, &bsize, &nstarts, &naccept, &just_max);
-    cout << "omega:\n" << omega << "\n";
+	       &llh.psi_dyn(0), &llh.psi_stc(0),
+	       &llh.psi(0), &llh.l0(0), &llh.l1(0), &llh.l2(0), &llh.pl2(0),
+	       &y(0), &tX(0), &ntrials(0), &offset(0),
+	       &prior_prec(0), &phi(0),
+	       &starts(0), &num, &bsize, &nstarts, &naccept, &just_max, &type);
+    // cout << "omega:\n" << omega << "\n";
   }
 
   cout << "omega:\n" << omega << "\n";
@@ -443,11 +444,11 @@ void test_draw_omega_wrapper_real_data(int reps=1)
   for (int i=0; i<reps; i++) {
     cout << "omega:\n" << omega << "\n";
     draw_omega(&omega(0), &beta(0), 
-			   &llh.psi_dyn(0), &llh.psi_stc(0),
-			   &llh.psi(0), &llh.l0(0), &llh.l1(0), &llh.l2(0), &llh.pl2(0),
-			   &y(0), &tX(0), &ntrials(0), &offset(0),
-			   &prior_prec(0), &phi(0),
-			   &starts(0), &num, &bsize, &nstarts, &naccept, &just_max);
+	       &llh.psi_dyn(0), &llh.psi_stc(0),
+	       &llh.psi(0), &llh.l0(0), &llh.l1(0), &llh.l2(0), &llh.pl2(0),
+	       &y(0), &tX(0), &ntrials(0), &offset(0),
+	       &prior_prec(0), &phi(0),
+	       &starts(0), &num, &bsize, &nstarts, &naccept, &just_max, 0);
   }
 
   cout << "omega:\n" << omega << "\n";
@@ -465,7 +466,7 @@ int main(int argc, char** argv)
   // test_laplace_omega();
   // test_draw_omega_block();
   // test_draw_omega(5);
-  // test_draw_omega_wrapper(5);
+  test_draw_omega_wrapper(100);
   // test_draw_omega_real_data(2);
-  test_draw_omega_wrapper_real_data(2);
+  // test_draw_omega_wrapper_real_data(2);
 }
