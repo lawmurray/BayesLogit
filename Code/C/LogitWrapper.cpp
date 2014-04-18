@@ -22,7 +22,7 @@
 #include "Rmath.h"
 #endif
 
-#include "LogitWrapper.hpp"
+#include "LogitWrapper.h"
 #include "Logit.hpp"
 #include "MultLogit.hpp"
 #include "RNG.hpp"
