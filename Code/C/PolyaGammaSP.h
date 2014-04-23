@@ -4,7 +4,7 @@
 #define __POLYAGAMMASP__
 
 #include "RNG.hpp"
-#include "PolyaGamma.hpp"
+#include "PolyaGamma.h"
 //#include "InvertY2.hpp"
 
 //------------------------------------------------------------------------------

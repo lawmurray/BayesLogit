@@ -31,7 +31,7 @@
 #include <stdexcept>
 #include <omp.h>
 
-#include "PolyaGamma.hpp"
+#include "PolyaGamma.h"
 
 // // The numerical accuracy of __PI will affect your distribution.
 // const double __PI = 3.141592653589793238462643383279502884197;
