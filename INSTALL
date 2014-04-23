@@ -6,7 +6,7 @@ To generate the C library manually.
   - You can clone the repository or download the code as a zip file via
     github.com.
 
-  - For these instructions, ASSUME the repository/base directory is called
+  - For these instructions, ASSUME the repository directory is called
     BayesLogit.
 
 2) Install the Matrix and RNG files in BayesLogit/Code/C/include/
