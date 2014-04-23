@@ -56,7 +56,10 @@ test2: test2.cpp FFBS.cpp FFBS.h
 test3: test3.cpp
 	g++ -o test3 test3.cpp $(OPTS) $(INC) $(LNK)
 
-test_pgpar : test_pgpar.cpp PolyaGamma.hpp PolyaGammaPar.hpp
+test_hybrid_par : test_hybrid_par.cpp PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o InvertY.o ParallelWrapper.o RNG.o
+	g++ -o test_hybrid_par test_hybrid_par.cpp PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o InvertY.o ParallelWrapper.o RNG.o GRNG.o $(OPTS) $(INC) -fopenmp $(LNK)
+
+test_pgpar : test_pgpar.cpp PolyaGamma.h PolyaGammaPar.h
 	g++ -o test_pgpar BayesLogit.so test_pgpar.cpp $(OPTS) $(INC) -fopenmp $(LNK)
 
 test_logit : test_logit.cpp Logit.hpp MatRNG.so PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o InvertY.o InvertY2.o
@@ -83,7 +86,10 @@ BayesLogit.so : $(obj)
 MatRNG.so : Matrix.o RNG.o
 	g++ $(OPTS) $(INC) -o MatRNG.so Matrix.o MatrixFrame.o RNG.o $(DEP) -fPIC -shared $(LNK)
 
-LogitWrapper.o : LogitWrapper.hpp LogitWrapper.cpp Logit.hpp PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o
+ParallelWrapper.o : ParallelWrapper.cpp ParallelWrapper.h
+	g++ $(OPTS) $(INC) -o ParallelWrapper.o -c ParallelWrapper.cpp -fopenmp
+
+LogitWrapper.o : LogitWrapper.h LogitWrapper.cpp Logit.hpp PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o
 	g++ $(OPTS) $(INC) $(GINC) -fPIC -o LogitWrapper.o -c LogitWrapper.cpp
 
 FSF_nmix.o : FSF_nmix.hpp FSF_nmix.cpp
