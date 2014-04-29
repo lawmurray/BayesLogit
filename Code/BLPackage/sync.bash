@@ -29,9 +29,9 @@ $rsyncit $CODE/C/PolyaGamma.cpp    $BLDIR/src/
 $rsyncit $CODE/C/PolyaGammaAlt.cpp $BLDIR/src/
 $rsyncit $CODE/C/PolyaGammaSP.cpp  $BLDIR/src/
 $rsyncit $CODE/C/InvertY.hpp       $BLDIR/src/InvertY.h
-$rsyncit $CODE/C/InvertY2.hpp       $BLDIR/src/InvertY2.h
+#$rsyncit $CODE/C/InvertY2.hpp       $BLDIR/src/InvertY2.h
 $rsyncit $CODE/C/InvertY.cpp       $BLDIR/src/
-$rsyncit $CODE/C/InvertY2.cpp       $BLDIR/src/
+#$rsyncit $CODE/C/InvertY2.cpp       $BLDIR/src/
 ## $rsyncit $CODE/C/FFBS.h           $BLDIR/src/
 ## $rsyncit $CODE/C/FFBS.cpp         $BLDIR/src/
 $rsyncit $CODE/C/FSF_nmix.hpp     $BLDIR/src/FSF_nmix.h
