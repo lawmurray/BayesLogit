@@ -104,8 +104,8 @@ rpg.sp <- function(num=1, h=1, z=0.0, track.iter=FALSE)
 rpg <- function(num=1, h=1, z=0.0)
 {
     ## Check Parameters.
-    if (any(h<1)) {
-      print("h must be >= 1.");
+    if (any(h<=0)) {
+      print("h must be > 0.");
       return(NA);
     }
 
