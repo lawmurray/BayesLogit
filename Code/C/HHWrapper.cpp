@@ -48,7 +48,7 @@ bool right(double U, double lambda, double r)
 
 bool left(double U, double lambda, double r)
 {
-  double H = 0.5 * log(2) + 2.5 * log(__PI) 
+  double H = 0.5 * log(2.0) + 2.5 * log(__PI) 
     - 2.5 * log(lambda) - pow(__PI, 2) / 2 / lambda 
     + 0.5 * lambda;
   
