@@ -1254,6 +1254,17 @@ z_i^*|y_i
 & = - \log(w_i + v_i) + \log(w_i + u_i),
 \end{align*}
 
+Note above that I am changing the rate.  It should be possible to sample $\beta$
+and then to then return and generate $\tilde v_i$, for instance, where
+\[
+v_i = \tilde v_i / \lambda_i^1.
+\]
+Along with $\tilde w_i$ and $\tilde u_i$.  If this can actually occur
+concurrently, then it will presumably be faster.  The only thing I need to
+consider is what I am doing with my RNGs.  If I am only using one set of RNGs,
+then I think I may have a problem, since these should be shared memory, or
+something like that.
+
 \end{enumerate}
 
 \section{Migon etal 2005}
