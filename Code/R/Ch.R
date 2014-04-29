@@ -4,9 +4,9 @@
 ## License version 3 or later and without ANY warranty, implied or otherwise.
 
 
-h14 = scan("h1to4.txt")
-t14 = scan("t1to4.txt")
-d14 = scan("d1to4.txt")
+h14 = scan("~/Projects/RPackage/BayesLogit/Code/R/h1to4.txt")
+t14 = scan("~/Projects/RPackage/BayesLogit/Code/R/t1to4.txt")
+d14 = scan("~/Projects/RPackage/BayesLogit/Code/R/d1to4.txt")
 e14 = 1/d14
 
 ################################################################################
@@ -294,7 +294,7 @@ if (FALSE)
 
 if (FALSE)
 {
-  ## source("Ch.R")
+  ## source("~/Projects/RPackage/BayesLogit/Code/R/Ch.R")
   dx    = 0.01
   xgrid = seq(dx, 3, dx)
   y1    = xgrid
@@ -338,11 +338,18 @@ if (FALSE)
   ##      col=rgb(0, 0, 255, 16, maxColorValue=255))
 
   ymax = max(c(y1,y4,y5))
-  plot(xgrid, y1, type="l", ylim=c(0,ymax), xlim=c(0,1), main="Density of PG(1,c)", xlab="x", ylab="f(x|1,c)")
+  plot(xgrid, y1, type="l", ylim=c(0,ymax), xlim=c(0,1),
+       main=expression(paste("Density of PG(1,", psi, ")", sep="")),
+       xlab="x",
+       ylab=expression(paste("f(x|1,", psi, ")", sep="")))
   lines(xgrid, y4, type="l", col=2, lty=2)
   lines(xgrid, y5, type="l", col=4, lty=4)
 
-  legend("topright", legend=c("c=0", "c=2", "c=4"), col=c(1,2,4), lty=c(1,2,4))
+  legend("topright",
+         legend=c(expression(paste(psi, "=0", sep="")),
+                  expression(paste(psi, "=2", sep="")),
+                  expression(paste(psi, "=4", sep=""))),
+         col=c(1,2,4), lty=c(1,2,4))
 
   ## hist(rpg.devroye(10000, 1, 0), add=TRUE, prob=TRUE, breaks=100,
   ##      col=rgb(0, 0, 0, 16, maxColorValue=255))
