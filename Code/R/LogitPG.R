@@ -56,6 +56,7 @@ logit.R <- function(y, X, n=rep(1, length(y)),
     ## draw w
     psi = drop(X%*%beta)
     ## Sum of gamma: poor approximation when psi is large!  Causes crash.
+    ## w = rpg.gamma(N, n, psi)
     ## Devroye is faster anyway.
     w = rpg.devroye(N, n, psi);
 

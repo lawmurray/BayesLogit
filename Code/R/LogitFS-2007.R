@@ -13,6 +13,7 @@ normal.mixture = list(
   m = c(5.09, 3.29, 1.82, 1.24, 0.764, 0.391, 0.0431, -0.306, -0.673, -1.06),
   v = c(4.50, 2.02, 1.10, 0.422, 0.198, 0.107, 0.0778, 0.0766, 0.0947, 0.146)
   )
+  normal.mixture$p = normal.mixture$w
   normal.mixture$s = sqrt(normal.mixture$v)
   normal.mixture$N = length(normal.mixture$w)
 
@@ -21,9 +22,11 @@ normal.mixture$mar.mean = mean(ev.samp);
 normal.mixture$mar.var  = var(ev.samp);
 
 ## Make a copy.
-NM = normal.mixture
+nmix.ev = normal.mixture
 
-draw.beta <- function(y.u, X, r, b.0=NULL, B.0=NULL, P.0=NULL)
+rm(normal.mixture)
+
+draw.beta.ev <- function(y.u, X, r, b.0=NULL, B.0=NULL, P.0=NULL)
 {
   ## y: N x 1 outcomes.
   ## X: N x P design matrix.
@@ -32,7 +35,7 @@ draw.beta <- function(y.u, X, r, b.0=NULL, B.0=NULL, P.0=NULL)
   ## b.0: prior mean for beta
   ## B.0: prior variance for beta
   ## P.0: prior precision for beta.
-  
+
   ## FS-F use b to denote means and B to denote variances.
 
   N = nrow(X);
@@ -42,17 +45,17 @@ draw.beta <- function(y.u, X, r, b.0=NULL, B.0=NULL, P.0=NULL)
   if (is.null(P.0)) P.0 = matrix(0.0, P, P);
   if (!is.null(B.0)) P.0 = solve(B.0);
 
-  Xdv = X / NM$v[r];
-  
+  Xdv = X / nmix.ev$v[r];
+
   P.L = t(X) %*% Xdv;
-  a.L = t(Xdv) %*% (y.u - NM$m[r]);
+  a.L = t(Xdv) %*% (y.u - nmix.ev$m[r]);
 
   P.N = P.0 + P.L;
   B.N = solve(P.N);
   b.N = B.N %*% (a.L + P.0 %*% b.0);
-  
+
   beta = b.N + t(chol(B.N)) %*% rnorm(P)
-} ## draw.beta
+} ## draw.beta.ev
 
 draw.utility <- function(y, lambda)
 {
@@ -63,34 +66,37 @@ draw.utility <- function(y, lambda)
   y.u = -1 * log( -1 * log(U) / (1+lambda) - (1-y) * log(V) / lambda )
 } ## draw.utility
 
-draw.indicators.R <- function(y.u, lambda)
-{
-  ## y.u - N x 1 - latent variable y^u in paper.
-  ## lambda = X beta
+## This is in Indicators.R
+## draw.indicators.R <- function(y.u, lambda)
+## {
+##   ## y.u - N x 1 - latent variable y^u in paper.
+##   ## lambda = X beta
 
-  res = y.u - log(lambda)
-  log.wds = log(NM$w) - log(NM$s);
+##   res = y.u - log(lambda)
+##   log.wds = log(nmix.ev$w) - log(nmix.ev$s);
 
-  ## Safer to work on log scale.  Columns correspond to outcome index i!
-  log.post = -0.5 * outer(-1*NM$m, res, "+")^2 / NM$v + log.wds;
-  unnrm.post = exp(log.post);
+##   ## Safer to work on log scale.  Columns correspond to outcome index i!
+##   log.post = -0.5 * outer(-1*nmix.ev$m, res, "+")^2 / nmix.ev$v + log.wds;
+##   unnrm.post = exp(log.post);
 
-  ## Now sample.
-  r = apply(unnrm.post, 2, function(x){sample.int(n=NM$N, size=1, prob=x)})
-}  ## draw.indicators
+##   ## Now sample.
+##   r = apply(unnrm.post, 2, function(x){sample.int(n=nmix.ev$N, size=1, prob=x)})
+## }  ## draw.indicators
 
-logit.mix.gibbs <- function(y, X, samp=1000, burn=100, b.0=NULL, B.0=NULL, P.0=NULL, verbose=10000,
-                            beta.true=NULL, y.u.true=NULL, r.true=NULL)
+logit.mix.gibbs.ev <- function(y, X, samp=1000, burn=100, b.0=NULL, B.0=NULL, P.0=NULL, verbose=10000,
+                               beta.true=NULL, y.u.true=NULL, r.true=NULL)
 {
   N = nrow(X)
   P = ncol(X)
   M = samp
 
+  print("LogitFS-2007.R: logit.mix.gibbs.ev");
+
   ## Default prior parameters.
   if (is.null(b.0)) b.0 = rep(0.0, P);
   if (is.null(P.0)) P.0 = matrix(0.0, P, P);
   if (!is.null(B.0)) P.0 = solve(B.0);
-  
+
   out = list(
     beta = array(0, dim=c(M, P)),
     y.u  = array(0, dim=c(M, N)),
@@ -105,33 +111,40 @@ logit.mix.gibbs <- function(y, X, samp=1000, burn=100, b.0=NULL, B.0=NULL, P.0=N
   ## unlikely value (given the data).  It doesn't matter here because we can
   ## sample y.u without respect to r to start.  Nonetheless, seed randomly out
   ## of principle.
-  r = sample.int(NM$N, N, prob=NM$w, replace=TRUE);
+  r = sample.int(nmix.ev$N, N, prob=nmix.ev$w, replace=TRUE);
 
   ## In case we are doing testing.  May remove later.
   if (!is.null(beta.true)) beta = beta.true;
   if (!is.null(y.u.true))  y.u  = y.u.true;
   if (!is.null(r.true))    r    = r.true;
-  
+
+  start.time = proc.time()
+
   for (i in 1:(samp+burn)) {
+    if (i==burn+1) start.ess = proc.time()
 
     lambda = exp(X %*% beta);
 
     ## (y.u, r | beta)  = (y.u | beta) (r | y.u, \beta)
     ## (y.u | beta, r) != (y.u | beta)
     y.u  = draw.utility(y, lambda)
-    r    = draw.indicators.R(y.u, lambda)
-    
-    beta = draw.beta(y.u, X, r, b.0, "P.0"=P.0);
-    
+    r    = draw.indicators.C(y.u - log(lambda), nmix.ev)
+
+    beta = draw.beta.ev(y.u, X, r, b.0, "P.0"=P.0);
+
     if (i > burn) {
       out$beta[i-burn,] = beta;
       out$y.u [i-burn,] = y.u;
       out$r   [i-burn,] = r;
     }
 
-    if (i %% verbose == 0) cat("Iteration", i, "\n");
-    
+    if (i %% verbose == 0) cat("LogitFS-2007: Iteration", i, "\n");
+
   }
+
+  end.time = proc.time()
+  out$total.time = end.time - start.time
+  out$ess.time   = end.time - start.ess
 
   out
 }
@@ -144,7 +157,7 @@ plot.compare <- function(out.fs, out.bl)
 {
   P = ncol(out.fs$beta)
   old.par = par(mfrow=c(2,2));
-  
+
   for (i in 1:P) {
     hist(out.fs$beta[,i], main="FS&F", xlab=paste("beta", i));
     acf(out.fs$beta[,i], main="FS&F");
@@ -172,7 +185,7 @@ plot.compare <- function(out.fs, out.bl)
 ## acf(out.fs$beta[,2], main="FS&F")
 ## acf(out.bl$beta[,1], main="BayesLogit")
 ## acf(out.bl$beta[,2], main="BayesLogit")
-             
+
 ################################################################################
                                    ## MAIN ##
 ################################################################################
@@ -182,26 +195,33 @@ plot.compare <- function(out.fs, out.bl)
 ## Synthetic test 1 ##
 
 if (FALSE) {
-  
+
   N = 1000;
+  verbose = 100
   samp = 1000;
   burn = 500
-  
+
   beta = c(1.0, 0.4);
   X = cbind(1, rnorm(N));
 
-  r    = sample.int(NM$N, N, prob=NM$w, replace=TRUE);
-  ep   = rnorm(N, NM$m[r], NM$s[r]);
+  r    = sample.int(nmix.ev$N, N, prob=nmix.ev$w, replace=TRUE);
+  ep   = rnorm(N, nmix.ev$m[r], nmix.ev$s[r]);
   y.u  = X %*% beta + ep;
   y.u0 = -1 * log(rexp(N));
   y    = as.numeric(y.u > y.u0);
-  
+
   B.0 = diag(1, 2)
-  out.fs = logit.mix.gibbs(y, X, samp=samp, burn=burn, beta.true=beta, y.u.true=y.u, r.true=r);
+
+  ## source("LogitFS-2007.R")
+  out.fs <- logit.mix.gibbs.ev(y, X, samp=samp, burn=burn, beta.true=beta,
+                               y.u.true=y.u, r.true=r, verbose=verbose);
 
   glm1   = glm(y ~ X+0, family=binomial(link="logit"));
   print(coef(glm1));
-  out.bl = logit.gibbs(y, X, samp=samp, burn=burn, n.prior=0);
+  out.bl = logit.R(y, X, samp=samp, burn=burn);
+
+  apply(out.fs$beta, 2, mean)
+  apply(out.bl$beta, 2, mean)
 
   plot.compare(out.fs, out.bl);
 }
@@ -209,16 +229,16 @@ if (FALSE) {
 ## Synthetic test 2 ##
 
 if (FALSE) {
-  
+
   N = 1000;
-  
+
   beta = c(1.0, 0.4);
   X = cbind(1, rnorm(N));
   psi = X %*% beta;
   p = exp(psi) / (1 + exp(psi));
   y = rbinom(N, 1, prob=p);
 
-  out = logit.mix.gibbs(y, X, samp=1000, burn=0);
+  out = logit.mix.gibbs.ev(y, X, samp=1000, burn=0);
 
   glm1   = glm(y ~ X+0, family=binomial(link="logit"));
   ## out.bl = logit.gibbs(y, X, samp=1000, burn=0, n.prior=0);

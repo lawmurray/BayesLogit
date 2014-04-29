@@ -12,6 +12,7 @@ library("bayesm")
 blogit = BayesLogit::logit;
 
 source("LogitPG.R")
+source("LogitFS-2007.R")
 source("LogitFS-2010.R")
 source("LogitOD.R")
 source("Metropolis.R")
@@ -27,8 +28,8 @@ run <- list("synth1"=FALSE,
             "diabetes"=FALSE,
             "australia"=FALSE,
             "heart"=FALSE,
-            "nodal"=TRUE,
-            "ortho"=FALSE,
+            "nodal"=FALSE,
+            "ortho"=TRUE,
             "factor"=FALSE)
 
 write.dir = ""
@@ -41,12 +42,12 @@ plot.it  = FALSE
 samp = 10000
 burn  = 2000
 verbose = 2000
-ntrials = 1
+ntrials = 2
 
 logit.meth <- c("PG", "IndMH", "RAM", "OD",
-                "dRUMIndMH", "dRUMHAM", "dRUMAuxMix", "IndivdRUMIndMH", "GP",  "FS")
+                "dRUMIndMH", "dRUMHAM", "dRUMAuxMix", "IndivdRUMIndMH", "GP",  "FS", "FS2007")
 
-run.meth <- logit.meth
+run.meth <- c("FS", "FS2007");
 
 start.run = proc.time()
 
@@ -54,14 +55,14 @@ start.run = proc.time()
                            ## Dyn Logit Benchmark ##
 ################################################################################
 
-benchmark.logit <- function(y, X, 
+benchmark.logit <- function(y, X,
                             samp=1000, burn=100, ntrials=1, verbose=100,
                             method = c("PG", "FS", "GP", "OD", "IndMH",
-                              "dRUMIndMH", "dRUMHAM", "dRUMAuxMix", "IndivdRUMIndMH"),
+                              "dRUMIndMH", "dRUMHAM", "dRUMAuxMix", "IndivdRUMIndMH", "FS2007"),
                             m.0=NULL, C.0=NULL,
-                            dset.name="", df=Inf)   
+                            dset.name="", df=Inf)
 {
-  
+
   ## Initialize
   ## sstat.beta.list = list()
   var.names = c("beta");
@@ -88,46 +89,52 @@ benchmark.logit <- function(y, X,
   if (is.null(m.0)) m.0 = rep(0, P);
   if (is.null(C.0)) C.0 = diag(100, P);
   P.0 = solve(C.0);
-  
+
   for(i in 1:ntrials) {
 
     start.time = proc.time();
-    
+
     if (method=="PG") { ## binomial, fraction
-      
+
       gb <- logit.R(y, X, n, m0=m.0, P0=P.0, samp=samp, burn=burn, verbose=verbose)
       gb$arate = 1
-      
+
     } else if (method=="FS") { ## binary
-      
+
       gb <- logit.mix.gibbs(y, X, samp=samp, burn=burn, b.0=m.0, P.0=P.0, verbose=verbose)
       gb$arate = 1
-      
+
+    } else if (method=="FS2007") { ## binary
+
+      gb <- logit.mix.gibbs.ev(y, X, samp=samp, burn=burn, b.0=m.0, P.0=P.0, verbose=verbose)
+      gb$arate = 1
+
+
     } else if (method=="GP") { ## binomial
-      
+
       gb <- reglogit(T=sim, y=y, X=X, N=n, flatten=TRUE, sigma=sqrt(diag(C.0)), nu=1,
                      kappa = 1, icept=FALSE, normalize=FALSE, zzero=TRUE,
                      powerprior=FALSE, kmax=442, bstart=NULL, lt=NULL,
                      nup=NULL, method="MH", verb=verbose, burn.point=burn);
       gb$beta = gb$beta[(burn+1):sim,]
       gb$arate = 1
-      
+
     } else if (method=="IndMH") { ## multinomial, fraction
-      
+
       ## This is essentially independent-metropolis in the binary case
       m.0 = array(m.0, dim=c(P, 1));
       P.0 = array(P.0, dim=c(P, P, 1))
       gb <- mlogit.MH.R(y, X, n, m.0, P.0, beta.0=rep(0, P), samp=samp, burn=burn,
                         method="Ind", tune=1.0, df=df, verbose=verbose)
       gb$arate = gb$acceptr
-      
+
     } else if (method=="OD") { ## binary
-      
+
       gb <- logit.OD.R(y, X, m0=m.0, P0=P.0, samp=samp, burn=burn, verbose=verbose)
       gb$arate = 1
-      
+
     } else if (method=="RAM") { ## multinomial
-      
+
       alts = 2
       X.new = createX(alts, na=0, nd=P, Xd=X, Xa=NULL, base=1, INT=FALSE)
       gb <- rmnlIndepMetrop(Data=list(p=alts, y=(y+1), X=X.new),
@@ -137,50 +144,50 @@ benchmark.logit <- function(y, X,
       gb$alpha = gb$alphadraw;
       gb$ess.time = gb$total.time;
       gb$arate = gb$acceptr
-      
+
     } else if (method=="HH") { ## binary
 
     } else if (method=="dRUMIndMH") { ## binomial
-      
+
       y = as.numeric(y);
       gb <- dRUMIndMH(y, n, X, sim=sim, burn=burn, b0=m.0, B0=C.0, verbose=verbose);
       gb$beta = t(gb$beta)[(burn+1):sim,];
       gb$ess.time = rep(gb$duration_wBI, 3)
       gb$total.time= gb$duration
       gb$arate = gb$rate / 100;
-      
+
     } else if (method=="dRUMHAM") { ## binomial
-      
+
       y = as.numeric(y)
       gb <- dRUMHAM(y, n, X, sim=sim, burn=burn, b0=m.0, B0=C.0, verbose=verbose);
       gb$beta = t(gb$beta)[(burn+1):sim,];
       gb$ess.time = rep(gb$duration_wBI, 3)
       gb$total.time= gb$duration
       gb$arate = 1
-      
+
     } else if (method=="dRUMAuxMix") { ## binomial - precompute all mixtures
-      
+
       y = as.numeric(y)
       gb <- dRUMAuxMix(y, n, X, sim=sim, burn=burn, b0=m.0, B0=C.0, verbose=verbose);
       gb$beta = t(gb$beta)[(burn+1):sim,];
       gb$ess.time = rep(gb$duration_wBI, 3)
       gb$total.time= gb$duration
       gb$arate = 1
-      
+
     } else if (method=="IndivdRUMIndMH") { ## binary
-      
+
       y = as.numeric(y)
       gb <- IndivdRUMIndMH(y, X, sim=sim, burn=burn, b0=m.0, B0=C.0, verbose=verbose);
       gb$beta = t(gb$beta)[(burn+1):sim,];
       gb$ess.time = rep(gb$duration_wBI, 3)
       gb$total.time= gb$duration
       gb$arate = gb$rate / 100;
-      
+
     } else {
       print("Unknown method.")
       return(NA);
     }
-    
+
     end.time = proc.time();
     gb$call.time = end.time - start.time;
 
@@ -201,7 +208,7 @@ benchmark.logit <- function(y, X,
   ## To get an idea of how ill-conditioned X is.
   eval = eigen(t(X) %*% X)$values;
   cn.X = eval[1] / eval[P]
-  
+
   info <- list("samp" = samp,
                "burn" = burn,
                "ntrials" = ntrials,
@@ -248,12 +255,12 @@ if (FALSE) {
   high = vX > quantile(vX, 0.5);
   X[low]  = 0;
   X[!low] = 1;
-  
+
   beta = rnorm(P, mean=0, sd=1);
-  
+
   ## beta = c(1.0, 0.4);
   ## X = matrix(rnorm(N*P), nrow=N, ncol=P);
-  
+
   psi = X %*% beta;
   p = exp(psi) / (1 + exp(psi));
   y = rbinom(N, 1, p);
@@ -292,7 +299,7 @@ if (FALSE) {
   glm.1 = glm(y ~ X + 0, family=binomial(link=logit))
 
   out.tbl = setup.table(out)
-  
+
   lapply(out, function(x) x$beta)
 
   lapply(out, function(x) {
@@ -311,11 +318,11 @@ if (FALSE) {
 ##------------------------------------------------------------------------------
 ## GERMANY
 if (run$german) {
-  
+
   load("DataSets/germany.RData");
   dset.name="German"
   file.name="bench-ger.RData"
-  
+
   y = y.ger
   X = X.ger
 
@@ -323,7 +330,7 @@ if (run$german) {
 
   bench.ger = list()
   if (load.old) load(file.name);
-  
+
   for (nm in run.meth) {
     bench.ger[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                                        method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
@@ -336,11 +343,11 @@ if (run$german) {
 ##------------------------------------------------------------------------------
 ## GERMAN - NUMERIC
 if (run$ger.num) {
-  
+
   load("DataSets/german-numeric.RData");
   dset.name="German.Numeric"
   file.name="bench-ger.num.RData"
-  
+
   y = y.ger.num
   X = X.ger.num
 
@@ -348,7 +355,7 @@ if (run$ger.num) {
 
   bench.ger.num = list()
   if (load.old) load(file.name);
-  
+
   for (nm in run.meth) {
     bench.ger.num[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                                            method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
@@ -364,7 +371,7 @@ if (run$diabetes) {
   load("DataSets/diabetes.RData");
   dset.name="Diabetes"
   file.name="bench-diabetes.RData"
-  
+
   y = y.diabetes
   X = X.diabetes
 
@@ -372,20 +379,20 @@ if (run$diabetes) {
 
   bench.diabetes = list()
   if (load.old) load(file.name);
-  
+
   for (nm in run.meth) {
     bench.diabetes[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                                             method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
   if (write.it) save(y.diabetes, X.diabetes, glm.diabetes, bench.diabetes, file=file.name);
-  
+
 }
 
 ##------------------------------------------------------------------------------
 ## AUSTRALIA
 if (run$australia) {
-  
+
   load("DataSets/australia.RData");
   dset.name="Australia"
   file.name="bench-aus.RData"
@@ -397,7 +404,7 @@ if (run$australia) {
 
   bench.aus = list()
   if (load.old) load(file.name);
-  
+
   out = list();
   for (nm in run.meth) {
     bench.aus[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
@@ -410,7 +417,7 @@ if (run$australia) {
 ##------------------------------------------------------------------------------
 ## HEART
 if (run$heart) {
-  
+
   load("DataSets/heart.RData");
   dset.name = "Heart"
   file.name = "bench-heart.RData"
@@ -422,14 +429,14 @@ if (run$heart) {
 
   bench.heart = list()
   if (load.old) load(file.name);
-  
+
   for (nm in run.meth) {
     bench.heart[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                                  method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
   if (write.it) save(y.heart, X.heart, glm.heart, bench.heart, file=file.name);
-  
+
 }
 
 ##------------------------------------------------------------------------------
@@ -450,14 +457,14 @@ if (run$nodal) {
 
   bench.nodal = list()
   if (load.old) load(file.name);
-  
+
   for (nm in run.meth) {
     bench.nodal[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                                          method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
   if (write.it) save(y.nodal, X.nodal, glm.nodal, bench.nodal, file=file.name);
-  
+
 }
 
 ##------------------------------------------------------------------------------
@@ -470,7 +477,7 @@ if (run$ortho) {
   y = as.matrix(read.csv("Benchmark-DataSets/orthoY.csv"))
   X = as.matrix(read.csv("Benchmark-DataSets/orthoX.csv"))
   ## X = cbind(1, X)
-  
+
   y.ortho = y
   X.ortho = X
 
@@ -478,14 +485,14 @@ if (run$ortho) {
 
   bench.ortho = list()
   if (load.old) load(file.name);
-  
+
   for (nm in run.meth) {
     bench.ortho[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                                          method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
   if (write.it) save(y.ortho, X.ortho, glm.ortho, bench.ortho, file=file.name);
-  
+
 }
 
 ##------------------------------------------------------------------------------
@@ -505,14 +512,14 @@ if (run$factor) {
 
   bench.factor = list()
   if (load.old) load(file.name);
-  
+
   for (nm in run.meth) {
     bench.factor[[nm]] <- benchmark.logit(y, X, samp=samp, burn=burn, ntrials=ntrials, verbose=2000,
                                          method=nm, m.0=NULL, C.0=NULL, dset.name=dset.name)
   }
 
   if (write.it) save(y.factor, X.factor, glm.factor, bench.factor, file=file.name);
-  
+
 }
 
 ################################################################################

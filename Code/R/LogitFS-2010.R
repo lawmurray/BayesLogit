@@ -63,11 +63,13 @@ normal.mixture$mar.var  = pi^2 / 3;
 ## Make a copy.
 nmix.logis = normal.mixture
 
-################################################################################
+rm(normal.mixture)
 
 ################################################################################
 
-draw.beta <- function(z, X, r, nmix, b.0=NULL, B.0=NULL, P.0=NULL)
+################################################################################
+
+draw.beta.l3 <- function(z, X, r, nmix, b.0=NULL, B.0=NULL, P.0=NULL)
 {
   ## y: N x 1 outcomes.
   ## X: N x P design matrix.
@@ -76,7 +78,7 @@ draw.beta <- function(z, X, r, nmix, b.0=NULL, B.0=NULL, P.0=NULL)
   ## b.0: prior mean for beta
   ## B.0: prior variance for beta
   ## P.0: prior precision for beta.
-  
+
   ## FS-F use b to denote means and B to denote variances.
 
   N = nrow(X);
@@ -87,7 +89,7 @@ draw.beta <- function(z, X, r, nmix, b.0=NULL, B.0=NULL, P.0=NULL)
   if (!is.null(B.0)) P.0 = solve(B.0);
 
   Xdv = X / nmix$v[r];
-  
+
   P.L = t(X) %*% Xdv;
   a.L = t(Xdv) %*% z;
 
@@ -95,9 +97,9 @@ draw.beta <- function(z, X, r, nmix, b.0=NULL, B.0=NULL, P.0=NULL)
   ## B.N = solve(P.N);
   B.N = chol2inv(chol(P.N));
   b.N = B.N %*% (a.L + P.0 %*% b.0);
-  
+
   beta = b.N + t(chol(B.N)) %*% rnorm(P)
-} ## draw.beta
+} ## draw.beta.l3
 
 draw.z <- function(lambda, y){
   n = length(lambda)
@@ -113,11 +115,13 @@ logit.mix.gibbs <- function(y, X, samp=1000, burn=100, b.0=NULL, B.0=NULL, P.0=N
   P = ncol(X)
   M = samp
 
+  print("LogitFS-2010.R: logit.mix.gibbs");
+
   ## Default prior parameters.
   if (is.null(b.0)) b.0 = rep(0.0, P);
   if (is.null(P.0)) P.0 = matrix(0.0, P, P);
   if (!is.null(B.0)) P.0 = solve(B.0);
-  
+
   out = list(
     beta = array(0, dim=c(M, P)),
     z    = array(0, dim=c(M, N)),
@@ -140,7 +144,7 @@ logit.mix.gibbs <- function(y, X, samp=1000, burn=100, b.0=NULL, B.0=NULL, P.0=N
   if (!is.null(r.true))    r = r.true;
 
   start.time = proc.time()
-  
+
   for (i in 1:(samp+burn)) {
     if (i==burn+1) start.ess = proc.time()
 
@@ -152,17 +156,17 @@ logit.mix.gibbs <- function(y, X, samp=1000, burn=100, b.0=NULL, B.0=NULL, P.0=N
     ## r    = draw.indicators.logis.C(z, lambda, nmix.logis)
     r    = draw.indicators.C(z-log(lambda), nmix.logis)
     ## I tried inserting the code directly.  It did not speed things up.
-    
+
     ## (beta | r, z, y)
-    beta = draw.beta(z, X, r, nmix.logis, b.0, "P.0"=P.0);
-    
+    beta = draw.beta.l3(z, X, r, nmix.logis, b.0, "P.0"=P.0);
+
     if (i > burn) {
       out$beta[i-burn,] = beta;
       out$z [i-burn,] = z;
       out$r   [i-burn,] = r;
     }
 
-    if (i %% verbose == 0) cat("LogitFS-2010: Iteration", i, "\n");  
+    if (i %% verbose == 0) cat("LogitFS-2010: Iteration", i, "\n");
   }
 
   end.time = proc.time()
@@ -180,7 +184,7 @@ plot.compare <- function(out.fs, out.bl)
 {
   P = ncol(out.fs$beta)
   old.par = par(mfrow=c(2,2));
-  
+
   for (i in 1:P) {
     hist(out.fs$beta[,i], main="FS&F", xlab=paste("beta", i));
     acf(out.fs$beta[,i], main="FS&F");
@@ -208,7 +212,7 @@ plot.compare <- function(out.fs, out.bl)
 ## acf(out.fs$beta[,2], main="FS&F")
 ## acf(out.bl$beta[,1], main="BayesLogit")
 ## acf(out.bl$beta[,2], main="BayesLogit")
-             
+
 ################################################################################
                                    ## MAIN ##
 ################################################################################
@@ -218,11 +222,12 @@ plot.compare <- function(out.fs, out.bl)
 ## Synthetic test 1 ##
 
 if (FALSE) {
-  
+
   N = 1000;
+  verbose = 100;
   samp = 1000;
   burn = 500
-  
+
   beta = c(1.0, 0.4);
   X = cbind(1, rnorm(N));
 
@@ -231,13 +236,19 @@ if (FALSE) {
   z    = X %*% beta + ep
   lambda = exp(X %*% beta);
   y    = as.numeric(z > 0);
-  
+
   B.0 = diag(1, 2)
-  out.fs = logit.mix.gibbs(y, X, samp=samp, burn=burn, beta.true=beta, z.true=z, r.true=r);
+
+  ## source("LogitFS-2010.R")
+  out.fs <- logit.mix.gibbs(y, X, samp=samp, burn=burn, beta.true=beta,
+                            z.true=NULL, r.true=NULL, verbose=verbose);
 
   glm1   = glm(y ~ X+0, family=binomial(link="logit"));
   print(coef(glm1));
-  out.bl = logit(y, X, samp=samp, burn=burn, n.prior=0);
+  out.bl = logit(y, X, samp=samp, burn=burn);
+
+  apply(out.fs$beta, 2, mean)
+  apply(out.bl$beta, 2, mean)
 
   plot.compare(out.fs, out.bl);
 }
@@ -245,9 +256,9 @@ if (FALSE) {
 ## Synthetic test 2 ##
 
 if (FALSE) {
-  
+
   N = 1000;
-  
+
   beta = c(1.0, 0.4);
   X = cbind(1, rnorm(N));
   psi = X %*% beta;
