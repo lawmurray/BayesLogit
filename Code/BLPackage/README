@@ -1,3 +1,5 @@
+-*- mode: outline; -*-
+
 Table of Conents
  - Install
  - Run Demo
@@ -35,3 +37,10 @@ If you use WINDOWS you can install the BINARY:
 
 After you have installed the package, start R and run the script
 <Demo.R>, which can be found in this directory.
+
+* MISC
+
+** Font problems:
+
+   If you install BasicTex on Mac you need to manually install the packages
+   courier and helvetic .
