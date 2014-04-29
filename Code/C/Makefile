@@ -34,7 +34,7 @@ DEP = RRNG.o
 endif
 
 OPTS = -O2 $(USE_R) -g -DNDEBUG
-## OPTS = -g -Wall -std=c++98  $(USE_R) ## -Wshadow
+OPTS = -g -Wall -std=c++98  $(USE_R) -Wconversion -pedantic -Wall -Wextra # -Wshadow
 ## OPTS = -g -Wall -pedantic $(USE_R)
 ## Note: pedantic kills eigen.
 
