@@ -62,6 +62,9 @@ test_hybrid_par : test_hybrid_par.cpp PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.
 test_pgpar : test_pgpar.cpp PolyaGamma.h PolyaGammaPar.h
 	g++ -o test_pgpar BayesLogit.so test_pgpar.cpp $(OPTS) $(INC) -fopenmp $(LNK)
 
+test_pgomp : test_pgomp.cpp PolyaGammaOMP.h PolyaGammaHybrid.h BayesLogit.so
+	g++ -o test_pgomp BayesLogit.so test_pgomp.cpp $(OPTS) $(INC) -fopenmp $(LNK)
+
 test_logit : test_logit.cpp Logit.hpp MatRNG.so PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o InvertY.o InvertY2.o
 	g++ -o test_logit MatRNG.so PolyaGamma.o PolyaGammaAlt.o PolyaGammaSP.o InvertY.o InvertY2.o test_logit.cpp $(OPTS) $(INC) $(LNK)
 
