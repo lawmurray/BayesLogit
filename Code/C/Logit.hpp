@@ -25,9 +25,9 @@
 #define __LOGIT__
 
 #include "Matrix.h"
-#include "RNG.hpp"
+#include "RNG.h"
 #include "PolyaGamma.h"
-#include "Normal.hpp"
+#include "Normal.h"
 #include <stdexcept>
 #include <list>
 #include <time.h>
@@ -64,6 +64,10 @@ class Logit{
   // Posterior precision, b = Pm.
   Matrix PP;
   Matrix bP;
+
+  // Workspaces for Gibbs
+  Matrix S1, U1;
+  Matrix x1, s1, t1;
 
   // Random variates.
   Normal mvnorm;
@@ -115,7 +119,7 @@ protected:
 Logit::Logit()
 {
   // We do not want to call this constructor.
-  // printf("You must add data.");
+  // Rprintf("You must add data.");
 } // Logit
 
 Logit::Logit(const Matrix& y_data , const Matrix& tX_data, const Matrix& n_data)
@@ -137,7 +141,7 @@ bool Logit::data_conforms(const Matrix& y_data, const Matrix& tX_data, const Mat
   ok *= check[1] = y_data.area()  == n_data.area();
 
   for(int i = 0; i < 2; i++)
-    if (!check[i]) printf("Problem with check %i .\n", i);
+    if (!check[i]) Rprintf("Problem with check %i .\n", i);
 
   return ok;
 }
@@ -166,6 +170,12 @@ void Logit::set_data(const Matrix& y_data, const Matrix& tX_data, const Matrix& 
   PP.resize(P, P);
   bP.resize(P, 1);
 
+  // Set up workspaces for Gibbs
+  S1.resize(P - 1, P - 1);
+  U1.resize(P - 1, P - 1);
+  x1.resize(P - 1, 1);
+  s1.resize(P - 1, 1);
+  t1.resize(P - 1, 1);
 }
 
 void Logit::set_bP()
@@ -243,8 +253,8 @@ void Logit::compress()
   // cout << "Old N: " << old_N << " N: " << N << "\n";
   // Warning...
   if (old_N != N) {
-    printf("Warning: data was combined!\n");
-    printf("N: %i, P: %i \n", N, P);
+    Rprintf("Warning: data was combined!\n");
+    Rprintf("N: %i, P: %i \n", N, P);
   }
 
   // Matrix y(N);
@@ -294,14 +304,16 @@ inline void Logit::draw_beta(MF beta, MF w, RNG& r)
       tXRtOm(i,j) = tX(i,j) * sqrt(w(j));
 
   // PP = X' Om X + P0.
-  PP = P0; syrk(PP, tXRtOm, 'N', 1.0, 1.0);
+  PP = P0;
+  syrk(PP, tXRtOm, 'N', 1.0, 1.0);
 
   // PP = U'U.
   // U'U mP = bP --> U' y = bP; U mP = y;
   // ep = U z
   // dr = mP + z.
 
-  Matrix U; chol(U, PP, 'U');
+  Matrix U;
+  chol(U, PP, 'U');
 
   r.norm(beta, 1.0);
   Matrix mP(bP);
@@ -316,25 +328,74 @@ inline void Logit::draw_beta(MF beta, MF w, RNG& r)
 
 inline void Logit::draw_beta(MF beta, MF w, MF beta_prev, RNG& r)
 {
-  // Maybe have a special case for when P0 = 0.
-  Matrix tXOmega(tX);
-  prodonrow(tXOmega, w);
-  Matrix tXOmX; mult(tXOmX, tXOmega, tX, 'N', 'T');
-  PP = P0; PP += tXOmX;
-  // Joint draw.
-  mvnorm.set_from_likelihood(bP, PP);
-  mvnorm.draw(beta[0], r);
+  // tXRtOm = tX sqrt(Om)
+  Matrix tXRtOm(P, N);
+  for(uint j=0; j<tX.cols(); j++)
+    for(uint i=0; i<tX.rows(); i++)
+      tXRtOm(i,j) = tX(i,j) * sqrt(w(j));
 
-  // // Gibbs sampling.
-  // beta.copy(beta_prev);
-  // for(uint i = 0; i < P; ++i){
-  //   double m_i = bP(i);
-  //   for(uint j = 0; j < P; ++j){
-  // 	m_i -= j != i ? tXOmX(i,j) * beta(j) : 0.0;
-  //   }
-  //   m_i /= tXOmX(i,i);
-  //   beta(i) = r.norm(m_i, sqrt(1/tXOmX(i,i)));
-  // }
+  // PP = X' Om X + P0.
+  PP = P0;
+  syrk(PP, tXRtOm, 'N', 1.0, 1.0);
+
+  // PP = U'U.
+  Matrix U;
+  chol(U, PP, 'U');
+
+  // U'U mP = bP --> U' y = bP; U mP = y;
+  Matrix mP(bP);
+  trsm(U, mP, 'U', 'L', 'T'); // U' y = bP
+  trsm(U, mP, 'U', 'L', 'N'); // U mP = y
+
+  // posterior covariance
+  Matrix SP(PP);
+  for (uint i=0; i<P; i++)
+    for (uint j=0; j<P; j++)
+      SP(i,j) = (i == j) ? 1.0 : 0.0;
+  trsm(U, SP, 'U', 'L', 'T');
+  trsm(U, SP, 'U', 'L', 'N');
+
+  // Gibbs update beta components one by one
+  beta = beta_prev;
+  double mi;
+  double si;
+
+  for(uint i = 0; i < P; i++) {
+    for(uint j = 0; j < P; j++) {
+      if (j != i) {
+        uint j1 = j > i ? j - 1 : j;
+        x1(j1) = beta(j) - mP(j);
+        s1(j1) = SP(i,j);
+        for(uint k=0; k<P; k++) {
+          if (k != i) {
+            uint k1 = k > i ? k - 1 : k;
+            S1(j1,k1) = SP(j,k);
+          }
+        }
+      }
+    }
+    chol(U1, S1, 'U');
+
+    mi = mP(i);
+    trsm(U1, x1, 'U', 'L', 'T');
+    trsm(U1, x1, 'U', 'L', 'N');
+    for (uint j = 0; j < P - 1; j++) {
+      mi += s1(j)*x1(j);
+    }
+
+    si = SP(i,i);
+    trsm(U1, s1, 'U', 'L', 'T');
+    for (uint j = 0; j < P - 1; j++) {
+      si -= s1(j)*s1(j);
+    }
+
+    if (i == 100) {
+      // intercept
+      beta(i) = r.norm(mi, sqrt(si));
+    } else {
+      beta(i) = r.tnorm(0.0, mi, sqrt(si));
+    }
+  }
 }
 
 double Logit::gibbs_block(MF beta_space, MF w_space,
@@ -364,8 +425,8 @@ double Logit::gibbs_block(MF beta_space, MF w_space,
   for (int m=1; m<=samp*period; m++) {
 
     draw_w   (w_curr_mf,  psi, r);
-    // draw_beta(beta_curr_mf, w_curr_mf, beta_prev_mf, r);
-    draw_beta(beta_curr_mf, w_curr_mf, r);
+    draw_beta(beta_curr_mf, w_curr_mf, beta_prev_mf, r);
+    //draw_beta(beta_curr_mf, w_curr_mf, r);
     gemm(psi, tX, beta_curr_mf, 'T');
 
     // Increment on i-th iteration % period.
@@ -409,12 +470,12 @@ void Logit::gibbs(Matrix& w, Matrix& beta, int samp, int burn, RNG& r)
 
   // Burn.
   total_time = gibbs_block(beta, w, beta[0], w[0], 1, burn, r);
-  printf("Burn-in complete: %g sec. for %i iterations.\n", total_time, burn);
-  printf("Expect approx. %g sec. for %i samples.\n", total_time * samp / burn, samp);
+  Rprintf("Burn-in complete: %g sec. for %i iterations.\n", total_time, burn);
+  Rprintf("Expect approx. %g sec. for %i samples.\n", total_time * samp / burn, samp);
 
   // Sample.
   total_time = gibbs_block(beta, w, beta[0], w[0], samp, 1, r);
-  printf("Sampling complete: %g sec. for %i iterations.\n", total_time, samp);
+  Rprintf("Sampling complete: %g sec. for %i iterations.\n", total_time, samp);
 
 } // gibbs
 
