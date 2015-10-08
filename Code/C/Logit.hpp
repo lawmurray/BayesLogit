@@ -389,7 +389,7 @@ inline void Logit::draw_beta(MF beta, MF w, MF beta_prev, RNG& r)
       si -= s1(j)*s1(j);
     }
 
-    if (i == 100) {
+    if (i == P - 1) {
       // intercept
       beta(i) = r.norm(mi, sqrt(si));
     } else {
