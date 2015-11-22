@@ -169,13 +169,6 @@ void Logit::set_data(const Matrix& y_data, const Matrix& tX_data, const Matrix& 
   // Set posterior dim.
   PP.resize(P, P);
   bP.resize(P, 1);
-
-  // Set up workspaces for Gibbs
-  S1.resize(P - 1, P - 1);
-  U1.resize(P - 1, P - 1);
-  x1.resize(P - 1, 1);
-  s1.resize(P - 1, 1);
-  t1.resize(P - 1, 1);
 }
 
 void Logit::set_bP()
@@ -342,58 +335,56 @@ inline void Logit::draw_beta(MF beta, MF w, MF beta_prev, RNG& r)
   Matrix U;
   chol(U, PP, 'U');
 
+  //
+  Matrix L;
+  L.resize(P, P);
+  for(uint i = 0; i < P; i++) {
+    for(uint j = 0; j < P; j++) {
+      L(i,j) = (i == j) ? 1.0 : 0.0;
+    }
+  }
+  trsm(U, L, 'U', 'L', 'T');
+
   // U'U mP = bP --> U' y = bP; U mP = y;
   Matrix mP(bP);
   trsm(U, mP, 'U', 'L', 'T'); // U' y = bP
   trsm(U, mP, 'U', 'L', 'N'); // U mP = y
 
-  // posterior covariance
-  Matrix SP(PP);
-  for (uint i=0; i<P; i++)
-    for (uint j=0; j<P; j++)
-      SP(i,j) = (i == j) ? 1.0 : 0.0;
-  trsm(U, SP, 'U', 'L', 'T');
-  trsm(U, SP, 'U', 'L', 'N');
-
-  // Gibbs update beta components one by one
-  beta = beta_prev;
-  double mi;
-  double si;
-
+  // transform
+  Matrix z;
+  z.resize(P);
   for(uint i = 0; i < P; i++) {
-    for(uint j = 0; j < P; j++) {
-      if (j != i) {
-        uint j1 = j > i ? j - 1 : j;
-        x1(j1) = beta(j) - mP(j);
-        s1(j1) = SP(i,j);
-        for(uint k=0; k<P; k++) {
-          if (k != i) {
-            uint k1 = k > i ? k - 1 : k;
-            S1(j1,k1) = SP(j,k);
-          }
-        }
+    z(i) = beta_prev(i) - mP(i);
+    beta(i) = beta_prev(i);
+  }
+  trsm(L, z, 'L', 'L', 'N');
+
+  // update intercept
+  beta(P - 1) -= L(P - 1,P - 1)*z(P - 1);
+  z(P - 1) = r.norm(0.0, 1.0);
+  beta(P - 1) += L(P - 1,P - 1)*z(P - 1);
+
+  // update coefficients
+  for(int i = P - 2; i >= 0; i--) {
+    double cmin = -1.0/0.0, cmax = 1.0/0.0, c1;
+
+    for(uint j = i; j < P; j++) {
+      beta(j) -= L(j,i)*z(i);
+    }
+    for(uint j = i; j < P - 1; j++) {
+      c1 = -beta(j)/L(j,i);
+      if (L(j,i) > 0.0 && c1 > cmin) {
+        cmin = c1;
+      } else if (L(j,i) < 0.0 && c1 < cmax) {
+        cmax = c1;
       }
     }
-    chol(U1, S1, 'U');
 
-    mi = mP(i);
-    trsm(U1, x1, 'U', 'L', 'T');
-    trsm(U1, x1, 'U', 'L', 'N');
-    for (uint j = 0; j < P - 1; j++) {
-      mi += s1(j)*x1(j);
+    if (cmin < cmax) {
+      z(i) = r.tnorm(cmin, cmax, 0.0, 1.0);
     }
-
-    si = SP(i,i);
-    trsm(U1, s1, 'U', 'L', 'T');
-    for (uint j = 0; j < P - 1; j++) {
-      si -= s1(j)*s1(j);
-    }
-
-    if (i == P - 1) {
-      // intercept
-      beta(i) = r.norm(mi, sqrt(si));
-    } else {
-      beta(i) = r.tnorm(0.0, mi, sqrt(si));
+    for(uint j = i; j < P; j++) {
+      beta(j) += L(j,i)*z(i);
     }
   }
 }
