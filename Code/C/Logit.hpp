@@ -359,32 +359,26 @@ inline void Logit::draw_beta(MF beta, MF w, MF beta_prev, RNG& r)
   }
   trsm(L, z, 'L', 'L', 'N');
 
-  // update intercept
-  beta(P - 1) -= L(P - 1,P - 1)*z(P - 1);
-  z(P - 1) = r.norm(0.0, 1.0);
-  beta(P - 1) += L(P - 1,P - 1)*z(P - 1);
-
   // update coefficients
-  for(int i = P - 2; i >= 0; i--) {
+  for(int i = P - 1; i >= 0; i--) {
     double cmin = -1.0/0.0, cmax = 1.0/0.0, c1;
+    double l1, z1 = z(i), z2;
 
-    for(uint j = i; j < P; j++) {
-      beta(j) -= L(j,i)*z(i);
-    }
     for(uint j = i; j < P - 1; j++) {
-      c1 = -beta(j)/L(j,i);
-      if (L(j,i) > 0.0 && c1 > cmin) {
+      l1 = L(j,i);
+      c1 = z1 - beta(j)/l1;
+      if (l1 > 0.0 && c1 > cmin) {
         cmin = c1;
-      } else if (L(j,i) < 0.0 && c1 < cmax) {
+      } else if (l1 < 0.0 && c1 < cmax) {
         cmax = c1;
       }
     }
 
     if (cmin < cmax) {
-      z(i) = r.tnorm(cmin, cmax, 0.0, 1.0);
-    }
-    for(uint j = i; j < P; j++) {
-      beta(j) += L(j,i)*z(i);
+      z2 = r.tnorm(cmin, cmax, 0.0, 1.0);
+      for(uint j = i; j < P; j++) {
+        beta(j) += L(j,i)*(z2 - z1);
+      }
     }
   }
 }
