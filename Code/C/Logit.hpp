@@ -359,13 +359,22 @@ inline void Logit::draw_beta(MF beta, MF w, MF beta_prev, RNG& r)
   }
   trsm(L, z, 'L', 'L', 'N');
 
-  // update coefficients
-  for(int i = P - 1; i >= 0; i--) {
-    double cmin = -1.0/0.0, cmax = 1.0/0.0, c1;
-    double l1, z1 = z(i), z2;
+  // random sweep
+  std::vector<uint> is(P);
+  for (int i = 0; i < P; ++i) {
+    is[i] = i;
+  }
+  for (int i = 0; i < P - 1; ++i) {
+    std::swap(is[i], is[(uint)r.flat(i, P)]);
+  }
 
-    for(uint j = i; j < P - 1; j++) {
-      l1 = L(j,i);
+  // update coefficients
+  for(int i = 0; i < P; i++) {
+    double cmin = -1.0/0.0, cmax = 1.0/0.0, c1;
+    double l1, z1 = z(is[i]), z2;
+
+    for(uint j = is[i]; j < P - 1; j++) {
+      l1 = L(j,is[i]);
       c1 = z1 - beta(j)/l1;
       if (l1 > 0.0 && c1 > cmin) {
         cmin = c1;
@@ -376,8 +385,8 @@ inline void Logit::draw_beta(MF beta, MF w, MF beta_prev, RNG& r)
 
     if (cmin < cmax) {
       z2 = r.tnorm(cmin, cmax, 0.0, 1.0);
-      for(uint j = i; j < P; j++) {
-        beta(j) += L(j,i)*(z2 - z1);
+      for(uint j = is[i]; j < P; j++) {
+        beta(j) += L(j,is[i])*(z2 - z1);
       }
     }
   }
