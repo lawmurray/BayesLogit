@@ -336,14 +336,19 @@ inline void Logit::draw_beta(MF beta, MF w, MF beta_prev, RNG& r)
   chol(U, PP, 'U');
 
   //
-  Matrix L;
-  L.resize(P, P);
+  Matrix S;
+  S.resize(P, P);
   for(uint i = 0; i < P; i++) {
     for(uint j = 0; j < P; j++) {
-      L(i,j) = (i == j) ? 1.0 : 0.0;
+      S(i,j) = (i == j) ? 1.0 : 0.0;
     }
   }
-  trsm(U, L, 'U', 'L', 'T');
+  trsm(U, S, 'U', 'L', 'T'); // U' y = bP
+  trsm(U, S, 'U', 'L', 'N'); // U mP = y
+
+  Matrix L;
+  L.resize(P,P);
+  chol(L, S, 'L');
 
   // U'U mP = bP --> U' y = bP; U mP = y;
   Matrix mP(bP);
@@ -359,32 +364,34 @@ inline void Logit::draw_beta(MF beta, MF w, MF beta_prev, RNG& r)
   }
   trsm(L, z, 'L', 'L', 'N');
 
-  // random sweep
   std::vector<uint> is(P);
   for (int i = 0; i < P; ++i) {
     is[i] = i;
   }
-  for (int i = 0; i < P - 1; ++i) {
-    std::swap(is[i], is[(uint)r.flat(i, P)]);
-  }
 
-  // update coefficients
-  for(int i = 0; i < P; i++) {
-    double cmin = -1.0/0.0, cmax = 1.0/0.0, c1;
-    double l1, z1 = z(is[i]), z2;
-
-    for(uint j = is[i]; j < P - 1; j++) {
-      l1 = L(j,is[i]);
-      c1 = z1 - beta(j)/l1;
-      if (l1 > 0.0 && c1 > cmin) {
-        cmin = c1;
-      } else if (l1 < 0.0 && c1 < cmax) {
-        cmax = c1;
-      }
+  for (int k = 0; k < P; ++k) {
+    // random sweep
+    for (int i = 0; i < P - 1; ++i) {
+      std::swap(is[i], is[(uint)r.flat(i, P)]);
     }
 
-    if (cmin < cmax) {
+    // update coefficients
+    for(int i = 0; i < P; i++) {
+      double cmin = -1.0/0.0, cmax = 1.0/0.0, c1;
+      double l1, z1 = z(is[i]), z2;
+
+      for(uint j = is[i]; j < P - 1; j++) {
+        l1 = L(j,is[i]);
+        c1 = z1 - beta(j)/l1;
+        if (l1 > 0.0 && c1 > cmin) {
+          cmin = c1;
+        } else if (l1 < 0.0 && c1 < cmax) {
+          cmax = c1;
+        }
+      }
+
       z2 = r.tnorm(cmin, cmax, 0.0, 1.0);
+      z(is[i]) = z2;
       for(uint j = is[i]; j < P; j++) {
         beta(j) += L(j,is[i])*(z2 - z1);
       }
